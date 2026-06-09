@@ -1,0 +1,10 @@
+{
+  "sidebar": {
+    "newChat": "New Chat",
+    "skills": "Skills & Tools"
+  },
+  "header": {
+    "sidebarToggle": "Toggle sidebar",
+    "settings": "Settings"
+  }
+}

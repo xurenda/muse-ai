@@ -73,6 +73,14 @@ TypeScript:
 
 **变体**：`cva(...)` 及仅用于当前组件的变体相关常量写在 **同一 `.tsx` 文件内**，**不导出**；对外只需导出组件本身以及必要的 `**Props` 类型\*\*（例如配合 `VariantProps`）。
 
+### 设计 Token
+
+Token 定义与说明见 `packages/web/src/styles/index.css`。写样式时**先查现有 token**，优先用语义化 Tailwind 类名（如 `bg-background`、`text-muted-foreground`），不要硬编码色值。若现有 token 不够用，**先在 `index.css` 中新增**（`:root`、`.dark`、`@theme inline` 一并维护），再在组件里使用。
+
+### i18n
+
+用户可见文案放在 `packages/shared/src/i18n/locales/<语言>/<命名空间>.json`。组件里用 `const { t } = useTranslation('命名空间')`，以 `t('some.key')` 代替硬编码字符串；新增文案先加 JSON，再在组件中引用。
+
 ### 可访问性与交互
 
 - 交互控件尽量使用语义化 HTML 与可用的 `aria-*` / 标签关联（`label`、`button` 等）。

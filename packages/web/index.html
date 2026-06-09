@@ -4,6 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Muse AI</title>
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('muse-ai:theme')
+          var colorMode = 'system'
+
+          if (stored) {
+            var parsed = JSON.parse(stored)
+            colorMode = parsed.state && parsed.state.colorMode ? parsed.state.colorMode : 'system'
+          }
+
+          var isDark =
+            colorMode === 'dark' ||
+            (colorMode === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+          document.documentElement.classList.toggle('dark', isDark)
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+        } catch (_error) {
+          /* 忽略解析失败，使用默认浅色 */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

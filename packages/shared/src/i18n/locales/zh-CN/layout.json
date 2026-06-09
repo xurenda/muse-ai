@@ -1,0 +1,10 @@
+{
+  "sidebar": {
+    "newChat": "新对话",
+    "skills": "技能与工具"
+  },
+  "header": {
+    "sidebarToggle": "切换侧边栏",
+    "settings": "设置"
+  }
+}

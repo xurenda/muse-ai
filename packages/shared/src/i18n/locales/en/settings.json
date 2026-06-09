@@ -1,0 +1,14 @@
+{
+  "systemSettings": "System Settings",
+  "language": "Language",
+  "appearance": "Appearance",
+  "languageOptions": {
+    "zh-CN": "简体中文",
+    "en": "English"
+  },
+  "appearanceOptions": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Follow System"
+  }
+}

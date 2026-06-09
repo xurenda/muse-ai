@@ -1,0 +1,14 @@
+{
+  "systemSettings": "系统设置",
+  "language": "语言",
+  "appearance": "外观",
+  "languageOptions": {
+    "zh-CN": "简体中文",
+    "en": "English"
+  },
+  "appearanceOptions": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  }
+}
