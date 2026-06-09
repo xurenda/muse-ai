@@ -75,13 +75,26 @@ TypeScript:
 
 ### 设计 Token
 
-Token 定义与说明见 `packages/web/src/styles/index.css`。写样式时**先查现有 token**，优先用语义化 Tailwind 类名（如 `bg-background`、`text-muted-foreground`），不要硬编码色值。若现有 token 不够用，**先在 `index.css` 中新增**（`:root`、`.dark`、`@theme inline` 一并维护），再在组件里使用。
+定义见 `packages/web/src/styles/index.css`。颜色、字号等全局值用 token + 语义类名（如 `bg-background`、`text-sm`），不要硬编码色值或 `text-[13px]` 这类魔术数字。间距直接用 Tailwind scale（如 `px-3`），不必再包一层 token。
 
-### i18n
+### 已有 UI 基元（复用优先）
 
-用户可见文案放在 `packages/shared/src/i18n/locales/<语言>/<命名空间>.json`。组件里用 `const { t } = useTranslation('命名空间')`，以 `t('some.key')` 代替硬编码字符串；新增文案先加 JSON，再在组件中引用。
+**新增可复用基元时，在本节补一行说明**（写清用途与引用方式），方便后续 AI 与贡献者发现。
+
+| 基元 | 位置 | 用法 |
+| ---- | ---- | ---- |
+| `ui-menu-item` | `index.css` | 列表/菜单行基样式；叠场景色即可 |
+| `DropdownMenuItem` 等 | `components/ui/dropdown-menu.tsx` | 下拉菜单，已内置 `ui-menu-item` |
+| `Button` / `IconButton` | `components/ui/` | 按钮 |
+| 侧栏导航 | `sidebar-nav-link.tsx` | `ui-menu-item` + sidebar 色 token 的参考实现 |
+
+列表/菜单项：**优先用上表基元**，不要手写 `px-3 py-2 text-sm font-medium`。下拉用 `DropdownMenuItem`；侧栏等用 `ui-menu-item` + 场景色。菜单内图标：`size-3.5`、`strokeWidth={2}`。
 
 ### 可访问性与交互
 
 - 交互控件尽量使用语义化 HTML 与可用的 `aria-*` / 标签关联（`label`、`button` 等）。
 - 键盘可操作性与焦点顺序在复杂交互中需一并考虑。
+
+## i18n
+
+用户可见文案放在 `packages/shared/src/i18n/locales/<语言>/<命名空间>.json`。组件里用 `const { t } = useTranslation('命名空间')`，以 `t('some.key')` 代替硬编码字符串；新增文案先加 JSON，再在组件中引用。

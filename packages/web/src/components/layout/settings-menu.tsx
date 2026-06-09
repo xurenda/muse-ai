@@ -1,15 +1,5 @@
 import type { Locale } from '@muse-ai/shared/i18n'
-import {
-  ChevronDown,
-  ChevronRight,
-  Languages,
-  Monitor,
-  Moon,
-  Palette,
-  SlidersHorizontal,
-  Sun,
-  type LucideIcon,
-} from 'lucide-react'
+import { ChevronRight, Languages, Monitor, Moon, Palette, SlidersHorizontal, Sun, type LucideIcon } from 'lucide-react'
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -23,11 +13,11 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { IconButton } from '@/components/ui/icon-button'
 import type { ColorMode } from '@/constants/theme'
 import { useTranslation } from '@/hooks/use-translation'
 import { useLocaleStore } from '@/stores/locale'
 import { useThemeStore } from '@/stores/theme'
-import { cn } from '@/utils/cn'
 
 interface SettingsMenuProps {
   labelKey: string
@@ -57,7 +47,7 @@ function SubmenuOptions({
         const Icon = option.icon
         return (
           <DropdownMenuRadioItem key={option.value} value={option.value}>
-            {Icon ? <Icon className="size-4" strokeWidth={1.75} /> : null}
+            {Icon ? <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} /> : null}
             {option.label}
           </DropdownMenuRadioItem>
         )
@@ -77,7 +67,7 @@ function SubmenuTrigger({
 }) {
   return (
     <>
-      <Icon className="size-4" strokeWidth={1.75} />
+      <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />
       {label}
       <span className="ml-auto">{chevron}</span>
     </>
@@ -106,60 +96,33 @@ export function SettingsMenu({ labelKey, icon: TriggerIcon }: SettingsMenuProps)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors',
-            'hover:bg-accent hover:text-foreground',
-            'data-[state=open]:bg-accent data-[state=open]:text-foreground',
-          )}
-          aria-label={tLayout(labelKey)}
-        >
+        <IconButton type="button" aria-label={tLayout(labelKey)}>
           <TriggerIcon className="size-4" strokeWidth={1.75} />
-        </button>
+        </IconButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
+      <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuItem asChild>
-          <Link
-            to="/setting"
-            className="flex w-full items-center gap-2"
-          >
+          <Link to="/settings" className="flex w-full items-center gap-2">
             <SlidersHorizontal className="size-4" strokeWidth={1.75} />
-            {t('systemSettings')}
+            {t('settings')}
           </Link>
         </DropdownMenuItem>
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <SubmenuTrigger
-              icon={Languages}
-              label={t('language')}
-              chevron={<ChevronRight className="size-3.5 text-muted-foreground" strokeWidth={1.75} />}
-            />
+            <SubmenuTrigger icon={Languages} label={t('language')} chevron={<ChevronRight className="size-3.5 text-muted-foreground" strokeWidth={1.75} />} />
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-36">
-            <SubmenuOptions
-              options={languageOptions}
-              value={locale}
-              onValueChange={(value) => setLocale(value as Locale)}
-            />
+          <DropdownMenuSubContent className="w-44">
+            <SubmenuOptions options={languageOptions} value={locale} onValueChange={value => setLocale(value as Locale)} />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <SubmenuTrigger
-              icon={Palette}
-              label={t('appearance')}
-              chevron={<ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={1.75} />}
-            />
+            <SubmenuTrigger icon={Palette} label={t('appearance')} chevron={<ChevronRight className="size-3.5 text-muted-foreground" strokeWidth={1.75} />} />
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-36">
-            <SubmenuOptions
-              options={appearanceOptions}
-              value={colorMode}
-              onValueChange={(value) => setColorMode(value as ColorMode)}
-            />
+          <DropdownMenuSubContent className="w-44">
+            <SubmenuOptions options={appearanceOptions} value={colorMode} onValueChange={value => setColorMode(value as ColorMode)} />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
       </DropdownMenuContent>

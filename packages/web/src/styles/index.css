@@ -85,9 +85,21 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  /* 次级 UI 字号（侧栏、菜单、按钮等），略小于默认 14px，更紧凑 */
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
   /* 全局无衬线字体栈 */
   --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
+}
+
+/*
+ * 交互列表项基样式：侧栏导航、下拉菜单等复用
+ * 间距沿用 Tailwind spacing（3、2），字号/字重走上方 text-sm token
+ * 使用约定见仓库根目录 AGENTS.md「列表 / 菜单项」
+ */
+@utility ui-menu-item {
+  @apply flex items-center gap-2 px-3 py-2 text-sm font-medium leading-none outline-none transition-colors focus:outline-none focus-visible:outline-none;
 }
 
 @layer base {
@@ -95,6 +107,12 @@
   *::before,
   *::after {
     @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    @apply h-full;
   }
 
   body {

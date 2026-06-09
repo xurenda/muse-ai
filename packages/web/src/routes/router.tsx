@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
         element: <PlaceholderPage titleKey="pages.skills" />,
       },
       {
-        path: 'setting',
+        path: 'settings',
         element: <PlaceholderPage titleKey="pages.setting" />,
       },
     ],

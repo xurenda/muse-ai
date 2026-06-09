@@ -1,11 +1,4 @@
-import { type LucideIcon, PanelLeft, Settings } from 'lucide-react'
-
-export interface HeaderActionItem {
-  kind: 'action'
-  action: 'sidebar-toggle'
-  icon: LucideIcon
-  labelKey: string
-}
+import { Settings, type LucideIcon } from 'lucide-react'
 
 export interface HeaderNavItem {
   kind: 'nav'
@@ -21,11 +14,7 @@ export interface HeaderMenuItem {
   labelKey: string
 }
 
-export type HeaderItem = HeaderActionItem | HeaderNavItem | HeaderMenuItem
-
-export const appHeaderLeftItems = [
-  { kind: 'action', action: 'sidebar-toggle', icon: PanelLeft, labelKey: 'header.sidebarToggle' },
-] as const satisfies readonly HeaderItem[]
+export type HeaderItem = HeaderNavItem | HeaderMenuItem
 
 export const appHeaderRightItems = [
   { kind: 'menu', menu: 'settings', icon: Settings, labelKey: 'header.settings' },

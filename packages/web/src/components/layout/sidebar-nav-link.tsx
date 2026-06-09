@@ -16,14 +16,14 @@ export function SidebarNavLink({ to, icon: Icon, label, end }: SidebarNavLinkPro
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+          'ui-menu-item rounded-lg',
           isActive
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
         )
       }
     >
-      <Icon className="size-4 shrink-0 opacity-70" strokeWidth={1.75} />
+      <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />
       <span>{label}</span>
     </NavLink>
   )
