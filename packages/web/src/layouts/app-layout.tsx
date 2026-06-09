@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
 import { Group, Panel, usePanelRef } from 'react-resizable-panels'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+import { SettingsSidebar } from '@/components/layout/settings-sidebar'
 import { MainHeader } from '@/components/layout/main-header'
 import { SidebarResizeHandle } from '@/components/layout/sidebar-resize-handle'
 import { appHeaderRightItems } from '@/constants/app-header'
@@ -17,6 +18,8 @@ import {
 import { useSidebarStore } from '@/stores/sidebar'
 
 export function AppLayout() {
+  const { pathname } = useLocation()
+  const isSettingsRoute = pathname.startsWith('/settings')
   const sidebarPanelRef = usePanelRef()
   const sidebarOpen = useSidebarStore((state) => state.open)
   const setSidebarOpen = useSidebarStore((state) => state.setOpen)
@@ -55,11 +58,15 @@ export function AppLayout() {
         className="flex h-full min-h-0 flex-col bg-sidebar"
         onResize={handleSidebarResize}
       >
-        <AppSidebar
-          items={[...appSidebarItems]}
-          open={sidebarOpen}
-          onToggle={handleSidebarToggle}
-        />
+        {isSettingsRoute ? (
+          <SettingsSidebar open={sidebarOpen} onToggle={handleSidebarToggle} />
+        ) : (
+          <AppSidebar
+            items={[...appSidebarItems]}
+            open={sidebarOpen}
+            onToggle={handleSidebarToggle}
+          />
+        )}
       </Panel>
 
       <SidebarResizeHandle disabled={!sidebarOpen} />

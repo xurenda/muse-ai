@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/app-layout'
+import { SettingsLayout } from '@/layouts/settings-layout'
 import { PlaceholderPage } from '@/pages/placeholder-page'
+import { GeneralSettingsPage } from '@/pages/settings/general-settings-page'
+import { ModelsSettingsPage } from '@/pages/settings/models-settings-page'
 
 export const router = createBrowserRouter([
   {
@@ -21,7 +24,21 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <PlaceholderPage titleKey="pages.setting" />,
+        element: <SettingsLayout />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="general" replace />,
+          },
+          {
+            path: 'general',
+            element: <GeneralSettingsPage />,
+          },
+          {
+            path: 'models',
+            element: <ModelsSettingsPage />,
+          },
+        ],
       },
     ],
   },
