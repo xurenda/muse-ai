@@ -9,6 +9,7 @@ export {
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
 } from './constants/daemon'
+export { OFFICIAL_BASIC_PLUGIN_ID } from './constants/plugin'
 export {
   AGENT_CONFIG_FILE_NAME,
   AGENT_PLUGINS_FILE_NAME,
@@ -22,6 +23,11 @@ export {
   MODELS_FILE_NAME,
   MUSE_DIR_NAME,
   MUSE_HOME_ENV,
+  PLUGIN_BINS_DIR_NAME,
+  PLUGIN_EXTENSIONS_DIR_NAME,
+  PLUGIN_MANIFEST_FILE_NAME,
+  PLUGIN_PROMPTS_DIR_NAME,
+  PLUGIN_SKILLS_DIR_NAME,
   PLUGINS_DIR_NAME,
   PROMPTS_DIR_NAME,
   REGISTRY_AGENTS_FILE_NAME,
@@ -41,7 +47,10 @@ export type {
   CreateSessionResponse,
   DaemonAgentEventMessage,
   DaemonErrorResponse,
+  DeleteSessionResponse,
   GetSessionResponse,
+  ListSessionsQuery,
+  ListSessionsResponse,
   SessionPromptRequest,
   SessionPromptResponse,
 } from './types/daemon-api'
@@ -72,7 +81,15 @@ export type {
   UpdateProviderApiKeyRequest,
   UpsertCustomProviderRequest,
 } from './types/settings-api'
+export type { PluginManifest } from './types/plugin'
 export type { MuseSettings } from './types/settings'
-export type { SessionMeta } from './types/session'
+export type { SessionMeta, SessionTranscriptMessageEntry } from './types/session'
 export { namespaceIdToRelativePath } from './utils/namespace-id'
 export { maskApiKey } from './utils/mask-api-key'
+export {
+  pluginInstallRelativePath,
+  pluginManifestRelativePath,
+  promptInstallRelativePath,
+  resolvePluginManifestEntry,
+  skillInstallRelativePath,
+} from './utils/resource-paths'

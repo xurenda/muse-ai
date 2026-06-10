@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import WebSocket from 'ws'
 import { Agent, type AgentEvent, type AgentMessage } from '@earendil-works/pi-agent-core'
@@ -9,44 +7,49 @@ import {
   type DaemonAgentEventMessage,
   type SessionMeta,
 } from '@muse-ai/shared'
-import { getAgentSessionsDir } from '../data/paths'
 import { createSessionAgent } from './agent-factory'
 import { isProviderAuthError, markProviderAuthFailure } from './provider-health'
+import {
+  appendSessionTranscriptEntries,
+  deleteSessionFiles,
+  readSessionMessages,
+  scanSessionMetas,
+  writeSessionMeta,
+} from './session-store'
 
 interface SessionRecord {
   meta: SessionMeta
   agent: Agent
   clients: Set<WebSocket>
   unsubscribe?: () => void
+  /** 已写入 jsonl 的消息条数 */
+  persistedMessageCount: number
 }
 
 function serializeAgentEvent(event: AgentEvent): Record<string, unknown> {
   return JSON.parse(JSON.stringify(event)) as Record<string, unknown>
 }
 
-function getMessageText(message: AgentMessage): string {
-  if (!('content' in message)) {
-    return ''
+function deriveSessionTitle(message: string): string {
+  const normalized = message.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= 80) {
+    return normalized
   }
-
-  const { content } = message
-  if (typeof content === 'string') {
-    return content
-  }
-  if (!Array.isArray(content)) {
-    return ''
-  }
-
-  return content
-    .filter((part): part is { type: 'text'; text: string } => {
-      return typeof part === 'object' && part !== null && 'type' in part && part.type === 'text'
-    })
-    .map((part) => part.text)
-    .join('\n')
+  return `${normalized.slice(0, 79)}…`
 }
 
 export class SessionManager {
+  private index = new Map<string, SessionMeta>()
   private sessions = new Map<string, SessionRecord>()
+
+  /** daemon 启动时扫描磁盘，仅建立元数据索引 */
+  async initialize(): Promise<void> {
+    const metas = await scanSessionMetas()
+    this.index.clear()
+    for (const meta of metas) {
+      this.index.set(meta.id, meta)
+    }
+  }
 
   async createSession(input: CreateSessionRequest): Promise<SessionMeta> {
     const agentId = input.agentId ?? DEFAULT_AGENT_ID
@@ -57,34 +60,46 @@ export class SessionManager {
       cwd: input.cwd,
       createdAt: now,
       updatedAt: now,
+      messageCount: 0,
     }
 
     const agent = await createSessionAgent({ agentId, cwd: input.cwd })
-    const record: SessionRecord = {
-      meta,
-      agent,
-      clients: new Set(),
-    }
-
-    record.unsubscribe = agent.subscribe((event) => {
-      this.broadcastEvent(meta.id, event)
-    })
-
-    this.sessions.set(meta.id, record)
-    await this.persistSessionMeta(record)
+    const record = this.attachRuntime(meta, agent, 0)
+    this.index.set(meta.id, meta)
+    await writeSessionMeta(record.meta)
     return meta
   }
 
-  getSession(sessionId: string): SessionRecord | undefined {
-    return this.sessions.get(sessionId)
+  listSessions(agentId?: string): SessionMeta[] {
+    const sessions = [...this.index.values()]
+    const filtered = agentId ? sessions.filter((session) => session.agentId === agentId) : sessions
+    return filtered.sort((left, right) => {
+      const leftTime = Date.parse(left.updatedAt ?? left.createdAt)
+      const rightTime = Date.parse(right.updatedAt ?? right.createdAt)
+      return rightTime - leftTime
+    })
   }
 
-  getSessionResponse(sessionId: string) {
-    const record = this.sessions.get(sessionId)
-    if (!record) {
-      return undefined
+  async ensureHydrated(sessionId: string): Promise<SessionRecord> {
+    const existing = this.sessions.get(sessionId)
+    if (existing) {
+      return existing
     }
 
+    const meta = this.index.get(sessionId)
+    if (!meta) {
+      throw new Error('会话不存在')
+    }
+
+    const messages = await readSessionMessages(meta.agentId, meta.id)
+    const agent = await createSessionAgent({ agentId: meta.agentId, cwd: meta.cwd })
+    agent.state.messages = messages
+
+    return this.attachRuntime(meta, agent, messages.length)
+  }
+
+  async getSessionResponse(sessionId: string) {
+    const record = await this.ensureHydrated(sessionId)
     return {
       session: record.meta,
       messages: record.agent.state.messages,
@@ -92,13 +107,8 @@ export class SessionManager {
     }
   }
 
-  attachClient(sessionId: string, client: WebSocket): void {
-    const record = this.sessions.get(sessionId)
-    if (!record) {
-      client.close(4404, 'session not found')
-      return
-    }
-
+  async attachClient(sessionId: string, client: WebSocket): Promise<void> {
+    const record = await this.ensureHydrated(sessionId)
     record.clients.add(client)
     client.on('close', () => {
       record.clients.delete(client)
@@ -106,18 +116,22 @@ export class SessionManager {
   }
 
   async prompt(sessionId: string, message: string): Promise<void> {
-    const record = this.sessions.get(sessionId)
-    if (!record) {
-      throw new Error('会话不存在')
-    }
+    const record = await this.ensureHydrated(sessionId)
 
     if (record.agent.state.isStreaming) {
       throw new Error('Agent 正在回复中，请稍后再试')
     }
 
+    const trimmed = message.trim()
+    if (!record.meta.title) {
+      record.meta.title = deriveSessionTitle(trimmed)
+    }
+
     record.meta.updatedAt = new Date().toISOString()
-    await this.persistSessionMeta(record)
-    await record.agent.prompt(message.trim())
+    await writeSessionMeta(record.meta)
+    this.index.set(sessionId, record.meta)
+
+    await record.agent.prompt(trimmed)
     await record.agent.waitForIdle()
 
     if (record.agent.state.errorMessage) {
@@ -127,6 +141,47 @@ export class SessionManager {
       }
       throw new Error(record.agent.state.errorMessage)
     }
+
+    await this.appendNewMessages(record)
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const hydrated = this.sessions.get(sessionId)
+    if (hydrated?.agent.state.isStreaming) {
+      throw new Error('Agent 正在回复中，无法删除会话')
+    }
+
+    const meta = this.index.get(sessionId) ?? hydrated?.meta
+    if (!meta) {
+      throw new Error('会话不存在')
+    }
+
+    if (hydrated) {
+      hydrated.unsubscribe?.()
+      for (const client of hydrated.clients) {
+        client.close(1000, 'session deleted')
+      }
+      this.sessions.delete(sessionId)
+    }
+
+    this.index.delete(sessionId)
+    await deleteSessionFiles(meta.agentId, meta.id)
+  }
+
+  private attachRuntime(meta: SessionMeta, agent: Agent, persistedMessageCount: number): SessionRecord {
+    const record: SessionRecord = {
+      meta,
+      agent,
+      clients: new Set(),
+      persistedMessageCount,
+    }
+
+    record.unsubscribe = agent.subscribe((event) => {
+      this.broadcastEvent(meta.id, event)
+    })
+
+    this.sessions.set(meta.id, record)
+    return record
   }
 
   private broadcastEvent(sessionId: string, event: AgentEvent): void {
@@ -149,23 +204,19 @@ export class SessionManager {
     }
   }
 
-  private async persistSessionMeta(record: SessionRecord): Promise<void> {
-    const dir = getAgentSessionsDir(record.meta.agentId)
-    await mkdir(dir, { recursive: true })
-    const metaPath = join(dir, `${record.meta.id}.meta.json`)
-    await writeFile(metaPath, `${JSON.stringify(record.meta, null, 2)}\n`, 'utf8')
+  private async appendNewMessages(record: SessionRecord): Promise<void> {
+    const messages = record.agent.state.messages as AgentMessage[]
+    const newMessages = messages.slice(record.persistedMessageCount)
 
-    const transcriptPath = join(dir, `${record.meta.id}.jsonl`)
-    const lines = record.agent.state.messages.map((message) =>
-      JSON.stringify({
-        role: message.role,
-        text: getMessageText(message),
-        message,
-      }),
-    )
-    if (lines.length > 0) {
-      await writeFile(transcriptPath, `${lines.join('\n')}\n`, 'utf8')
+    if (newMessages.length > 0) {
+      await appendSessionTranscriptEntries(record.meta.agentId, record.meta.id, newMessages)
+      record.persistedMessageCount = messages.length
     }
+
+    record.meta.messageCount = messages.length
+    record.meta.updatedAt = new Date().toISOString()
+    await writeSessionMeta(record.meta)
+    this.index.set(record.meta.id, record.meta)
   }
 }
 

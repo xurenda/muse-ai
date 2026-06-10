@@ -1,6 +1,8 @@
 import type { SidebarItem } from '@/constants/app-sidebar'
+import { SessionList } from '@/components/chat/session-list'
 import { SidebarNavLink } from '@/components/layout/sidebar-nav-link'
 import { SidebarToolbar } from '@/components/layout/sidebar-toolbar'
+import { useSessionList } from '@/hooks/use-session-list'
 import { useTranslation } from '@/hooks/use-translation'
 
 interface AppSidebarProps {
@@ -11,11 +13,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
   const { t } = useTranslation('layout')
+  const { sessions, isLoading, error, refresh } = useSessionList()
 
   return (
-    <aside className="flex h-full flex-col">
+    <aside className="flex h-full min-h-0 flex-col">
       <SidebarToolbar open={open} onToggle={onToggle} />
-      <nav className="flex flex-col gap-0.5 px-2 pb-3">
+      <nav className="flex flex-col gap-0.5 px-2 pb-2">
         {items.map((item) => (
           <SidebarNavLink
             key={item.to}
@@ -26,6 +29,12 @@ export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
           />
         ))}
       </nav>
+      <SessionList
+        sessions={sessions}
+        isLoading={isLoading}
+        error={error}
+        onRefresh={refresh}
+      />
     </aside>
   )
 }

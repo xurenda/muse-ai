@@ -4,6 +4,7 @@ import type { AgentInstanceConfig } from '@muse-ai/shared'
 import { getAgentConfigPath, getAgentSystemPath } from '../data/paths'
 import { readJsonFile } from './read-json-file'
 import { museModelService } from './model-service'
+import { loadAgentTools } from './resource-loader'
 
 function buildSystemPrompt(systemMd: string, cwd?: string): string {
   const trimmed = systemMd.trim()
@@ -26,12 +27,16 @@ export async function createSessionAgent(options: {
   const config = await loadAgentInstanceConfig(options.agentId)
   const systemMd = await readFile(getAgentSystemPath(options.agentId), 'utf8')
   const model = museModelService.resolveModel(config)
+  const { tools } = await loadAgentTools({
+    agentId: options.agentId,
+    cwd: options.cwd ?? process.cwd(),
+  })
 
   return new Agent({
     initialState: {
       model,
       systemPrompt: buildSystemPrompt(systemMd, options.cwd),
-      tools: [],
+      tools,
     },
     getApiKey: (provider) => museModelService.getApiKey(provider),
   })

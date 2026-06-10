@@ -2,16 +2,19 @@ import { runDaemonStart } from './commands/daemon-start'
 import { runDaemonStatus } from './commands/daemon-status'
 import { runDaemonStop } from './commands/daemon-stop'
 import { runInit } from './commands/init'
+import { runPluginLink } from './commands/plugin-link'
 
 interface ParsedArgs {
   command?: string
   subcommand?: string
+  positional: string[]
   port?: number
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
   const [command, subcommand, ...rest] = argv
-  const parsed: ParsedArgs = { command, subcommand }
+  const positional: string[] = []
+  const parsed: ParsedArgs = { command, subcommand, positional }
 
   for (let index = 0; index < rest.length; index += 1) {
     const token = rest[index]
@@ -25,7 +28,9 @@ function parseArgs(argv: string[]): ParsedArgs {
         throw new Error(`无效的端口号: ${value}`)
       }
       index += 1
+      continue
     }
+    positional.push(token)
   }
 
   return parsed
@@ -36,7 +41,8 @@ function printUsage(): void {
   muse init
   muse daemon start [--port <port>]
   muse daemon stop
-  muse daemon status`)
+  muse daemon status
+  muse plugin link <path>`)
 }
 
 export async function main(argv: string[]): Promise<void> {
@@ -57,6 +63,17 @@ export async function main(argv: string[]): Promise<void> {
         return
       case 'status':
         await runDaemonStatus()
+        return
+      default:
+        printUsage()
+        process.exit(1)
+    }
+  }
+
+  if (args.command === 'plugin') {
+    switch (args.subcommand) {
+      case 'link':
+        await runPluginLink(args.positional[0])
         return
       default:
         printUsage()

@@ -7,11 +7,13 @@ import {
   removeDaemonState,
   writeDaemonState,
 } from '../daemon/state'
+import { sessionManager } from '../core/session-manager'
 import { startDaemonServer, stopDaemonServer } from '../daemon/server'
 
 export async function runDaemonStart(portOverride?: number): Promise<void> {
   await assertDaemonNotRunning()
   await ensureMuseDataLayout()
+  await sessionManager.initialize()
 
   const port = portOverride ?? resolveDaemonPort()
   const state = createDaemonState(port, getCliVersion())

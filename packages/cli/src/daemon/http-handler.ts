@@ -67,6 +67,15 @@ export function createHttpHandler(state: DaemonState) {
         return
       }
 
+      if (method === 'GET' && pathname === '/sessions') {
+        const query = new URL(request.url ?? '/', 'http://localhost').searchParams
+        const agentId = query.get('agentId') ?? undefined
+        sendJson(response, 200, {
+          sessions: sessionManager.listSessions(agentId),
+        })
+        return
+      }
+
       if (method === 'POST' && pathname === '/sessions') {
         const body = await readJsonBody<CreateSessionRequest>(request)
         const session = await sessionManager.createSession(body)
@@ -75,15 +84,35 @@ export function createHttpHandler(state: DaemonState) {
       }
 
       const sessionDetailMatch = pathname.match(SESSION_DETAIL_PATTERN)
-      if (method === 'GET' && sessionDetailMatch) {
+      if (sessionDetailMatch) {
         const sessionId = sessionDetailMatch[1]
-        const detail = sessionManager.getSessionResponse(sessionId)
-        if (!detail) {
-          sendError(response, 404, '会话不存在')
+
+        if (method === 'GET') {
+          try {
+            const detail = await sessionManager.getSessionResponse(sessionId)
+            sendJson(response, 200, detail)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            sendError(response, message.includes('不存在') ? 404 : 500, message)
+          }
           return
         }
-        sendJson(response, 200, detail)
-        return
+
+        if (method === 'DELETE') {
+          try {
+            await sessionManager.deleteSession(sessionId)
+            sendJson(response, 200, { deleted: true, sessionId })
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            const statusCode = message.includes('不存在')
+              ? 404
+              : message.includes('正在回复')
+                ? 409
+                : 500
+            sendError(response, statusCode, message)
+          }
+          return
+        }
       }
 
       const promptMatch = pathname.match(SESSION_PROMPT_PATTERN)

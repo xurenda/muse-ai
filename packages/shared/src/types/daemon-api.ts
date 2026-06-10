@@ -18,11 +18,27 @@ export interface CreateSessionResponse {
   session: SessionMeta
 }
 
+/** GET /sessions 查询参数 */
+export interface ListSessionsQuery {
+  agentId?: string
+}
+
+/** GET /sessions 响应 */
+export interface ListSessionsResponse {
+  sessions: SessionMeta[]
+}
+
 /** GET /sessions/:id 响应 */
 export interface GetSessionResponse {
   session: SessionMeta
   messages: unknown[]
   isStreaming: boolean
+}
+
+/** DELETE /sessions/:id 响应 */
+export interface DeleteSessionResponse {
+  deleted: true
+  sessionId: string
 }
 
 /** POST /sessions/:id/prompt 请求体 */

@@ -14,7 +14,9 @@ import {
   MODELS_FILE_NAME,
   MUSE_DIR_NAME,
   MUSE_HOME_ENV,
+  PLUGIN_MANIFEST_FILE_NAME,
   PLUGINS_DIR_NAME,
+  pluginInstallRelativePath,
   PROMPTS_DIR_NAME,
   REGISTRY_AGENTS_FILE_NAME,
   REGISTRY_DIR_NAME,
@@ -72,6 +74,15 @@ export function getRegistryAgentsPath(): string {
 
 export function getPluginsDir(): string {
   return join(getMuseHomeDir(), PLUGINS_DIR_NAME)
+}
+
+/** Plugin 安装目录绝对路径，如 ~/.muse/plugins/muse/basic */
+export function getPluginInstallPath(pluginId: string): string {
+  return join(getMuseHomeDir(), pluginInstallRelativePath(pluginId))
+}
+
+export function getPluginManifestPath(pluginId: string): string {
+  return join(getPluginInstallPath(pluginId), PLUGIN_MANIFEST_FILE_NAME)
 }
 
 export function getSkillsDir(): string {

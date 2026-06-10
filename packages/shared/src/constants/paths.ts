@@ -9,6 +9,13 @@ export const SETTINGS_FILE_NAME = 'settings.json'
 export const AUTH_FILE_NAME = 'auth.json'
 export const MODELS_FILE_NAME = 'models.json'
 
+/** Plugin 包内文件名与子目录名 */
+export const PLUGIN_MANIFEST_FILE_NAME = 'manifest.json'
+export const PLUGIN_EXTENSIONS_DIR_NAME = 'extensions'
+export const PLUGIN_SKILLS_DIR_NAME = 'skills'
+export const PLUGIN_PROMPTS_DIR_NAME = 'prompts'
+export const PLUGIN_BINS_DIR_NAME = 'bins'
+
 /** 子目录名 */
 export const REGISTRY_DIR_NAME = 'registry'
 export const PLUGINS_DIR_NAME = 'plugins'

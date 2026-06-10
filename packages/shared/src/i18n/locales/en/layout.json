@@ -1,7 +1,12 @@
 {
   "sidebar": {
     "newChat": "New Chat",
-    "skills": "Skills & Tools"
+    "skills": "Skills & Tools",
+    "sessions": "Recent chats",
+    "sessionsLoading": "Loading…",
+    "sessionsEmpty": "No chat history yet",
+    "untitledSession": "Untitled chat",
+    "deleteSession": "Delete chat"
   },
   "header": {
     "sidebarToggle": "Toggle sidebar",

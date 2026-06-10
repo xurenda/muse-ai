@@ -1,23 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/utils/chat-message'
-import { applyAgentEvent } from '@/utils/chat-message'
+import { agentMessagesToChatMessages, applyAgentEvent } from '@/utils/chat-message'
 import {
   buildSessionEventsUrl,
   createSession,
+  getSession,
   sendSessionPrompt,
 } from '@/services/session-api'
 
 interface UseChatSessionOptions {
   agentId?: string
   cwd?: string
+  /** 路由中的 sessionId，有值时恢复已有会话 */
+  sessionId?: string
+  onSessionCreated?: (sessionId: string) => void
 }
 
 export function useChatSession(options: UseChatSessionOptions = {}) {
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const { agentId, cwd, sessionId: routeSessionId, onSessionCreated } = options
+  const [sessionId, setSessionId] = useState<string | null>(routeSessionId ?? null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [resolvedCwd, setResolvedCwd] = useState(cwd ?? '')
+  const [isLoading, setIsLoading] = useState(Boolean(routeSessionId))
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
+  const resumedRef = useRef(false)
 
   const connectEvents = useCallback((id: string) => {
     socketRef.current?.close()
@@ -36,7 +44,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
       socket.onmessage = (event) => {
         const payload = JSON.parse(event.data as string) as {
-          type: string
+          type: 'agent_event'
           sessionId: string
           event: Record<string, unknown>
         }
@@ -48,24 +56,61 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     })
   }, [])
 
+  useEffect(() => {
+    if (!routeSessionId || resumedRef.current) {
+      return
+    }
+
+    resumedRef.current = true
+    setIsLoading(true)
+    setError(null)
+
+    void (async () => {
+      try {
+        const detail = await getSession(routeSessionId)
+        setSessionId(detail.session.id)
+        setMessages(agentMessagesToChatMessages(detail.messages))
+        if (detail.session.cwd) {
+          setResolvedCwd(detail.session.cwd)
+        }
+        await connectEvents(detail.session.id)
+      } catch (resumeError) {
+        const message = resumeError instanceof Error ? resumeError.message : String(resumeError)
+        setError(message)
+      } finally {
+        setIsLoading(false)
+      }
+    })()
+  }, [connectEvents, routeSessionId])
+
+  useEffect(() => {
+    if (!routeSessionId) {
+      setResolvedCwd(cwd ?? '')
+    }
+  }, [cwd, routeSessionId])
+
   const ensureSession = useCallback(async () => {
     if (sessionId) {
       return sessionId
     }
 
     const response = await createSession({
-      agentId: options.agentId,
-      cwd: options.cwd,
+      agentId,
+      cwd: cwd?.trim() || undefined,
     })
     setSessionId(response.session.id)
+    if (response.session.cwd) {
+      setResolvedCwd(response.session.cwd)
+    }
+    onSessionCreated?.(response.session.id)
     await connectEvents(response.session.id)
     return response.session.id
-  }, [connectEvents, options.agentId, options.cwd, sessionId])
+  }, [agentId, connectEvents, cwd, onSessionCreated, sessionId])
 
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim()
-      if (!trimmed || isSending) {
+      if (!trimmed || isSending || isLoading) {
         return
       }
 
@@ -89,7 +134,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         setIsSending(false)
       }
     },
-    [connectEvents, ensureSession, isSending],
+    [connectEvents, ensureSession, isLoading, isSending],
   )
 
   useEffect(() => {
@@ -101,6 +146,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   return {
     sessionId,
     messages,
+    resolvedCwd,
+    isLoading,
     isSending,
     error,
     sendMessage,

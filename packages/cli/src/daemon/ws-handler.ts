@@ -19,7 +19,11 @@ export function attachWebSocketServer(server: Server): WebSocketServer {
 
     const sessionId = match[1]
     wss.handleUpgrade(request, socket, head, (ws) => {
-      sessionManager.attachClient(sessionId, ws)
+      void sessionManager
+        .attachClient(sessionId, ws)
+        .catch(() => {
+          ws.close(4404, 'session not found')
+        })
     })
   })
 

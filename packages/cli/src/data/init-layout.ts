@@ -8,6 +8,7 @@ import {
 } from '@muse-ai/shared'
 import {
   DEFAULT_AGENT_CONFIG,
+  DEFAULT_AGENT_PLUGINS,
   DEFAULT_AGENT_SYSTEM,
   DEFAULT_AUTH,
   DEFAULT_MODELS,
@@ -84,7 +85,7 @@ async function initDefaultAgent(): Promise<void> {
   await ensureDir(getAgentInstanceDir(agentId))
   await writeJsonIfMissing(getAgentConfigPath(agentId), DEFAULT_AGENT_CONFIG)
   await writeTextIfMissing(getAgentSystemPath(agentId), DEFAULT_AGENT_SYSTEM)
-  await writeJsonIfMissing(getAgentPluginsPath(agentId), EMPTY_ENABLE_LIST)
+  await writeJsonIfMissing(getAgentPluginsPath(agentId), DEFAULT_AGENT_PLUGINS)
   await writeJsonIfMissing(getAgentSkillsPath(agentId), EMPTY_ENABLE_LIST)
   await writeJsonIfMissing(getAgentPromptsPath(agentId), EMPTY_ENABLE_LIST)
 }

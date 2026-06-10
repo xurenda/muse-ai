@@ -4,6 +4,10 @@
     "placeholder": "/path/to/project"
   },
   "empty": "Send a message to start. Configure the model in ~/.muse/agents/default/config.json and set an API key in auth.json or env vars.",
+  "loading": "Loading session…",
+  "tool": {
+    "label": "Tool {{name}}"
+  },
   "input": {
     "placeholder": "Type a message…",
     "send": "Send",

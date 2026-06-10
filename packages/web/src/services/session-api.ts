@@ -2,7 +2,9 @@ import { DAEMON_PROXY_PREFIX } from '@muse-ai/shared'
 import type {
   CreateSessionRequest,
   CreateSessionResponse,
+  DeleteSessionResponse,
   GetSessionResponse,
+  ListSessionsResponse,
   SessionPromptRequest,
   SessionPromptResponse,
 } from '@muse-ai/shared'
@@ -40,8 +42,19 @@ export function createSession(input: CreateSessionRequest = {}): Promise<CreateS
   })
 }
 
+export function listSessions(agentId?: string): Promise<ListSessionsResponse> {
+  const query = agentId ? `?agentId=${encodeURIComponent(agentId)}` : ''
+  return requestDaemon<ListSessionsResponse>(`/sessions${query}`)
+}
+
 export function getSession(sessionId: string): Promise<GetSessionResponse> {
   return requestDaemon<GetSessionResponse>(`/sessions/${sessionId}`)
+}
+
+export function deleteSession(sessionId: string): Promise<DeleteSessionResponse> {
+  return requestDaemon<DeleteSessionResponse>(`/sessions/${sessionId}`, {
+    method: 'DELETE',
+  })
 }
 
 export function sendSessionPrompt(

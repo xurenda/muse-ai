@@ -13,6 +13,8 @@ export {
   getDefaultAgentSessionsDir,
   getModelsPath,
   getMuseHomeDir,
+  getPluginInstallPath,
+  getPluginManifestPath,
   getPluginsDir,
   getPromptsDir,
   getRegistryAgentsPath,

@@ -1,5 +1,6 @@
 import {
   DEFAULT_AGENT_ID,
+  OFFICIAL_BASIC_PLUGIN_ID,
   type AgentInstanceConfig,
   type AgentRegistryFile,
   type AgentResourceEnableList,
@@ -29,6 +30,10 @@ export const EMPTY_AGENT_REGISTRY: AgentRegistryFile = {
 
 export const EMPTY_ENABLE_LIST: AgentResourceEnableList = {
   enabled: [],
+}
+
+export const DEFAULT_AGENT_PLUGINS: AgentResourceEnableList = {
+  enabled: [OFFICIAL_BASIC_PLUGIN_ID],
 }
 
 export const DEFAULT_AGENT_CONFIG: AgentInstanceConfig = {

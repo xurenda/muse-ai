@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTranslation } from '@/hooks/use-translation'
 import {
   deleteCustomProvider,

@@ -4,6 +4,10 @@
     "placeholder": "/path/to/project"
   },
   "empty": "发送第一条消息开始对话。请先在 ~/.muse/agents/default/config.json 配置模型，并在 auth.json 或环境变量中配置 API Key。",
+  "loading": "正在加载会话…",
+  "tool": {
+    "label": "工具 {{name}}"
+  },
   "input": {
     "placeholder": "输入消息…",
     "send": "发送",
