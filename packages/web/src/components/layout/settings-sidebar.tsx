@@ -31,7 +31,7 @@ export function SettingsSidebar({ open, onToggle }: SettingsSidebarProps) {
               to={item.to}
               icon={item.icon}
               label={t(item.labelKey)}
-              end={item.end}
+              end={'end' in item ? item.end : undefined}
             />
           ))}
         </div>

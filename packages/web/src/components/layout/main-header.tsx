@@ -1,4 +1,5 @@
 import type { HeaderItem } from '@/constants/app-header'
+import { DaemonStatus } from '@/components/layout/daemon-status'
 import { SidebarToggle } from '@/components/layout/sidebar-toggle'
 import { SettingsMenu } from '@/components/layout/settings-menu'
 
@@ -35,7 +36,10 @@ export function MainHeader({
       }
     >
       {!sidebarOpen ? <SidebarToggle open={false} onToggle={onSidebarToggle} /> : null}
-      <div className="flex items-center gap-1">{right.map(renderItem)}</div>
+      <div className="flex items-center gap-1">
+        <DaemonStatus />
+        {right.map(renderItem)}
+      </div>
     </header>
   )
 }

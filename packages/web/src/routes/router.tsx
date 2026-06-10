@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/layouts/app-layout'
 import { SettingsLayout } from '@/layouts/settings-layout'
+import { NewChatPage } from '@/pages/chat/new-chat-page'
 import { PlaceholderPage } from '@/pages/placeholder-page'
 import { GeneralSettingsPage } from '@/pages/settings/general-settings-page'
 import { ModelsSettingsPage } from '@/pages/settings/models-settings-page'
@@ -16,7 +17,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'new-chat',
-        element: <PlaceholderPage titleKey="pages.newChat" />,
+        element: <NewChatPage />,
       },
       {
         path: 'skills',

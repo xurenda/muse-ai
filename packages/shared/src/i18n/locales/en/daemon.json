@@ -1,0 +1,7 @@
+{
+  "status": {
+    "online": "Daemon online",
+    "offline": "Daemon offline",
+    "offlineHint": "Run muse daemon start in your terminal"
+  }
+}

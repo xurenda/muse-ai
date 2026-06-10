@@ -1,0 +1,12 @@
+{
+  "workspace": {
+    "label": "Working directory (optional, set before first message)",
+    "placeholder": "/path/to/project"
+  },
+  "empty": "Send a message to start. Configure the model in ~/.muse/agents/default/config.json and set an API key in auth.json or env vars.",
+  "input": {
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "sending": "Sending…"
+  }
+}

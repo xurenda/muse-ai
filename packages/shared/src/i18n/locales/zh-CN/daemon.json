@@ -1,0 +1,7 @@
+{
+  "status": {
+    "online": "Daemon 在线",
+    "offline": "Daemon 未运行",
+    "offlineHint": "请在终端执行 muse daemon start"
+  }
+}

@@ -4,8 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
+import { DEFAULT_DAEMON_HOST, DEFAULT_DAEMON_PORT } from '../shared/src/constants/daemon'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const daemonTarget = `http://${DEFAULT_DAEMON_HOST}:${DEFAULT_DAEMON_PORT}`
 
 export default defineConfig(({ command }) => ({
   plugins: [...(command === 'serve' ? [codeInspectorPlugin({ bundler: 'vite' })] : []), react(), tailwindcss()],
@@ -21,5 +23,13 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 3000,
     strictPort: true,
+    proxy: {
+      '/daemon': {
+        target: daemonTarget,
+        changeOrigin: true,
+        ws: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/daemon/, ''),
+      },
+    },
   },
 }))

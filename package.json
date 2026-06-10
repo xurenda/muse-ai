@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "husky",
     "dev": "pnpm --filter @muse-ai/web dev",
+    "muse": "pnpm --filter @muse-ai/cli exec tsx src/cli.ts",
     "build": "pnpm --filter @muse-ai/web build",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint ."

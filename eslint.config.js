@@ -22,4 +22,12 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['packages/cli/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
+    },
+  },
 )

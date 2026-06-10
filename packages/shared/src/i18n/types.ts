@@ -2,7 +2,7 @@ export const LOCALES = ['zh-CN', 'en'] as const
 
 export type Locale = (typeof LOCALES)[number]
 
-export const NAMESPACES = ['layout', 'settings', 'common'] as const
+export const NAMESPACES = ['layout', 'settings', 'common', 'daemon', 'chat'] as const
 
 export type Namespace = (typeof NAMESPACES)[number]
 

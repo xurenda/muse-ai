@@ -1,0 +1,12 @@
+{
+  "workspace": {
+    "label": "工作目录（可选，首次发送前填写）",
+    "placeholder": "/path/to/project"
+  },
+  "empty": "发送第一条消息开始对话。请先在 ~/.muse/agents/default/config.json 配置模型，并在 auth.json 或环境变量中配置 API Key。",
+  "input": {
+    "placeholder": "输入消息…",
+    "send": "发送",
+    "sending": "发送中…"
+  }
+}
