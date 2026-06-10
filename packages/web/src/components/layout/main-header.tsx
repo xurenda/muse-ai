@@ -2,6 +2,7 @@ import type { HeaderItem } from '@/constants/app-header'
 import { DaemonStatus } from '@/components/layout/daemon-status'
 import { SidebarToggle } from '@/components/layout/sidebar-toggle'
 import { SettingsMenu } from '@/components/layout/settings-menu'
+import { cn } from '@/utils/cn'
 
 interface MainHeaderProps {
   sidebarOpen: boolean
@@ -29,14 +30,19 @@ export function MainHeader({
 
   return (
     <header
-      className={
-        sidebarOpen
-          ? 'flex h-11 shrink-0 items-center justify-end px-3'
-          : 'flex h-11 shrink-0 items-center justify-between px-3'
-      }
+      className={cn(
+        'app-region-drag pointer-events-none absolute inset-x-0 top-0 z-10 flex h-11 items-center bg-transparent px-3',
+        sidebarOpen ? 'justify-end' : 'justify-between',
+      )}
     >
-      {!sidebarOpen ? <SidebarToggle open={false} onToggle={onSidebarToggle} /> : null}
-      <div className="flex items-center gap-1">
+      {!sidebarOpen ? (
+        <SidebarToggle
+          open={false}
+          onToggle={onSidebarToggle}
+          className="app-region-no-drag pointer-events-auto"
+        />
+      ) : null}
+      <div className="app-region-no-drag pointer-events-auto flex items-center gap-1">
         <DaemonStatus />
         {right.map(renderItem)}
       </div>

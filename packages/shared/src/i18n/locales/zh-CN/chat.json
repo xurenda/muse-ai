@@ -2,7 +2,12 @@
   "workspace": {
     "label": "工作目录（可选，首次发送前填写）",
     "placeholder": "/path/to/project",
-    "unset": "未设置工作目录"
+    "unset": "未设置工作目录",
+    "unsetShort": "未设置",
+    "pick": "选择工作目录",
+    "confirm": "确认",
+    "browse": "浏览…",
+    "recent": "最近使用"
   },
   "empty": "发送第一条消息开始对话。请先在 ~/.muse/agents/default/config.json 配置模型，并在 auth.json 或环境变量中配置 API Key。",
   "loading": "正在加载会话…",
@@ -29,5 +34,13 @@
     "steer": "追加",
     "sending": "发送中…",
     "stop": "停止"
+  },
+  "attachments": {
+    "add": "添加附件",
+    "remove": "移除附件",
+    "sectionLabel": "附件",
+    "statusBinary": "二进制文件，未嵌入内容",
+    "statusTooLarge": "文件过大（超过 256 KB），未嵌入内容",
+    "statusReadFailed": "读取失败，未嵌入内容"
   }
 }

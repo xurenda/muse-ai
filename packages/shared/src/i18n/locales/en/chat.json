@@ -2,7 +2,12 @@
   "workspace": {
     "label": "Working directory (optional, set before first message)",
     "placeholder": "/path/to/project",
-    "unset": "No working directory set"
+    "unset": "No working directory set",
+    "unsetShort": "Not set",
+    "pick": "Pick working directory",
+    "confirm": "Confirm",
+    "browse": "Browse…",
+    "recent": "Recent"
   },
   "empty": "Send a message to start. Configure the model in ~/.muse/agents/default/config.json and set an API key in auth.json or env vars.",
   "loading": "Loading session…",
@@ -29,5 +34,13 @@
     "steer": "Steer",
     "sending": "Sending…",
     "stop": "Stop"
+  },
+  "attachments": {
+    "add": "Add attachment",
+    "remove": "Remove attachment",
+    "sectionLabel": "Attachment",
+    "statusBinary": "Binary file; content not embedded",
+    "statusTooLarge": "File too large (over 256 KB); content not embedded",
+    "statusReadFailed": "Failed to read; content not embedded"
   }
 }

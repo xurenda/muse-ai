@@ -72,7 +72,7 @@ export function AppLayout() {
       <SidebarResizeHandle disabled={!sidebarOpen} />
 
       <Panel id={MAIN_PANEL_ID} minSize={MAIN_MIN_WIDTH} className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-        <div className="flex h-full min-w-0 flex-col">
+        <div className="relative flex h-full min-w-0 flex-col">
           <MainHeader
             sidebarOpen={sidebarOpen}
             onSidebarToggle={handleSidebarToggle}

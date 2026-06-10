@@ -130,6 +130,17 @@
   @apply flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium leading-none outline-none transition-colors focus:outline-none focus-visible:outline-none;
 }
 
+/* Electron 无边框窗口：标题栏拖动与可点击控件分区 */
+@utility app-region-drag {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+@utility app-region-no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 @layer base {
   *,
   *::before,
