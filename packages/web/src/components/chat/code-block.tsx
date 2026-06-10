@@ -6,9 +6,10 @@ import { highlightCode } from '@/utils/shiki-highlighter'
 interface CodeBlockProps {
   code: string
   language: string
+  className?: string
 }
 
-export function CodeBlock({ code, language }: CodeBlockProps) {
+export function CodeBlock({ code, language, className }: CodeBlockProps) {
   const isDark = useIsDark()
   const [html, setHtml] = useState<string | null>(null)
 
@@ -28,7 +29,12 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
 
   if (!html) {
     return (
-      <pre className="not-prose overflow-x-auto rounded-md border border-border bg-background p-3 text-xs leading-relaxed">
+      <pre
+        className={cn(
+          'not-prose overflow-x-auto rounded-md border border-border bg-background p-3 text-xs leading-relaxed',
+          className,
+        )}
+      >
         <code className="block font-mono whitespace-pre">{code}</code>
       </pre>
     )
@@ -39,6 +45,7 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
       className={cn(
         'not-prose overflow-x-auto rounded-md border border-border bg-background text-xs leading-relaxed',
         '[&_.shiki]:overflow-x-auto [&_.shiki]:bg-transparent! [&_.shiki]:p-3 [&_.shiki]:font-mono [&_.shiki]:whitespace-pre',
+        className,
       )}
       // Shiki 输出为静态 HTML，内容来自本地 highlighter
       dangerouslySetInnerHTML={{ __html: html }}

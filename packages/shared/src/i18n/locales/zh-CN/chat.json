@@ -6,8 +6,21 @@
   },
   "empty": "发送第一条消息开始对话。请先在 ~/.muse/agents/default/config.json 配置模型，并在 auth.json 或环境变量中配置 API Key。",
   "loading": "正在加载会话…",
-  "tool": {
-    "label": "工具 {{name}}"
+  "thinking": {
+    "active": "思考中",
+    "done": "思考了 {{seconds}} 秒",
+    "doneBrief": "思考片刻"
+  },
+  "explore": {
+    "active": "探索中",
+    "done": "探索了 {{count}} 项 · {{seconds}} 秒",
+    "doneBrief": "探索了 {{count}} 项",
+    "input": "输入",
+    "output": "输出",
+    "running": "执行中…"
+  },
+  "planning": {
+    "label": "规划下一步"
   },
   "input": {
     "placeholder": "输入消息…",

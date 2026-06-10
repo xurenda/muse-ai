@@ -1,7 +1,8 @@
 import { FolderOpen, Square } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChatMessageList } from '@/components/chat/chat-message-list'
+import { ChatViewList } from '@/components/chat/chat-view-list'
+import { PlanningIndicator } from '@/components/chat/planning-indicator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,7 +20,7 @@ export function ChatPage() {
   const [cwd, setCwd] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { containerRef, endRef, enableStick, onContentChange } = useStickToBottom<HTMLDivElement>()
-  const { messages, resolvedCwd, isLoading, isSending, error, sendMessage, stopGeneration } = useChatSession({
+  const { items, resolvedCwd, isLoading, isSending, isPlanning, error, sendMessage, stopGeneration } = useChatSession({
     sessionId: routeSessionId,
     cwd: cwd.trim() || undefined,
     onSessionCreated: (sessionId) => {
@@ -32,7 +33,7 @@ export function ChatPage() {
 
   useEffect(() => {
     onContentChange()
-  }, [messages, onContentChange])
+  }, [items, isPlanning, onContentChange])
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -96,11 +97,12 @@ export function ChatPage() {
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           {isLoading ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
 
-          {!isLoading && messages.length === 0 ? (
+          {!isLoading && items.length === 0 ? (
             <p className="text-sm leading-relaxed text-muted-foreground">{t('empty')}</p>
           ) : null}
 
-          <ChatMessageList messages={messages} />
+          <ChatViewList items={items} />
+          {isPlanning ? <PlanningIndicator /> : null}
           <div ref={endRef} aria-hidden />
         </div>
       </div>

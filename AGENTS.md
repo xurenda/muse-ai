@@ -39,9 +39,19 @@
 | 函数名、变量名    | pascalCase                                                             | `function helloWord()`                             |
 | 常量              | UPPER_SNAKE_CASE                                                       | `const API_BASE = ''`                              |
 | 枚举              | 枚举名 PascalCase；成员按场景选 **PascalCase** 或 **UPPER_SNAKE_CASE** | -                                                  |
-| 测试文件          | 与源文件同基名 + `.test.ts` / `.test.tsx`                              | `message-view-model.test.ts`                       |
+| 测试文件          | 与 `src` 内源文件同基名 + `.test.ts` / `.test.tsx`；放在与 `src` 同级的 `test/` 下，目录结构镜像 `src` | `src/utils/chat-view/parse-agent-message.ts` → `test/utils/chat-view/parse-agent-message.test.ts` |
 
 - **工具模块、通用函数 / 类型、服务端点封装**等（与产品名无强绑定者）使用**能说明职责**的普适命名即可，例如 `http-request.ts`、`httpRequest`、`joinApiUrl`、`resolveHttpBaseUrl`；**不要**仅为对齐仓库名而加 `muse` / `Muse` 前缀。
+
+---
+
+## 测试
+
+- **框架**：根目录 [Vitest](https://vitest.dev/)（`pnpm test` / `pnpm test:run`），配置见根目录 `vitest.config.ts`。
+- **位置**：各子包的测试放在 **`test/`**，与 **`src/` 同级**；**不要**把 `*.test.ts` 写在 `src/` 里。
+- **目录**：`test/` 下的路径镜像 `src/`（例如 `src/utils/foo.ts` → `test/utils/foo.test.ts`）。
+- **引用被测代码**：测试里 import 优先用 `@/`（Vitest 已 alias 到对应包的 `src/`），避免 `../../src/...`。
+- **命名与语言**：测试文件基名与源文件一致；`describe` / `it` 的描述优先使用**简体中文**（见「注释与文档语言」）。
 
 ---
 

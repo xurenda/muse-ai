@@ -6,8 +6,21 @@
   },
   "empty": "Send a message to start. Configure the model in ~/.muse/agents/default/config.json and set an API key in auth.json or env vars.",
   "loading": "Loading session…",
-  "tool": {
-    "label": "Tool {{name}}"
+  "thinking": {
+    "active": "Thinking",
+    "done": "Thought for {{seconds}}s",
+    "doneBrief": "Thought briefly"
+  },
+  "explore": {
+    "active": "Exploring",
+    "done": "Explored {{count}} items · {{seconds}}s",
+    "doneBrief": "Explored {{count}} items",
+    "input": "Input",
+    "output": "Output",
+    "running": "Running…"
+  },
+  "planning": {
+    "label": "Planning next moves"
   },
   "input": {
     "placeholder": "Type a message…",

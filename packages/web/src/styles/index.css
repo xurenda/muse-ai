@@ -53,6 +53,11 @@
   --sidebar-accent-foreground: oklch(0.28 0.03 252);
   /* 侧边栏与主内容区的分隔线 */
   --sidebar-border: oklch(0.91 0.01 260);
+
+  /* 滚动条滑块 / 轨道 */
+  --scrollbar-thumb: oklch(0.708 0 0 / 0.45);
+  --scrollbar-thumb-hover: oklch(0.556 0 0 / 0.65);
+  --scrollbar-track: transparent;
 }
 
 /* 深色模式：覆盖 :root 中的同名变量 */
@@ -77,6 +82,10 @@
   --sidebar-accent: oklch(0.26 0.03 252);
   --sidebar-accent-foreground: oklch(0.95 0.02 252);
   --sidebar-border: oklch(0.28 0.01 260);
+
+  --scrollbar-thumb: oklch(0.708 0 0 / 0.35);
+  --scrollbar-thumb-hover: oklch(0.82 0 0 / 0.5);
+  --scrollbar-track: transparent;
 }
 
 /*
@@ -136,5 +145,102 @@
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
+  }
+}
+
+/*
+ * 全站滚动条
+ * Chrome 121+ 若同时设置 scrollbar-width/color 与 ::-webkit-scrollbar，会忽略 webkit 并回退 Windows 原生滚动条（带箭头）。
+ * Firefox 走标准属性；Chromium 走 webkit 伪元素。
+ */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-color: unset;
+    scrollbar-width: auto;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 8px;
+  }
+
+  html::-webkit-scrollbar-button,
+  body::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  html::-webkit-scrollbar-corner,
+  body::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+/* 过程块标题炫光（思考中 / 探索中） */
+@keyframes process-shimmer {
+  0% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.process-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: process-shimmer 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .process-shimmer {
+    animation: none;
+    background: none;
+    color: var(--muted-foreground);
   }
 }

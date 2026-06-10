@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChatMessage } from '@/utils/chat-message'
+import { useWsIdleIndicator } from '@/hooks/use-ws-idle-indicator'
+import type { ChatViewItem, ChatViewState } from '@/utils/chat-view'
 import {
-  agentMessagesToChatMessages,
-  applyAgentEvent,
+  applyAgentEventMessage,
+  createInitialChatViewState,
   isAgentBusyEvent,
   isAgentIdleEvent,
   isDaemonWsMessage,
-} from '@/utils/chat-message'
+  rebuildChatViewState,
+} from '@/utils/chat-view'
 import {
   abortSession,
   buildSessionEventsUrl,
@@ -30,54 +32,66 @@ interface UseChatSessionOptions {
 export function useChatSession(options: UseChatSessionOptions = {}) {
   const { agentId, cwd, sessionId: routeSessionId, onSessionCreated } = options
   const [sessionId, setSessionId] = useState<string | null>(routeSessionId ?? null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [items, setItems] = useState<ChatViewItem[]>([])
   const [resolvedCwd, setResolvedCwd] = useState(cwd ?? '')
   const [isLoading, setIsLoading] = useState(Boolean(routeSessionId))
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { isPlanning, touchActivity } = useWsIdleIndicator(isSending)
   const socketRef = useRef<WebSocket | null>(null)
+  const viewStateRef = useRef<ChatViewState>(createInitialChatViewState())
   const resumedRef = useRef(false)
 
-  const handleWsPayload = useCallback((raw: string) => {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(raw) as unknown
-    } catch {
-      return
-    }
-
-    if (!isDaemonWsMessage(parsed)) {
-      return
-    }
-
-    if (parsed.type === 'session_snapshot') {
-      setMessages(agentMessagesToChatMessages(parsed.messages))
-      setIsSending(parsed.isStreaming)
-      return
-    }
-
-    if (parsed.type === 'session_state') {
-      setIsSending(parsed.isStreaming)
-      return
-    }
-
-    if (parsed.type === 'session_error') {
-      setError(parsed.error)
-      setIsSending(false)
-      return
-    }
-
-    if (parsed.type === 'agent_event') {
-      const event = parsed.event
-      if (isAgentBusyEvent(event)) {
-        setIsSending(true)
-      }
-      if (isAgentIdleEvent(event)) {
-        setIsSending(false)
-      }
-      setMessages((current) => applyAgentEvent(current, parsed))
-    }
+  const syncViewState = useCallback((state: ChatViewState) => {
+    viewStateRef.current = state
+    setItems(state.items)
   }, [])
+
+  const handleWsPayload = useCallback(
+    (raw: string) => {
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(raw) as unknown
+      } catch {
+        return
+      }
+
+      if (!isDaemonWsMessage(parsed)) {
+        return
+      }
+
+      if (parsed.type === 'session_snapshot') {
+        touchActivity()
+        syncViewState(rebuildChatViewState(parsed.messages))
+        setIsSending(parsed.isStreaming)
+        return
+      }
+
+      if (parsed.type === 'session_state') {
+        setIsSending(parsed.isStreaming)
+        return
+      }
+
+      if (parsed.type === 'session_error') {
+        setError(parsed.error)
+        setIsSending(false)
+        return
+      }
+
+      if (parsed.type === 'agent_event') {
+        touchActivity()
+        const event = parsed.event
+        if (isAgentBusyEvent(event)) {
+          setIsSending(true)
+        }
+        if (isAgentIdleEvent(event)) {
+          setIsSending(false)
+        }
+        syncViewState(applyAgentEventMessage(viewStateRef.current, parsed))
+      }
+    },
+    [syncViewState, touchActivity],
+  )
 
   const connectEvents = useCallback(
     (id: string) => {
@@ -103,16 +117,19 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     [handleWsPayload],
   )
 
-  const hydrateSession = useCallback(async (id: string) => {
-    const detail = await getSession(id)
-    setSessionId(detail.session.id)
-    setMessages(agentMessagesToChatMessages(detail.messages))
-    setIsSending(detail.isStreaming)
-    if (detail.session.cwd) {
-      setResolvedCwd(detail.session.cwd)
-    }
-    return detail
-  }, [])
+  const hydrateSession = useCallback(
+    async (id: string) => {
+      const detail = await getSession(id)
+      setSessionId(detail.session.id)
+      syncViewState(rebuildChatViewState(detail.messages))
+      setIsSending(detail.isStreaming)
+      if (detail.session.cwd) {
+        setResolvedCwd(detail.session.cwd)
+      }
+      return detail
+    },
+    [syncViewState],
+  )
 
   useEffect(() => {
     if (!routeSessionId || resumedRef.current) {
@@ -187,6 +204,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       try {
         const id = await ensureSession()
         await ensureSocket(id)
+        touchActivity()
 
         if (isSending) {
           if (delivery === 'followUp') {
@@ -204,7 +222,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         setError(message)
       }
     },
-    [ensureSession, ensureSocket, isLoading, isSending],
+    [ensureSession, ensureSocket, isLoading, isSending, touchActivity],
   )
 
   const stopGeneration = useCallback(async () => {
@@ -230,10 +248,11 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   return {
     sessionId,
-    messages,
+    items,
     resolvedCwd,
     isLoading,
     isSending,
+    isPlanning,
     error,
     sendMessage,
     stopGeneration,

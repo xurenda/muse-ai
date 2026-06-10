@@ -9,7 +9,9 @@
     "muse": "pnpm --filter @muse-ai/cli exec tsx src/cli.ts",
     "build": "pnpm --filter @muse-ai/web build",
     "typecheck": "pnpm -r typecheck",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
@@ -28,7 +30,8 @@
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
