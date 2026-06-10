@@ -11,6 +11,7 @@ import {
 } from '@muse-ai/shared'
 import { getAgentSessionsDir } from '../data/paths'
 import { createSessionAgent } from './agent-factory'
+import { isProviderAuthError, markProviderAuthFailure } from './provider-health'
 
 interface SessionRecord {
   meta: SessionMeta
@@ -120,6 +121,10 @@ export class SessionManager {
     await record.agent.waitForIdle()
 
     if (record.agent.state.errorMessage) {
+      const provider = record.agent.state.model?.provider
+      if (typeof provider === 'string' && isProviderAuthError(record.agent.state.errorMessage)) {
+        markProviderAuthFailure(provider, record.agent.state.errorMessage)
+      }
       throw new Error(record.agent.state.errorMessage)
     }
   }

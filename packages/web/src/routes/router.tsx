@@ -5,6 +5,7 @@ import { NewChatPage } from '@/pages/chat/new-chat-page'
 import { PlaceholderPage } from '@/pages/placeholder-page'
 import { GeneralSettingsPage } from '@/pages/settings/general-settings-page'
 import { ModelsSettingsPage } from '@/pages/settings/models-settings-page'
+import { ProvidersSettingsPage } from '@/pages/settings/providers-settings-page'
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +39,10 @@ export const router = createBrowserRouter([
           {
             path: 'models',
             element: <ModelsSettingsPage />,
+          },
+          {
+            path: 'providers',
+            element: <ProvidersSettingsPage />,
           },
         ],
       },

@@ -34,6 +34,12 @@
   /* 通用分隔线、容器边框 */
   --border: oklch(0.922 0 0);
 
+  /* 浮层：tooltip、popover 等 */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0 0);
+  --popover-border: oklch(0.9 0 0);
+  --popover-shadow: 0 4px 16px oklch(0.15 0 0 / 0.08);
+
   /* 侧边栏背景 */
   --sidebar: oklch(0.975 0.005 260);
   /* 侧边栏默认文字/图标色 */
@@ -58,6 +64,10 @@
   --input: oklch(0.269 0 0);
   --ring: oklch(0.556 0 0);
   --border: oklch(0.269 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --popover-border: oklch(0.32 0 0);
+  --popover-shadow: 0 4px 16px oklch(0 0 0 / 0.35);
   --sidebar: oklch(0.18 0.01 260);
   --sidebar-foreground: oklch(0.88 0.01 260);
   --sidebar-accent: oklch(0.26 0.03 252);
@@ -80,6 +90,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-border: var(--border);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover-border: var(--popover-border);
+  --shadow-popover: var(--popover-shadow);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -99,7 +113,7 @@
  * 使用约定见仓库根目录 AGENTS.md「列表 / 菜单项」
  */
 @utility ui-menu-item {
-  @apply flex items-center gap-2 px-3 py-2 text-sm font-medium leading-none outline-none transition-colors focus:outline-none focus-visible:outline-none;
+  @apply flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium leading-none outline-none transition-colors focus:outline-none focus-visible:outline-none;
 }
 
 @layer base {

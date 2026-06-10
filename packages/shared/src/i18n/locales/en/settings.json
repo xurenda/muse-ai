@@ -3,7 +3,8 @@
   "back": "Back",
   "nav": {
     "general": "General",
-    "models": "Models"
+    "models": "Models",
+    "providers": "Providers"
   },
   "language": "Language",
   "appearance": "Appearance",
@@ -15,5 +16,76 @@
     "light": "Light",
     "dark": "Dark",
     "system": "Follow System"
+  },
+  "models": {
+    "description": "Choose the default model for Agent conversations. Only providers with credentials are shown.",
+    "loading": "Loading…",
+    "provider": "Provider",
+    "model": "Model",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "noProviders": "No provider credentials configured yet. Add an API key or local service on the Providers page.",
+    "goToProviders": "Go to Providers"
+  },
+  "providers": {
+    "description": "Configure API keys or local / custom model services (e.g. Ollama).",
+    "loading": "Loading…",
+    "apiKeySection": "API Keys",
+    "customSection": "Local / Custom",
+    "showMore": "Other providers",
+    "showLess": "Show less",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Paste API key",
+    "apiKeyRequired": "API key is required",
+    "envHint": "Configured via environment: {{keys}}",
+    "envReadonly": "Provided by environment variables",
+    "save": "Save",
+    "saving": "Saving…",
+    "clear": "Clear",
+    "authStatus": {
+      "configured": "Configured",
+      "env": "Environment",
+      "missing": "Not configured"
+    },
+    "itemDescription": {
+      "configured": "API key saved locally"
+    },
+    "health": {
+      "ready": "Credentials available",
+      "broken": "Configured but unusable. Check your API key or environment variables."
+    },
+    "advanced": {
+      "title": "Advanced",
+      "baseUrl": "Base URL override",
+      "baseUrlPlaceholder": "Leave empty to use the built-in default",
+      "headers": "Request headers",
+      "headerKey": "Header name",
+      "headerValue": "Header value",
+      "addHeader": "Add header",
+      "extraModels": "Extra models",
+      "modelHeaders": "Model headers",
+      "addModel": "Add model"
+    },
+    "custom": {
+      "empty": "No custom providers yet",
+      "add": "Add",
+      "addTitle": "Add custom provider",
+      "editTitle": "Edit custom provider",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "id": "Provider ID",
+      "idRequired": "Provider ID is required",
+      "baseUrl": "Base URL",
+      "baseUrlRequired": "Base URL is required",
+      "api": "API type",
+      "apiKeyOptional": "API key (optional)",
+      "models": "Models",
+      "modelId": "Model ID",
+      "modelName": "Display name (optional)",
+      "modelsRequired": "Add at least one model",
+      "addModel": "Add model"
+    }
   }
 }

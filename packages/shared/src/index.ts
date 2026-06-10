@@ -1,5 +1,10 @@
 export { APP_NAME, DEFAULT_API_BASE } from './constants/app'
 export {
+  API_KEY_PROVIDER_IDS,
+  CUSTOM_PROVIDER_API_OPTIONS,
+  PROVIDER_DISPLAY_NAMES,
+} from './constants/provider-labels'
+export {
   DAEMON_PROXY_PREFIX,
   DEFAULT_DAEMON_HOST,
   DEFAULT_DAEMON_PORT,
@@ -43,11 +48,31 @@ export type {
 export type { DaemonHealthResponse, DaemonInfoResponse, DaemonState } from './types/daemon'
 export type { MuseModelDefinition, MuseModelsConfig, MuseProviderDefinition } from './types/models'
 export type {
+  ProviderAdvancedConfig,
+  ProviderExtraModelEntry,
+  ProviderHeaderEntry,
+  UpsertProviderAdvancedConfigRequest,
+} from './types/provider-advanced'
+export type {
   AgentRegistryEntry,
   AgentRegistryFile,
   RegistryEntry,
   RegistryFile,
 } from './types/registry'
+export type {
+  ApiKeyProviderItem,
+  CustomProviderItem,
+  ModelsConfigProviderOption,
+  ModelsConfigResponse,
+  ProviderAuthStatus,
+  ProviderHealthStatus,
+  ProviderModelOption,
+  ProvidersConfigResponse,
+  UpdateModelsConfigRequest,
+  UpdateProviderApiKeyRequest,
+  UpsertCustomProviderRequest,
+} from './types/settings-api'
 export type { MuseSettings } from './types/settings'
 export type { SessionMeta } from './types/session'
 export { namespaceIdToRelativePath } from './utils/namespace-id'
+export { maskApiKey } from './utils/mask-api-key'

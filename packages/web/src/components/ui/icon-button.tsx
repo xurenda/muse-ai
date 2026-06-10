@@ -4,7 +4,7 @@ import { type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/utils/cn'
 
 const iconButtonVariants = cva(
-  'inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 hover:bg-foreground/6 hover:text-foreground data-[state=open]:bg-foreground/6 data-[state=open]:text-foreground',
+  'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 enabled:hover:bg-foreground/6 enabled:hover:text-foreground data-[state=open]:bg-foreground/6 data-[state=open]:text-foreground',
 )
 
 export interface IconButtonProps
@@ -15,5 +15,5 @@ export interface IconButtonProps
 
 export function IconButton({ className, asChild = false, ...props }: IconButtonProps) {
   const Comp = asChild ? Slot : 'button'
-  return <Comp className={cn(iconButtonVariants({ className }))} {...props} />
+  return <Comp className={cn(iconButtonVariants(), className)} {...props} />
 }

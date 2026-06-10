@@ -3,7 +3,8 @@
   "back": "返回",
   "nav": {
     "general": "常规",
-    "models": "模型"
+    "models": "模型",
+    "providers": "供应方"
   },
   "language": "语言",
   "appearance": "外观",
@@ -15,5 +16,76 @@
     "light": "浅色",
     "dark": "深色",
     "system": "跟随系统"
+  },
+  "models": {
+    "description": "选择 Agent 对话时使用的默认模型。仅显示已配置凭证的供应方。",
+    "loading": "加载中…",
+    "provider": "供应方",
+    "model": "模型",
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "已保存",
+    "noProviders": "尚未配置任何供应方凭证，请先在供应方页面添加 API Key 或本地服务。",
+    "goToProviders": "前往供应方设置"
+  },
+  "providers": {
+    "description": "配置 API Key 或本地 / 自定义模型服务（如 Ollama）。",
+    "loading": "加载中…",
+    "apiKeySection": "API Key",
+    "customSection": "本地 / 自定义",
+    "showMore": "其他供应方",
+    "showLess": "收起",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "粘贴 API Key",
+    "apiKeyRequired": "请输入 API Key",
+    "envHint": "已通过环境变量配置：{{keys}}",
+    "envReadonly": "由环境变量提供，无需填写",
+    "save": "保存",
+    "saving": "保存中…",
+    "clear": "清除",
+    "authStatus": {
+      "configured": "已配置",
+      "env": "环境变量",
+      "missing": "未配置"
+    },
+    "itemDescription": {
+      "configured": "API Key 已保存到本地"
+    },
+    "health": {
+      "ready": "凭证可用",
+      "broken": "凭证已配置但当前无法使用，请检查 API Key 或环境变量"
+    },
+    "advanced": {
+      "title": "高级配置",
+      "baseUrl": "Base URL 覆盖",
+      "baseUrlPlaceholder": "留空则使用内置默认地址",
+      "headers": "请求 Headers",
+      "headerKey": "Header 名",
+      "headerValue": "Header 值",
+      "addHeader": "添加 Header",
+      "extraModels": "额外模型",
+      "modelHeaders": "模型 Headers",
+      "addModel": "添加模型"
+    },
+    "custom": {
+      "empty": "暂无自定义供应方",
+      "add": "添加",
+      "addTitle": "添加自定义供应方",
+      "editTitle": "编辑自定义供应方",
+      "edit": "编辑",
+      "delete": "删除",
+      "cancel": "取消",
+      "id": "供应方 ID",
+      "idRequired": "请输入供应方 ID",
+      "baseUrl": "Base URL",
+      "baseUrlRequired": "请输入 Base URL",
+      "api": "API 类型",
+      "apiKeyOptional": "API Key（可选）",
+      "models": "模型列表",
+      "modelId": "模型 ID",
+      "modelName": "显示名称（可选）",
+      "modelsRequired": "至少添加一个模型",
+      "addModel": "添加模型"
+    }
   }
 }

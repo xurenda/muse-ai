@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { LocaleProvider } from '@/components/locale-provider'
+import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { router } from '@/routes/router'
 import '@/styles/index.css'
@@ -17,6 +18,7 @@ createRoot(rootElement).render(
     <LocaleProvider>
       <ThemeProvider>
         <RouterProvider router={router} />
+        <Toaster />
       </ThemeProvider>
     </LocaleProvider>
   </StrictMode>,

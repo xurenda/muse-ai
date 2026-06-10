@@ -8,6 +8,7 @@ import {
 } from '@earendil-works/pi-ai'
 import type { AgentInstanceConfig, AuthStorageData, MuseModelsConfig } from '@muse-ai/shared'
 import { getAuthPath, getModelsPath } from '../data/paths'
+import { mergeHeaderRecords } from './header-utils'
 import { readAuthData, readJsonFileIfExists } from './read-json-file'
 
 const DEFAULT_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
@@ -31,6 +32,8 @@ function parseCustomModels(config: MuseModelsConfig): Model<Api>[] {
       }
     }
 
+    const providerHeaders = providerConfig.headers
+
     for (const modelDef of modelDefs) {
       const api = modelDef.api ?? providerConfig.api ?? builtInDefaults?.api
       const baseUrl = modelDef.baseUrl ?? providerConfig.baseUrl ?? builtInDefaults?.baseUrl
@@ -49,6 +52,7 @@ function parseCustomModels(config: MuseModelsConfig): Model<Api>[] {
         cost: DEFAULT_COST,
         contextWindow: 128000,
         maxTokens: 16384,
+        headers: mergeHeaderRecords(providerHeaders, modelDef.headers),
       } as Model<Api>)
     }
   }
@@ -58,6 +62,7 @@ function parseCustomModels(config: MuseModelsConfig): Model<Api>[] {
 
 export class MuseModelService {
   private auth: AuthStorageData = {}
+  private modelsConfig: MuseModelsConfig = { providers: {} }
   private customModels: Model<Api>[] = []
   private providerApiKeys = new Map<string, string>()
 
@@ -67,6 +72,7 @@ export class MuseModelService {
       providers: {},
     }
 
+    this.modelsConfig = modelsConfig
     this.customModels = parseCustomModels(modelsConfig)
     this.providerApiKeys.clear()
 
@@ -77,8 +83,26 @@ export class MuseModelService {
     }
   }
 
+  getModelsConfig(): MuseModelsConfig {
+    return this.modelsConfig
+  }
+
   getAllModels(): Model<Api>[] {
-    const builtIn = getProviders().flatMap((provider) => getModels(provider) as Model<Api>[])
+    const providerConfigs = this.modelsConfig.providers ?? {}
+
+    const builtIn = getProviders().flatMap((provider) => {
+      const builtInModels = getModels(provider as KnownProvider) as Model<Api>[]
+      const providerConfig = providerConfigs[provider]
+      const baseUrlOverride = providerConfig?.baseUrl?.trim()
+      const providerHeaders = providerConfig?.headers
+
+      return builtInModels.map((model) => ({
+        ...model,
+        baseUrl: baseUrlOverride || model.baseUrl,
+        headers: mergeHeaderRecords(model.headers, providerHeaders),
+      }))
+    })
+
     const byKey = new Map<string, Model<Api>>()
     for (const model of [...builtIn, ...this.customModels]) {
       byKey.set(`${model.provider}:${model.id}`, model)
@@ -118,6 +142,29 @@ export class MuseModelService {
     }
 
     return model
+  }
+
+  hasStoredCredential(provider: string): boolean {
+    return provider in this.auth
+  }
+
+  hasModelsJsonApiKeyConfig(provider: string): boolean {
+    return this.providerApiKeys.has(provider)
+  }
+
+  getStoredAuthType(provider: string): 'api_key' | 'oauth' | undefined {
+    const stored = this.auth[provider]
+    if (!stored) {
+      return undefined
+    }
+    if (stored.type === 'api_key' || stored.type === 'oauth') {
+      return stored.type
+    }
+    return undefined
+  }
+
+  getModelsJsonApiKey(provider: string): string | undefined {
+    return this.providerApiKeys.get(provider)
   }
 
   getApiKey(provider: string): string | undefined {

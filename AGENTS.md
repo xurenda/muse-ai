@@ -85,7 +85,6 @@ TypeScript:
 | ---- | ---- | ---- |
 | `ui-menu-item` | `index.css` | 列表/菜单行基样式；叠场景色即可 |
 | `DropdownMenuItem` 等 | `components/ui/dropdown-menu.tsx` | 下拉菜单，已内置 `ui-menu-item` |
-| `Button` / `IconButton` | `components/ui/` | 按钮 |
 | 侧栏导航 | `sidebar-nav-link.tsx` | `ui-menu-item` + sidebar 色 token 的参考实现 |
 
 列表/菜单项：**优先用上表基元**，不要手写 `px-3 py-2 text-sm font-medium`。下拉用 `DropdownMenuItem`；侧栏等用 `ui-menu-item` + 场景色。菜单内图标：`size-3.5`、`strokeWidth={2}`。

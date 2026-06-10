@@ -7,6 +7,7 @@ import type {
   SessionPromptRequest,
 } from '@muse-ai/shared'
 import { sessionManager } from '../core/session-manager'
+import { handleSettingsRoute } from './routes/settings'
 import { readJsonBody } from './read-body'
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
@@ -51,6 +52,18 @@ export function createHttpHandler(state: DaemonState) {
 
       if (method === 'GET' && pathname === '/info') {
         sendJson(response, 200, getInfoResponse(state))
+        return
+      }
+
+      const handledSettings = await handleSettingsRoute(
+        method,
+        pathname,
+        request,
+        response,
+        sendJson,
+        sendError,
+      )
+      if (handledSettings) {
         return
       }
 

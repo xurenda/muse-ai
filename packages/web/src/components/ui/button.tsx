@@ -4,16 +4,18 @@ import { type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/utils/cn'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md text-sm transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        default: 'bg-primary font-medium text-primary-foreground enabled:hover:bg-primary/90',
+        outline:
+          'font-normal text-muted-foreground enabled:hover:bg-foreground/6 enabled:hover:text-foreground data-[state=open]:bg-foreground/6 data-[state=open]:text-foreground',
       },
       size: {
         default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
+        sm: 'h-6 gap-1 px-2 text-xs',
+        icon: 'size-6 shrink-0',
       },
     },
     defaultVariants: {
@@ -29,5 +31,5 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Va
 
 export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
   const Comp = asChild ? Slot : 'button'
-  return <Comp className={cn(buttonVariants({ variant, size, className }))} {...props} />
+  return <Comp className={cn(buttonVariants({ variant, size }), className)} {...props} />
 }
