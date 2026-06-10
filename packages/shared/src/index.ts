@@ -46,13 +46,22 @@ export type {
   CreateSessionRequest,
   CreateSessionResponse,
   DaemonAgentEventMessage,
+  DaemonSessionErrorMessage,
+  DaemonSessionSnapshotMessage,
+  DaemonSessionStateMessage,
   DaemonErrorResponse,
+  DaemonWsMessage,
   DeleteSessionResponse,
   GetSessionResponse,
   ListSessionsQuery,
   ListSessionsResponse,
+  SessionAbortResponse,
+  SessionFollowUpRequest,
+  SessionFollowUpResponse,
   SessionPromptRequest,
   SessionPromptResponse,
+  SessionSteerRequest,
+  SessionSteerResponse,
 } from './types/daemon-api'
 export type { DaemonHealthResponse, DaemonInfoResponse, DaemonState } from './types/daemon'
 export type { MuseModelDefinition, MuseModelsConfig, MuseProviderDefinition } from './types/models'

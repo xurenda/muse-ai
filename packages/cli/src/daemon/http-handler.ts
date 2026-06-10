@@ -4,7 +4,9 @@ import type {
   DaemonHealthResponse,
   DaemonInfoResponse,
   DaemonState,
+  SessionFollowUpRequest,
   SessionPromptRequest,
+  SessionSteerRequest,
 } from '@muse-ai/shared'
 import { sessionManager } from '../core/session-manager'
 import { handleSettingsRoute } from './routes/settings'
@@ -37,7 +39,20 @@ function getInfoResponse(state: DaemonState): DaemonInfoResponse {
 
 const SESSION_EVENTS_PATTERN = /^\/sessions\/([^/]+)\/events$/
 const SESSION_PROMPT_PATTERN = /^\/sessions\/([^/]+)\/prompt$/
+const SESSION_ABORT_PATTERN = /^\/sessions\/([^/]+)\/abort$/
+const SESSION_STEER_PATTERN = /^\/sessions\/([^/]+)\/steer$/
+const SESSION_FOLLOW_UP_PATTERN = /^\/sessions\/([^/]+)\/follow-up$/
 const SESSION_DETAIL_PATTERN = /^\/sessions\/([^/]+)$/
+
+function mapSessionCommandError(message: string): number {
+  if (message.includes('不存在')) {
+    return 404
+  }
+  if (message.includes('正在回复') || message.includes('没有进行中') || message.includes('尚未开始')) {
+    return 409
+  }
+  return 500
+}
 
 export function createHttpHandler(state: DaemonState) {
   return async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
@@ -125,12 +140,62 @@ export function createHttpHandler(state: DaemonState) {
         }
 
         try {
-          await sessionManager.prompt(sessionId, body.message)
+          await sessionManager.acceptPrompt(sessionId, body.message)
           sendJson(response, 202, { accepted: true })
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
-          const statusCode = message.includes('不存在') ? 404 : message.includes('正在回复') ? 409 : 500
-          sendError(response, statusCode, message)
+          sendError(response, mapSessionCommandError(message), message)
+        }
+        return
+      }
+
+      const abortMatch = pathname.match(SESSION_ABORT_PATTERN)
+      if (method === 'POST' && abortMatch) {
+        const sessionId = abortMatch[1]
+        try {
+          await sessionManager.abortSession(sessionId)
+          sendJson(response, 200, { aborted: true })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          sendError(response, mapSessionCommandError(message), message)
+        }
+        return
+      }
+
+      const steerMatch = pathname.match(SESSION_STEER_PATTERN)
+      if (method === 'POST' && steerMatch) {
+        const sessionId = steerMatch[1]
+        const body = await readJsonBody<SessionSteerRequest>(request)
+        if (!body.message?.trim()) {
+          sendError(response, 400, 'message 不能为空')
+          return
+        }
+
+        try {
+          await sessionManager.steerSession(sessionId, body.message)
+          sendJson(response, 202, { accepted: true })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          sendError(response, mapSessionCommandError(message), message)
+        }
+        return
+      }
+
+      const followUpMatch = pathname.match(SESSION_FOLLOW_UP_PATTERN)
+      if (method === 'POST' && followUpMatch) {
+        const sessionId = followUpMatch[1]
+        const body = await readJsonBody<SessionFollowUpRequest>(request)
+        if (!body.message?.trim()) {
+          sendError(response, 400, 'message 不能为空')
+          return
+        }
+
+        try {
+          await sessionManager.followUpSession(sessionId, body.message)
+          sendJson(response, 202, { accepted: true })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          sendError(response, mapSessionCommandError(message), message)
         }
         return
       }

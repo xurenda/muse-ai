@@ -1,4 +1,4 @@
-import type { DaemonAgentEventMessage } from '@muse-ai/shared'
+import type { DaemonAgentEventMessage, DaemonWsMessage } from '@muse-ai/shared'
 
 export type ChatMessageRole = 'user' | 'assistant' | 'tool'
 
@@ -85,11 +85,44 @@ export function agentMessagesToChatMessages(messages: unknown[]): ChatMessage[] 
   return chatMessages
 }
 
+export function isDaemonWsMessage(value: unknown): value is DaemonWsMessage {
+  if (!value || typeof value !== 'object' || !('type' in value)) {
+    return false
+  }
+  const type = (value as { type?: unknown }).type
+  return (
+    type === 'agent_event' ||
+    type === 'session_snapshot' ||
+    type === 'session_error' ||
+    type === 'session_state'
+  )
+}
+
+/** agent 生命周期事件是否表示进入忙碌状态 */
+export function isAgentBusyEvent(event: Record<string, unknown>): boolean {
+  return event.type === 'agent_start'
+}
+
+/** agent 生命周期事件是否表示回合结束 */
+export function isAgentIdleEvent(event: Record<string, unknown>): boolean {
+  return event.type === 'agent_end'
+}
+
 export function applyAgentEvent(messages: ChatMessage[], payload: DaemonAgentEventMessage): ChatMessage[] {
   const event = payload.event
 
   if (event.type === 'message_start' && event.message && typeof event.message === 'object') {
     const message = event.message as { role?: string }
+    if (message.role === 'user') {
+      return [
+        ...messages,
+        {
+          id: `user-${messages.length}`,
+          role: 'user',
+          content: extractTextFromAgentMessage(event.message),
+        },
+      ]
+    }
     if (message.role === 'toolResult') {
       const toolMessage = createChatMessageFromAgentMessage(event.message, messages.length)
       return toolMessage ? [...messages, toolMessage] : messages

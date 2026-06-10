@@ -5,8 +5,13 @@ import type {
   DeleteSessionResponse,
   GetSessionResponse,
   ListSessionsResponse,
+  SessionAbortResponse,
+  SessionFollowUpRequest,
+  SessionFollowUpResponse,
   SessionPromptRequest,
   SessionPromptResponse,
+  SessionSteerRequest,
+  SessionSteerResponse,
 } from '@muse-ai/shared'
 
 const daemonBaseUrl = DAEMON_PROXY_PREFIX
@@ -62,6 +67,32 @@ export function sendSessionPrompt(
   input: SessionPromptRequest,
 ): Promise<SessionPromptResponse> {
   return requestDaemon<SessionPromptResponse>(`/sessions/${sessionId}/prompt`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function abortSession(sessionId: string): Promise<SessionAbortResponse> {
+  return requestDaemon<SessionAbortResponse>(`/sessions/${sessionId}/abort`, {
+    method: 'POST',
+  })
+}
+
+export function sendSessionSteer(
+  sessionId: string,
+  input: SessionSteerRequest,
+): Promise<SessionSteerResponse> {
+  return requestDaemon<SessionSteerResponse>(`/sessions/${sessionId}/steer`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function sendSessionFollowUp(
+  sessionId: string,
+  input: SessionFollowUpRequest,
+): Promise<SessionFollowUpResponse> {
+  return requestDaemon<SessionFollowUpResponse>(`/sessions/${sessionId}/follow-up`, {
     method: 'POST',
     body: JSON.stringify(input),
   })

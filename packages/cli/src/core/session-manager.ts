@@ -5,6 +5,9 @@ import {
   DEFAULT_AGENT_ID,
   type CreateSessionRequest,
   type DaemonAgentEventMessage,
+  type DaemonSessionErrorMessage,
+  type DaemonSessionSnapshotMessage,
+  type DaemonWsMessage,
   type SessionMeta,
 } from '@muse-ai/shared'
 import { createSessionAgent } from './agent-factory'
@@ -24,6 +27,8 @@ interface SessionRecord {
   unsubscribe?: () => void
   /** 已写入 jsonl 的消息条数 */
   persistedMessageCount: number
+  /** 已受理 prompt、后台任务尚未结束（覆盖 isStreaming 生效前的窗口） */
+  turnInProgress: boolean
 }
 
 function serializeAgentEvent(event: AgentEvent): Record<string, unknown> {
@@ -36,6 +41,18 @@ function deriveSessionTitle(message: string): string {
     return normalized
   }
   return `${normalized.slice(0, 79)}…`
+}
+
+function buildUserMessage(text: string): AgentMessage {
+  return {
+    role: 'user',
+    content: [{ type: 'text', text }],
+    timestamp: Date.now(),
+  }
+}
+
+function isAbortedAssistantMessage(message: AgentMessage): boolean {
+  return message.role === 'assistant' && message.stopReason === 'aborted'
 }
 
 export class SessionManager {
@@ -103,22 +120,25 @@ export class SessionManager {
     return {
       session: record.meta,
       messages: record.agent.state.messages,
-      isStreaming: record.agent.state.isStreaming,
+      isStreaming: this.isSessionStreaming(record),
     }
   }
 
   async attachClient(sessionId: string, client: WebSocket): Promise<void> {
     const record = await this.ensureHydrated(sessionId)
     record.clients.add(client)
+    this.sendWsMessage(client, this.buildSnapshotMessage(record))
+
     client.on('close', () => {
       record.clients.delete(client)
     })
   }
 
-  async prompt(sessionId: string, message: string): Promise<void> {
+  /** 校验并受理 prompt，后台执行 agent 回合（fire-and-forget） */
+  async acceptPrompt(sessionId: string, message: string): Promise<void> {
     const record = await this.ensureHydrated(sessionId)
 
-    if (record.agent.state.isStreaming) {
+    if (this.isSessionStreaming(record)) {
       throw new Error('Agent 正在回复中，请稍后再试')
     }
 
@@ -131,23 +151,65 @@ export class SessionManager {
     await writeSessionMeta(record.meta)
     this.index.set(sessionId, record.meta)
 
-    await record.agent.prompt(trimmed)
-    await record.agent.waitForIdle()
+    record.turnInProgress = true
+    this.broadcastSessionState(record)
 
-    if (record.agent.state.errorMessage) {
-      const provider = record.agent.state.model?.provider
-      if (typeof provider === 'string' && isProviderAuthError(record.agent.state.errorMessage)) {
-        markProviderAuthFailure(provider, record.agent.state.errorMessage)
+    void this.executePrompt(sessionId, trimmed).finally(() => {
+      const current = this.sessions.get(sessionId)
+      if (!current) {
+        return
       }
-      throw new Error(record.agent.state.errorMessage)
+      current.turnInProgress = false
+      this.broadcastSessionState(current)
+    })
+  }
+
+  /** 中止当前 agent 回合 */
+  async abortSession(sessionId: string): Promise<void> {
+    const record = await this.ensureHydrated(sessionId)
+
+    if (!this.isSessionStreaming(record)) {
+      throw new Error('当前没有进行中的回复')
     }
 
-    await this.appendNewMessages(record)
+    record.agent.abort()
+  }
+
+  /** 流式过程中注入 steering 消息（当前 turn 结束后优先处理） */
+  async steerSession(sessionId: string, message: string): Promise<void> {
+    const record = await this.ensureHydrated(sessionId)
+    const trimmed = message.trim()
+
+    if (!trimmed) {
+      throw new Error('message 不能为空')
+    }
+
+    if (!record.agent.state.isStreaming) {
+      throw new Error('Agent 尚未开始回复，请稍后再试')
+    }
+
+    record.agent.steer(buildUserMessage(trimmed))
+  }
+
+  /** 流式过程中排队 follow-up（整轮结束后才处理） */
+  async followUpSession(sessionId: string, message: string): Promise<void> {
+    const record = await this.ensureHydrated(sessionId)
+    const trimmed = message.trim()
+
+    if (!trimmed) {
+      throw new Error('message 不能为空')
+    }
+
+    if (!this.isSessionStreaming(record)) {
+      throw new Error('Agent 未在回复中，请直接发送消息')
+    }
+
+    record.agent.followUp(buildUserMessage(trimmed))
   }
 
   async deleteSession(sessionId: string): Promise<void> {
     const hydrated = this.sessions.get(sessionId)
-    if (hydrated?.agent.state.isStreaming) {
+    if (hydrated && this.isSessionStreaming(hydrated)) {
       throw new Error('Agent 正在回复中，无法删除会话')
     }
 
@@ -168,12 +230,48 @@ export class SessionManager {
     await deleteSessionFiles(meta.agentId, meta.id)
   }
 
+  private isSessionStreaming(record: SessionRecord): boolean {
+    return record.turnInProgress || record.agent.state.isStreaming
+  }
+
+  private async executePrompt(sessionId: string, message: string): Promise<void> {
+    const record = this.sessions.get(sessionId)
+    if (!record) {
+      return
+    }
+
+    try {
+      await record.agent.prompt(message)
+      await record.agent.waitForIdle()
+
+      const messages = record.agent.state.messages as AgentMessage[]
+      const lastMessage = messages[messages.length - 1]
+      const wasAborted = lastMessage !== undefined && isAbortedAssistantMessage(lastMessage)
+
+      if (record.agent.state.errorMessage && !wasAborted) {
+        const errorMessage = record.agent.state.errorMessage
+        const provider = record.agent.state.model?.provider
+        if (typeof provider === 'string' && isProviderAuthError(errorMessage)) {
+          markProviderAuthFailure(provider, errorMessage)
+        }
+        this.broadcastSessionError(sessionId, errorMessage)
+      }
+
+      await this.appendNewMessages(record)
+      this.broadcastSnapshot(record)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.broadcastSessionError(sessionId, errorMessage)
+    }
+  }
+
   private attachRuntime(meta: SessionMeta, agent: Agent, persistedMessageCount: number): SessionRecord {
     const record: SessionRecord = {
       meta,
       agent,
       clients: new Set(),
       persistedMessageCount,
+      turnInProgress: false,
     }
 
     record.unsubscribe = agent.subscribe((event) => {
@@ -182,6 +280,68 @@ export class SessionManager {
 
     this.sessions.set(meta.id, record)
     return record
+  }
+
+  private buildSnapshotMessage(record: SessionRecord): DaemonSessionSnapshotMessage {
+    return {
+      type: 'session_snapshot',
+      sessionId: record.meta.id,
+      messages: record.agent.state.messages,
+      isStreaming: this.isSessionStreaming(record),
+    }
+  }
+
+  private sendWsMessage(client: WebSocket, message: DaemonWsMessage): void {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message))
+    }
+  }
+
+  private broadcastSessionState(record: SessionRecord): void {
+    const payload: DaemonWsMessage = {
+      type: 'session_state',
+      sessionId: record.meta.id,
+      isStreaming: this.isSessionStreaming(record),
+    }
+    const raw = JSON.stringify(payload)
+
+    for (const client of record.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(raw)
+      }
+    }
+  }
+
+  /** 回合结束后向所有订阅者推送快照，便于多 tab 对齐 */
+  private broadcastSnapshot(record: SessionRecord): void {
+    const payload = this.buildSnapshotMessage(record)
+    const raw = JSON.stringify(payload)
+
+    for (const client of record.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(raw)
+      }
+    }
+  }
+
+  private broadcastSessionError(sessionId: string, error: string): void {
+    const payload: DaemonSessionErrorMessage = {
+      type: 'session_error',
+      sessionId,
+      error,
+    }
+    const raw = JSON.stringify(payload)
+
+    const record = this.sessions.get(sessionId)
+    if (!record) {
+      return
+    }
+
+    for (const client of record.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(raw)
+      }
+    }
   }
 
   private broadcastEvent(sessionId: string, event: AgentEvent): void {

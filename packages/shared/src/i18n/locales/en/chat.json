@@ -1,7 +1,8 @@
 {
   "workspace": {
     "label": "Working directory (optional, set before first message)",
-    "placeholder": "/path/to/project"
+    "placeholder": "/path/to/project",
+    "unset": "No working directory set"
   },
   "empty": "Send a message to start. Configure the model in ~/.muse/agents/default/config.json and set an API key in auth.json or env vars.",
   "loading": "Loading session…",
@@ -10,7 +11,10 @@
   },
   "input": {
     "placeholder": "Type a message…",
+    "placeholderStreaming": "Agent is replying: Enter to steer, Shift+Enter to queue follow-up",
     "send": "Send",
-    "sending": "Sending…"
+    "steer": "Steer",
+    "sending": "Sending…",
+    "stop": "Stop"
   }
 }

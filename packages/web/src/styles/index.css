@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
 /* 基于 .dark class 的深色变体，配合 applyTheme 切换 */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -19,6 +20,8 @@
   /* 主色上的文字/图标，需与 primary 保持对比度 */
   --primary-foreground: oklch(0.985 0 0);
 
+  /* 弱化背景，用于 assistant 次要区域、禁用态等 */
+  --muted: oklch(0.965 0 0);
   /* 弱化文字，用于辅助说明、占位、图标默认态 */
   --muted-foreground: oklch(0.556 0 0);
 
@@ -58,6 +61,7 @@
   --foreground: oklch(0.985 0 0);
   --primary: oklch(0.62 0.17 252);
   --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
@@ -84,6 +88,7 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);

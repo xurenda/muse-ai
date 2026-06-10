@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { FolderOpen, Square } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useTranslation } from '@/hooks/use-translation'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
-import { useChatSession } from '@/hooks/use-chat-session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { useChatSession } from '@/hooks/use-chat-session'
+import { useStickToBottom } from '@/hooks/use-stick-to-bottom'
+import { useTranslation } from '@/hooks/use-translation'
+
+const TEXTAREA_MAX_HEIGHT = 200
 
 export function ChatPage() {
   const { t } = useTranslation('chat')
@@ -12,7 +17,9 @@ export function ChatPage() {
   const { sessionId: routeSessionId } = useParams()
   const [input, setInput] = useState('')
   const [cwd, setCwd] = useState('')
-  const { messages, resolvedCwd, isLoading, isSending, error, sendMessage } = useChatSession({
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { containerRef, endRef, enableStick, onContentChange } = useStickToBottom<HTMLDivElement>()
+  const { messages, resolvedCwd, isLoading, isSending, error, sendMessage, stopGeneration } = useChatSession({
     sessionId: routeSessionId,
     cwd: cwd.trim() || undefined,
     onSessionCreated: (sessionId) => {
@@ -23,49 +30,121 @@ export function ChatPage() {
   const workspaceValue = routeSessionId ? resolvedCwd : cwd
   const workspaceReadOnly = Boolean(routeSessionId)
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  useEffect(() => {
+    onContentChange()
+  }, [messages, onContentChange])
+
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    textarea.style.height = `${Math.min(textarea.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`
+  }, [input])
+
+  const handleSubmit = useCallback(
+    async (delivery: 'prompt' | 'steer' | 'followUp' = 'prompt') => {
+      const trimmed = input.trim()
+      if (!trimmed || isLoading) return
+      if (!isSending && delivery !== 'prompt') return
+
+      enableStick()
+      await sendMessage(trimmed, delivery)
+      setInput('')
+    },
+    [enableStick, input, isLoading, isSending, sendMessage],
+  )
+
+  const handleFormSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    await sendMessage(input)
-    setInput('')
+    await handleSubmit(isSending ? 'steer' : 'prompt')
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      void handleSubmit(isSending ? 'steer' : 'prompt')
+      return
+    }
+
+    if (event.key === 'Enter' && event.shiftKey && isSending) {
+      event.preventDefault()
+      void handleSubmit('followUp')
+    }
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-border px-4 py-3">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          {t('workspace.label')}
-          <Input
-            placeholder={t('workspace.placeholder')}
-            value={workspaceValue}
-            onChange={(event) => setCwd(event.target.value)}
-            readOnly={workspaceReadOnly}
+      <div className="shrink-0 border-b border-border px-4 py-2">
+        <div className="mx-auto flex max-w-3xl items-center gap-2">
+          <FolderOpen className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={2} />
+          {workspaceReadOnly ? (
+            <span className="truncate text-xs text-muted-foreground" title={workspaceValue}>
+              {workspaceValue || t('workspace.unset')}
+            </span>
+          ) : (
+            <Input
+              className="h-7 min-w-0 flex-1 text-xs"
+              placeholder={t('workspace.placeholder')}
+              value={workspaceValue}
+              onChange={(event) => setCwd(event.target.value)}
+            />
+          )}
+        </div>
+      </div>
+
+      <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          {isLoading ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
+
+          {!isLoading && messages.length === 0 ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">{t('empty')}</p>
+          ) : null}
+
+          <ChatMessageList messages={messages} />
+          <div ref={endRef} aria-hidden />
+        </div>
+      </div>
+
+      {error ? (
+        <p className="shrink-0 px-4 pb-2 text-sm text-destructive">
+          <span className="mx-auto block max-w-3xl">{error}</span>
+        </p>
+      ) : null}
+
+      <form className="shrink-0 border-t border-border px-4 py-3" onSubmit={handleFormSubmit}>
+        <div className="mx-auto flex max-w-3xl items-end gap-2">
+          <Textarea
+            ref={textareaRef}
+            className="min-h-9 max-h-[200px] min-w-0 flex-1 py-2"
+            rows={1}
+            placeholder={isSending ? t('input.placeholderStreaming') : t('input.placeholder')}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
           />
-        </label>
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
-        {isLoading ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
-
-        {!isLoading && messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('empty')}</p>
-        ) : null}
-
-        <ChatMessageList messages={messages} />
-      </div>
-
-      {error ? <p className="px-4 pb-2 text-sm text-destructive">{error}</p> : null}
-
-      <form className="flex gap-2 border-t border-border px-4 py-3" onSubmit={handleSubmit}>
-        <Input
-          className="min-w-0 flex-1"
-          placeholder={t('input.placeholder')}
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          disabled={isSending || isLoading}
-        />
-        <Button type="submit" disabled={isSending || isLoading || !input.trim()}>
-          {isSending ? t('input.sending') : t('input.send')}
-        </Button>
+          {isSending ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0"
+              disabled={isLoading}
+              onClick={() => {
+                void stopGeneration()
+              }}
+            >
+              <Square className="size-3.5 fill-current" strokeWidth={0} />
+              {t('input.stop')}
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            className="shrink-0"
+            disabled={isLoading || !input.trim()}
+          >
+            {isSending ? t('input.steer') : t('input.send')}
+          </Button>
+        </div>
       </form>
     </div>
   )

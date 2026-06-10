@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/utils/chat-message'
-import { agentMessagesToChatMessages, applyAgentEvent } from '@/utils/chat-message'
 import {
+  agentMessagesToChatMessages,
+  applyAgentEvent,
+  isAgentBusyEvent,
+  isAgentIdleEvent,
+  isDaemonWsMessage,
+} from '@/utils/chat-message'
+import {
+  abortSession,
   buildSessionEventsUrl,
   createSession,
   getSession,
+  sendSessionFollowUp,
   sendSessionPrompt,
+  sendSessionSteer,
 } from '@/services/session-api'
+
+export type SessionMessageDelivery = 'prompt' | 'steer' | 'followUp'
 
 interface UseChatSessionOptions {
   agentId?: string
@@ -27,33 +38,80 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const socketRef = useRef<WebSocket | null>(null)
   const resumedRef = useRef(false)
 
-  const connectEvents = useCallback((id: string) => {
-    socketRef.current?.close()
+  const handleWsPayload = useCallback((raw: string) => {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw) as unknown
+    } catch {
+      return
+    }
 
-    return new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(buildSessionEventsUrl(id))
-      socketRef.current = socket
+    if (!isDaemonWsMessage(parsed)) {
+      return
+    }
 
-      socket.onopen = () => {
-        resolve()
+    if (parsed.type === 'session_snapshot') {
+      setMessages(agentMessagesToChatMessages(parsed.messages))
+      setIsSending(parsed.isStreaming)
+      return
+    }
+
+    if (parsed.type === 'session_state') {
+      setIsSending(parsed.isStreaming)
+      return
+    }
+
+    if (parsed.type === 'session_error') {
+      setError(parsed.error)
+      setIsSending(false)
+      return
+    }
+
+    if (parsed.type === 'agent_event') {
+      const event = parsed.event
+      if (isAgentBusyEvent(event)) {
+        setIsSending(true)
       }
-
-      socket.onerror = () => {
-        reject(new Error('WebSocket 连接失败'))
+      if (isAgentIdleEvent(event)) {
+        setIsSending(false)
       }
+      setMessages((current) => applyAgentEvent(current, parsed))
+    }
+  }, [])
 
-      socket.onmessage = (event) => {
-        const payload = JSON.parse(event.data as string) as {
-          type: 'agent_event'
-          sessionId: string
-          event: Record<string, unknown>
+  const connectEvents = useCallback(
+    (id: string) => {
+      socketRef.current?.close()
+
+      return new Promise<void>((resolve, reject) => {
+        const socket = new WebSocket(buildSessionEventsUrl(id))
+        socketRef.current = socket
+
+        socket.onopen = () => {
+          resolve()
         }
-        if (payload.type !== 'agent_event') {
-          return
+
+        socket.onerror = () => {
+          reject(new Error('WebSocket 连接失败'))
         }
-        setMessages((current) => applyAgentEvent(current, payload))
-      }
-    })
+
+        socket.onmessage = (event) => {
+          handleWsPayload(event.data as string)
+        }
+      })
+    },
+    [handleWsPayload],
+  )
+
+  const hydrateSession = useCallback(async (id: string) => {
+    const detail = await getSession(id)
+    setSessionId(detail.session.id)
+    setMessages(agentMessagesToChatMessages(detail.messages))
+    setIsSending(detail.isStreaming)
+    if (detail.session.cwd) {
+      setResolvedCwd(detail.session.cwd)
+    }
+    return detail
   }, [])
 
   useEffect(() => {
@@ -67,13 +125,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
     void (async () => {
       try {
-        const detail = await getSession(routeSessionId)
-        setSessionId(detail.session.id)
-        setMessages(agentMessagesToChatMessages(detail.messages))
-        if (detail.session.cwd) {
-          setResolvedCwd(detail.session.cwd)
-        }
-        await connectEvents(detail.session.id)
+        await hydrateSession(routeSessionId)
+        await connectEvents(routeSessionId)
       } catch (resumeError) {
         const message = resumeError instanceof Error ? resumeError.message : String(resumeError)
         setError(message)
@@ -81,7 +134,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
         setIsLoading(false)
       }
     })()
-  }, [connectEvents, routeSessionId])
+  }, [connectEvents, hydrateSession, routeSessionId])
 
   useEffect(() => {
     if (!routeSessionId) {
@@ -107,35 +160,67 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     return response.session.id
   }, [agentId, connectEvents, cwd, onSessionCreated, sessionId])
 
+  const ensureSocket = useCallback(
+    async (id: string) => {
+      if (socketRef.current?.readyState !== WebSocket.OPEN) {
+        await connectEvents(id)
+      }
+    },
+    [connectEvents],
+  )
+
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, delivery: SessionMessageDelivery = 'prompt') => {
       const trimmed = text.trim()
-      if (!trimmed || isSending || isLoading) {
+      if (!trimmed || isLoading) {
         return
       }
 
-      setError(null)
-      setIsSending(true)
-      setMessages((current) => [
-        ...current,
-        { id: `user-${current.length}`, role: 'user', content: trimmed },
-      ])
+      if (!isSending && delivery !== 'prompt') {
+        return
+      }
+
+      if (!isSending && delivery === 'prompt') {
+        setError(null)
+      }
 
       try {
         const id = await ensureSession()
-        if (socketRef.current?.readyState !== WebSocket.OPEN) {
-          await connectEvents(id)
+        await ensureSocket(id)
+
+        if (isSending) {
+          if (delivery === 'followUp') {
+            await sendSessionFollowUp(id, { message: trimmed })
+          } else {
+            await sendSessionSteer(id, { message: trimmed })
+          }
+          return
         }
+
         await sendSessionPrompt(id, { message: trimmed })
+        setIsSending(true)
       } catch (sendError) {
         const message = sendError instanceof Error ? sendError.message : String(sendError)
         setError(message)
-      } finally {
-        setIsSending(false)
       }
     },
-    [connectEvents, ensureSession, isLoading, isSending],
+    [ensureSession, ensureSocket, isLoading, isSending],
   )
+
+  const stopGeneration = useCallback(async () => {
+    if (!sessionId || !isSending) {
+      return
+    }
+
+    setError(null)
+
+    try {
+      await abortSession(sessionId)
+    } catch (abortError) {
+      const message = abortError instanceof Error ? abortError.message : String(abortError)
+      setError(message)
+    }
+  }, [isSending, sessionId])
 
   useEffect(() => {
     return () => {
@@ -151,5 +236,6 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     isSending,
     error,
     sendMessage,
+    stopGeneration,
   }
 }
