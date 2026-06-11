@@ -19,7 +19,9 @@ export {
   AGENTS_DIR_NAME,
   AUTH_FILE_NAME,
   DAEMON_STATE_FILE_NAME,
+  TRACE_DIR_NAME,
   DEFAULT_AGENT_ID,
+  EXTENSION_RUNTIME_DIR_NAME,
   MODELS_FILE_NAME,
   MUSE_DIR_NAME,
   MUSE_HOME_ENV,
@@ -93,6 +95,12 @@ export type {
 export type { PluginManifest } from './types/plugin'
 export type { MuseSettings } from './types/settings'
 export type { SessionMeta, SessionTranscriptMessageEntry } from './types/session'
+export type {
+  GetSessionTraceResponse,
+  ListSessionTracesResponse,
+  LlmTraceEntry,
+  SessionTraceSummary,
+} from './types/trace-api'
 export { namespaceIdToRelativePath } from './utils/namespace-id'
 export { maskApiKey } from './utils/mask-api-key'
 export {

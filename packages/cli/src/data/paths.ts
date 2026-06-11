@@ -8,6 +8,8 @@ import {
   AGENT_SYSTEM_FILE_NAME,
   AGENTS_DIR_NAME,
   AUTH_FILE_NAME,
+  TRACE_DIR_NAME,
+  EXTENSION_RUNTIME_DIR_NAME,
   DAEMON_STATE_FILE_NAME,
   DEFAULT_AGENT_ID,
   DEFAULT_DAEMON_PORT,
@@ -127,6 +129,14 @@ export function getAgentPromptsPath(agentId: string): string {
 
 export function getSessionsDir(): string {
   return join(getMuseHomeDir(), SESSIONS_DIR_NAME)
+}
+
+export function getTraceDir(): string {
+  return join(getMuseHomeDir(), TRACE_DIR_NAME)
+}
+
+export function getExtensionRuntimeDir(sessionId: string): string {
+  return join(getMuseHomeDir(), EXTENSION_RUNTIME_DIR_NAME, sessionId)
 }
 
 export function getAgentSessionsDir(agentId: string): string {

@@ -23,6 +23,8 @@ export const SKILLS_DIR_NAME = 'skills'
 export const PROMPTS_DIR_NAME = 'prompts'
 export const AGENTS_DIR_NAME = 'agents'
 export const SESSIONS_DIR_NAME = 'sessions'
+export const TRACE_DIR_NAME = 'trace'
+export const EXTENSION_RUNTIME_DIR_NAME = '.extension-runtime'
 
 /** registry 内文件名 */
 export const REGISTRY_PLUGINS_FILE_NAME = 'plugins.json'

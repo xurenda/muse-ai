@@ -10,6 +10,7 @@ import type {
 } from '@muse-ai/shared'
 import { sessionManager } from '../core/session-manager'
 import { handleSettingsRoute } from './routes/settings'
+import { handleTracesRoute } from './routes/traces'
 import { readJsonBody } from './read-body'
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
@@ -79,6 +80,11 @@ export function createHttpHandler(state: DaemonState) {
         sendError,
       )
       if (handledSettings) {
+        return
+      }
+
+      const handledTraces = await handleTracesRoute(method, pathname, response, sendJson, sendError)
+      if (handledTraces) {
         return
       }
 

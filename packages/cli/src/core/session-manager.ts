@@ -11,6 +11,7 @@ import {
   type SessionMeta,
 } from '@muse-ai/shared'
 import { createSessionAgent } from './agent-factory'
+import type { MuseExtensionHost } from './extension-host'
 import { isProviderAuthError, markProviderAuthFailure } from './provider-health'
 import {
   appendSessionTranscriptEntries,
@@ -23,6 +24,7 @@ import {
 interface SessionRecord {
   meta: SessionMeta
   agent: Agent
+  extensionHost: MuseExtensionHost
   clients: Set<WebSocket>
   unsubscribe?: () => void
   /** 已写入 jsonl 的消息条数 */
@@ -80,11 +82,20 @@ export class SessionManager {
       messageCount: 0,
     }
 
-    const agent = await createSessionAgent({ agentId, cwd: input.cwd })
-    const record = this.attachRuntime(meta, agent, 0)
+    const { agent, extensionHost } = await createSessionAgent({
+      agentId,
+      sessionId: meta.id,
+      cwd: input.cwd,
+    })
+    const record = this.attachRuntime(meta, agent, extensionHost, 0)
+    await extensionHost.emitSessionStart('startup')
     this.index.set(meta.id, meta)
     await writeSessionMeta(record.meta)
     return meta
+  }
+
+  hasSession(sessionId: string): boolean {
+    return this.index.has(sessionId)
   }
 
   listSessions(agentId?: string): SessionMeta[] {
@@ -109,10 +120,15 @@ export class SessionManager {
     }
 
     const messages = await readSessionMessages(meta.agentId, meta.id)
-    const agent = await createSessionAgent({ agentId: meta.agentId, cwd: meta.cwd })
+    const { agent, extensionHost } = await createSessionAgent({
+      agentId: meta.agentId,
+      sessionId: meta.id,
+      cwd: meta.cwd,
+    })
     agent.state.messages = messages
+    await extensionHost.emitSessionStart('resume')
 
-    return this.attachRuntime(meta, agent, messages.length)
+    return this.attachRuntime(meta, agent, extensionHost, messages.length)
   }
 
   async getSessionResponse(sessionId: string) {
@@ -220,6 +236,7 @@ export class SessionManager {
 
     if (hydrated) {
       hydrated.unsubscribe?.()
+      await hydrated.extensionHost.emitSessionShutdown()
       for (const client of hydrated.clients) {
         client.close(1000, 'session deleted')
       }
@@ -265,17 +282,25 @@ export class SessionManager {
     }
   }
 
-  private attachRuntime(meta: SessionMeta, agent: Agent, persistedMessageCount: number): SessionRecord {
+  private attachRuntime(
+    meta: SessionMeta,
+    agent: Agent,
+    extensionHost: MuseExtensionHost,
+    persistedMessageCount: number,
+  ): SessionRecord {
     const record: SessionRecord = {
       meta,
       agent,
+      extensionHost,
       clients: new Set(),
       persistedMessageCount,
       turnInProgress: false,
     }
 
     record.unsubscribe = agent.subscribe((event) => {
-      this.broadcastEvent(meta.id, event)
+      void extensionHost.handleAgentEvent(event).then(() => {
+        this.broadcastEvent(meta.id, event)
+      })
     })
 
     this.sessions.set(meta.id, record)

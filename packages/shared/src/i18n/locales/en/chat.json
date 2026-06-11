@@ -35,6 +35,38 @@
     "sending": "Sending…",
     "stop": "Stop"
   },
+  "trace": {
+    "title": "LLM Trace",
+    "toggle": "Trace",
+    "close": "Close",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "empty": "No traces yet (enable the muse/trace plugin)",
+    "selectTurn": "Select a turn to inspect",
+    "turnLabel": "Turn {{index}}",
+    "turnMeta": "{{count}} entries · {{time}}",
+    "turnMetaWithModel": "{{count}} entries · {{model}} · {{time}}",
+    "copyEntry": "Copy",
+    "copyTurn": "Copy turn",
+    "exportTurn": "Export jsonl",
+    "copied": "Copied to clipboard",
+    "copyFailed": "Copy failed",
+    "exported": "Exported jsonl",
+    "type": {
+      "turn_start": "Turn started",
+      "turn_end": "Turn ended",
+      "provider_request": "LLM request",
+      "after_provider_response": "HTTP response",
+      "tool_call": "Tool call",
+      "tool_result": "Tool result",
+      "transform_context": "Context transform",
+      "message_start": "Message started",
+      "message_end": "Message ended",
+      "message_update": "Message updated",
+      "agent_start": "Agent started",
+      "agent_end": "Agent ended"
+    }
+  },
   "attachments": {
     "add": "Add attachment",
     "remove": "Remove attachment",

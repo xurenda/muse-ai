@@ -4,6 +4,8 @@ import type {
   CreateSessionResponse,
   DeleteSessionResponse,
   GetSessionResponse,
+  GetSessionTraceResponse,
+  ListSessionTracesResponse,
   ListSessionsResponse,
   SessionAbortResponse,
   SessionFollowUpRequest,
@@ -96,6 +98,16 @@ export function sendSessionFollowUp(
     method: 'POST',
     body: JSON.stringify(input),
   })
+}
+
+export function listSessionTraces(sessionId: string): Promise<ListSessionTracesResponse> {
+  return requestDaemon<ListSessionTracesResponse>(`/sessions/${encodeURIComponent(sessionId)}/traces`)
+}
+
+export function getSessionTrace(sessionId: string, turnIndex: number): Promise<GetSessionTraceResponse> {
+  return requestDaemon<GetSessionTraceResponse>(
+    `/sessions/${encodeURIComponent(sessionId)}/traces/${turnIndex}`,
+  )
 }
 
 export function buildSessionEventsUrl(sessionId: string): string {
