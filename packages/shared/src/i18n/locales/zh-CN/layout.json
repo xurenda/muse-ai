@@ -10,6 +10,13 @@
   },
   "header": {
     "sidebarToggle": "切换侧边栏",
+    "rightSidebarToggle": "切换右侧边栏",
     "settings": "设置"
+  },
+  "rightSidebar": {
+    "addMenu": "添加面板",
+    "actions": {
+      "trace": "Trace"
+    }
   }
 }

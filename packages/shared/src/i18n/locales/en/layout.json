@@ -10,6 +10,13 @@
   },
   "header": {
     "sidebarToggle": "Toggle sidebar",
+    "rightSidebarToggle": "Toggle right sidebar",
     "settings": "Settings"
+  },
+  "rightSidebar": {
+    "addMenu": "Add panel",
+    "actions": {
+      "trace": "Trace"
+    }
   }
 }

@@ -77,7 +77,7 @@ export function TracePanel({ sessionId, isSending, onClose }: TracePanelProps) {
   }
 
   return (
-    <aside className="flex h-full w-96 shrink-0 flex-col border-l border-border bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <h2 className="text-sm font-medium">{t('trace.title')}</h2>
         <div className="flex items-center gap-1">
@@ -151,6 +151,6 @@ export function TracePanel({ sessionId, isSending, onClose }: TracePanelProps) {
           </div>
         </div>
       </div>
-    </aside>
+    </div>
   )
 }

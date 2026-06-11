@@ -3,11 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatViewList } from '@/components/chat/chat-view-list'
 import { PlanningIndicator } from '@/components/chat/planning-indicator'
-import { TracePanel } from '@/components/chat/trace-panel'
-import { Button } from '@/components/ui/button'
 import { useChatSession, type SessionMessageDelivery } from '@/hooks/use-chat-session'
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom'
 import { useTranslation } from '@/hooks/use-translation'
+import { useChatSessionRuntimeStore } from '@/stores/chat-session-runtime'
 
 export function ChatPage() {
   const { t } = useTranslation('chat')
@@ -15,9 +14,9 @@ export function ChatPage() {
   const { sessionId: routeSessionId } = useParams()
   const [input, setInput] = useState('')
   const [cwd, setCwd] = useState('')
-  const [traceOpen, setTraceOpen] = useState(false)
+  const setIsSending = useChatSessionRuntimeStore((state) => state.setIsSending)
   const { containerRef, endRef, enableStick, onContentChange } = useStickToBottom<HTMLDivElement>()
-  const { items, resolvedCwd, isLoading, isSending, isPlanning, error, sendMessage, stopGeneration, sessionId } = useChatSession({
+  const { items, resolvedCwd, isLoading, isSending, isPlanning, error, sendMessage, stopGeneration } = useChatSession({
     sessionId: routeSessionId,
     cwd: cwd.trim() || undefined,
     onSessionCreated: (sessionId) => {
@@ -31,6 +30,16 @@ export function ChatPage() {
   useEffect(() => {
     onContentChange()
   }, [items, isPlanning, onContentChange])
+
+  useEffect(() => {
+    setIsSending(isSending)
+  }, [isSending, setIsSending])
+
+  useEffect(() => {
+    return () => {
+      setIsSending(false)
+    }
+  }, [setIsSending])
 
   const handleSendMessage = useCallback(
     async (message: string, delivery: SessionMessageDelivery) => {
@@ -54,19 +63,6 @@ export function ChatPage() {
       <div className="flex min-h-0 flex-1 flex-col">
       <div ref={containerRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-          {routeSessionId ? (
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setTraceOpen((open) => !open)}
-              >
-                {t('trace.toggle')}
-              </Button>
-            </div>
-          ) : null}
-
           {isLoading ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
 
           {!isLoading && items.length === 0 ? (
@@ -101,8 +97,6 @@ export function ChatPage() {
         </div>
       </form>
       </div>
-
-      {traceOpen && sessionId ? <TracePanel sessionId={sessionId} isSending={isSending} onClose={() => setTraceOpen(false)} /> : null}
     </div>
   )
 }

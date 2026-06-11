@@ -1,33 +1,23 @@
 import type { HeaderItem } from '@/constants/app-header'
-import { DaemonStatus } from '@/components/layout/daemon-status'
+import { HeaderActions } from '@/components/layout/header-actions'
 import { SidebarToggle } from '@/components/layout/sidebar-toggle'
-import { SettingsMenu } from '@/components/layout/settings-menu'
 import { cn } from '@/utils/cn'
 
 interface MainHeaderProps {
   sidebarOpen: boolean
   onSidebarToggle: () => void
+  rightSidebarOpen: boolean
+  onRightSidebarToggle: () => void
   right?: HeaderItem[]
 }
 
 export function MainHeader({
   sidebarOpen,
   onSidebarToggle,
+  rightSidebarOpen,
+  onRightSidebarToggle,
   right = [],
 }: MainHeaderProps) {
-  const renderItem = (item: HeaderItem) => {
-    if (item.kind === 'menu' && item.menu === 'settings') {
-      return (
-        <SettingsMenu
-          key={item.menu}
-          labelKey={item.labelKey}
-          icon={item.icon}
-        />
-      )
-    }
-    return null
-  }
-
   return (
     <header
       className={cn(
@@ -42,10 +32,14 @@ export function MainHeader({
           className="app-region-no-drag pointer-events-auto"
         />
       ) : null}
-      <div className="app-region-no-drag pointer-events-auto flex items-center gap-1">
-        <DaemonStatus />
-        {right.map(renderItem)}
-      </div>
+      {!rightSidebarOpen ? (
+        <div className="app-region-no-drag pointer-events-auto flex items-center gap-1">
+          <HeaderActions
+            right={right}
+            rightSidebarToggle={{ open: false, onToggle: onRightSidebarToggle }}
+          />
+        </div>
+      ) : null}
     </header>
   )
 }

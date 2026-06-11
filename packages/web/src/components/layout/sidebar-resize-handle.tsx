@@ -12,7 +12,7 @@ export function SidebarResizeHandle({ disabled }: SidebarResizeHandleProps) {
       className={cn(
         'relative w-px shrink-0 bg-sidebar-border transition-colors',
         'before:absolute before:inset-y-0 before:-left-1 before:-right-1 before:content-[""]',
-        !disabled && 'hover:bg-border',
+        !disabled && 'cursor-col-resize hover:bg-muted-foreground/55',
       )}
     />
   )
