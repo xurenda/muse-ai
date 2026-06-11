@@ -5,7 +5,6 @@ import type {
   DeleteSessionResponse,
   GetSessionResponse,
   GetSessionTraceResponse,
-  ListSessionTracesResponse,
   ListSessionsResponse,
   SessionAbortResponse,
   SessionFollowUpRequest,
@@ -100,14 +99,49 @@ export function sendSessionFollowUp(
   })
 }
 
-export function listSessionTraces(sessionId: string): Promise<ListSessionTracesResponse> {
-  return requestDaemon<ListSessionTracesResponse>(`/sessions/${encodeURIComponent(sessionId)}/traces`)
+export interface GetSessionTraceResult {
+  notModified: boolean
+  etag: string | null
+  data: GetSessionTraceResponse | null
 }
 
-export function getSessionTrace(sessionId: string, turnIndex: number): Promise<GetSessionTraceResponse> {
-  return requestDaemon<GetSessionTraceResponse>(
-    `/sessions/${encodeURIComponent(sessionId)}/traces/${turnIndex}`,
-  )
+export function getSessionTrace(
+  sessionId: string,
+  options?: { ifNoneMatch?: string },
+): Promise<GetSessionTraceResult> {
+  const headers: Record<string, string> = {}
+  if (options?.ifNoneMatch) {
+    headers['If-None-Match'] = options.ifNoneMatch
+  }
+
+  return fetch(`${daemonBaseUrl}/sessions/${encodeURIComponent(sessionId)}/trace`, {
+    headers,
+  }).then(async (response) => {
+    const etag = response.headers.get('ETag')
+
+    if (response.status === 304) {
+      return {
+        notModified: true,
+        etag,
+        data: null,
+      }
+    }
+
+    const body = (await response.json()) as GetSessionTraceResponse | { error?: string }
+    if (!response.ok) {
+      const message =
+        typeof body === 'object' && body !== null && 'error' in body && typeof body.error === 'string'
+          ? body.error
+          : `请求失败 (${response.status})`
+      throw new Error(message)
+    }
+
+    return {
+      notModified: false,
+      etag,
+      data: body as GetSessionTraceResponse,
+    }
+  })
 }
 
 export function buildSessionEventsUrl(sessionId: string): string {

@@ -97,9 +97,9 @@ export type { MuseSettings } from './types/settings'
 export type { SessionMeta, SessionTranscriptMessageEntry } from './types/session'
 export type {
   GetSessionTraceResponse,
-  ListSessionTracesResponse,
-  LlmTraceEntry,
-  SessionTraceSummary,
+  SessionTraceAssistantMessage,
+  SessionTraceRequest,
+  SessionTraceResponse,
 } from './types/trace-api'
 export { namespaceIdToRelativePath } from './utils/namespace-id'
 export { maskApiKey } from './utils/mask-api-key'

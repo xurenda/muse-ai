@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Group, Panel, usePanelRef } from 'react-resizable-panels'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/components/layout/app-sidebar'
@@ -31,6 +31,21 @@ export function AppLayout() {
   const setSidebarOpen = useSidebarStore((state) => state.setOpen)
   const rightSidebarOpen = useRightSidebarStore((state) => state.open)
   const setRightSidebarOpen = useRightSidebarStore((state) => state.setOpen)
+  const expandRequestId = useRightSidebarStore((state) => state.expandRequestId)
+
+  useEffect(() => {
+    if (expandRequestId === 0) {
+      return
+    }
+
+    const panel = rightSidebarPanelRef.current
+    if (!panel?.isCollapsed()) {
+      return
+    }
+
+    panel.expand()
+    setRightSidebarOpen(true)
+  }, [expandRequestId, rightSidebarPanelRef, setRightSidebarOpen])
 
   const handleSidebarToggle = useCallback(() => {
     const panel = sidebarPanelRef.current

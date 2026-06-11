@@ -13,6 +13,8 @@ import {
 import { createSessionAgent } from './agent-factory'
 import type { MuseExtensionHost } from './extension-host'
 import { isProviderAuthError, markProviderAuthFailure } from './provider-health'
+import { deleteSessionTraces, flushSessionTraceBuffer } from './trace-store'
+import { registerMuseTraceBufferApi } from './trace-buffer'
 import {
   appendSessionTranscriptEntries,
   deleteSessionFiles,
@@ -63,6 +65,7 @@ export class SessionManager {
 
   /** daemon 启动时扫描磁盘，仅建立元数据索引 */
   async initialize(): Promise<void> {
+    registerMuseTraceBufferApi()
     const metas = await scanSessionMetas()
     this.index.clear()
     for (const meta of metas) {
@@ -96,6 +99,13 @@ export class SessionManager {
 
   hasSession(sessionId: string): boolean {
     return this.index.has(sessionId)
+  }
+
+  /** daemon 退出前刷盘 trace 并通知扩展 */
+  async shutdown(): Promise<void> {
+    for (const record of this.sessions.values()) {
+      await record.extensionHost.emitSessionShutdown()
+    }
   }
 
   listSessions(agentId?: string): SessionMeta[] {
@@ -244,7 +254,7 @@ export class SessionManager {
     }
 
     this.index.delete(sessionId)
-    await deleteSessionFiles(meta.agentId, meta.id)
+    await Promise.all([deleteSessionFiles(meta.agentId, meta.id), deleteSessionTraces(meta.id)])
   }
 
   private isSessionStreaming(record: SessionRecord): boolean {
@@ -279,6 +289,8 @@ export class SessionManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       this.broadcastSessionError(sessionId, errorMessage)
+    } finally {
+      await flushSessionTraceBuffer(sessionId)
     }
   }
 

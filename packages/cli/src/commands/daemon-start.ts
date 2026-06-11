@@ -8,6 +8,7 @@ import {
   writeDaemonState,
 } from '../daemon/state'
 import { sessionManager } from '../core/session-manager'
+import { flushAllSessionTraceBuffers } from '../core/trace-store'
 import { startDaemonServer, stopDaemonServer } from '../daemon/server'
 
 export async function runDaemonStart(portOverride?: number): Promise<void> {
@@ -32,6 +33,8 @@ export async function runDaemonStart(portOverride?: number): Promise<void> {
     shuttingDown = true
 
     console.log(`\n收到 ${signal}，正在停止 daemon...`)
+    await sessionManager.shutdown()
+    await flushAllSessionTraceBuffers()
     await stopDaemonServer(server)
     await removeDaemonState()
     process.exit(0)

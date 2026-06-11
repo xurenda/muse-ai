@@ -1,8 +1,15 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { getSessionTrace, listSessionTraces } from '../../src/core/trace-store'
+import {
+  clearSessionTraceBuffer,
+  flushSessionTraceBuffer,
+  traceBufferUpdateRequest,
+  traceBufferUpdateResponseMessage,
+  traceBufferUpdateResponseStatus,
+} from '../../src/core/trace-buffer'
+import { deleteSessionTraces, getSessionTrace } from '../../src/core/trace-store'
 
 const previousMuseHome = process.env.MUSE_HOME
 
@@ -23,36 +30,71 @@ describe('trace-store', () => {
     await rm(museHome, { recursive: true, force: true })
   })
 
-  it('列出空 trace 目录时返回空数组', async () => {
-    const result = await listSessionTraces('session-1')
-    expect(result).toEqual({ sessionId: 'session-1', traces: [] })
+  it('无 trace 时返回空对象', async () => {
+    const result = await getSessionTrace('session-1')
+    expect(result).toEqual({ sessionId: 'session-1' })
   })
 
-  it('读取并解析 jsonl trace 文件', async () => {
-    const sessionId = 'session-abc'
-    const traceDir = join(museHome, 'trace', sessionId)
+  it('优先读取内存中的 trace 缓冲', async () => {
+    const sessionId = 'session-live'
+    traceBufferUpdateRequest(sessionId, { model: 'gpt-4o', messages: [] })
+    traceBufferUpdateResponseStatus(sessionId, 200)
+    traceBufferUpdateResponseMessage(sessionId, {
+      role: 'assistant',
+      content: [{ type: 'text', text: 'hello' }],
+      stopReason: 'stop',
+    })
+
+    const result = await getSessionTrace(sessionId)
+    expect(result.request?.payload).toEqual({ model: 'gpt-4o', messages: [] })
+    expect(result.response?.status).toBe(200)
+    expect(result.response?.message.stopReason).toBe('stop')
+    expect(result.updatedAt).toBeTruthy()
+  })
+
+  it('flush 后从磁盘读取 request.json 与 response.json', async () => {
+    const sessionId = 'session-flush'
+    traceBufferUpdateRequest(sessionId, { model: 'deepseek-v4-flash' })
+    traceBufferUpdateResponseStatus(sessionId, 200)
+    traceBufferUpdateResponseMessage(sessionId, {
+      role: 'assistant',
+      content: [{ type: 'text', text: 'done' }],
+      usage: { totalTokens: 10 },
+      stopReason: 'stop',
+    })
+
+    await flushSessionTraceBuffer(sessionId)
+    clearSessionTraceBuffer(sessionId)
+
+    const traceDir = join(museHome, 'traces', sessionId)
+    const requestRaw = await readFile(join(traceDir, 'request.json'), 'utf8')
+    const responseRaw = await readFile(join(traceDir, 'response.json'), 'utf8')
+
+    expect(JSON.parse(requestRaw)).toMatchObject({
+      payload: { model: 'deepseek-v4-flash' },
+    })
+    expect(JSON.parse(responseRaw)).toMatchObject({
+      status: 200,
+      message: {
+        stopReason: 'stop',
+      },
+    })
+
+    const result = await getSessionTrace(sessionId)
+    expect(result.request?.payload).toEqual({ model: 'deepseek-v4-flash' })
+    expect(result.response?.message.stopReason).toBe('stop')
+  })
+
+  it('deleteSessionTraces 删除 trace 目录与缓冲', async () => {
+    const sessionId = 'session-delete'
+    const traceDir = join(museHome, 'traces', sessionId)
     await mkdir(traceDir, { recursive: true })
-    await writeFile(
-      join(traceDir, '0-trace.jsonl'),
-      [
-        JSON.stringify({ timestamp: '2026-06-11T00:00:00.000Z', turnIndex: 0, type: 'turn_start' }),
-        JSON.stringify({ timestamp: '2026-06-11T00:00:01.000Z', turnIndex: 0, type: 'provider_request', payload: { model: 'gpt-4o' } }),
-      ].join('\n') + '\n',
-      'utf8',
-    )
+    await writeFile(join(traceDir, 'request.json'), '{}\n', 'utf8')
+    traceBufferUpdateRequest(sessionId, { model: 'x' })
 
-    const list = await listSessionTraces(sessionId)
-    expect(list.traces).toHaveLength(1)
-    expect(list.traces[0]?.turnIndex).toBe(0)
-    expect(list.traces[0]?.entryCount).toBe(2)
-    expect(list.traces[0]?.modelLabel).toBe('gpt-4o')
+    await deleteSessionTraces(sessionId)
 
-    const detail = await getSessionTrace(sessionId, 0)
-    expect(detail.entries).toHaveLength(2)
-    expect(detail.entries[1]?.type).toBe('provider_request')
-  })
-
-  it('trace 不存在时抛出错误', async () => {
-    await expect(getSessionTrace('session-missing', 0)).rejects.toThrow('trace 不存在')
+    const result = await getSessionTrace(sessionId)
+    expect(result.request).toBeUndefined()
   })
 })

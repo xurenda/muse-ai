@@ -83,7 +83,7 @@ export function createHttpHandler(state: DaemonState) {
         return
       }
 
-      const handledTraces = await handleTracesRoute(method, pathname, response, sendJson, sendError)
+      const handledTraces = await handleTracesRoute(method, pathname, request, response, sendJson, sendError)
       if (handledTraces) {
         return
       }

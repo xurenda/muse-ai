@@ -1,35 +1,32 @@
-/** 单条 LLM trace 记录（jsonl 一行） */
-export interface LlmTraceEntry {
-  timestamp: string
-  turnIndex: number
-  type: string
-  systemPrompt?: string
-  model?: Record<string, unknown>
-  payload?: unknown
-  status?: number
-  headers?: Record<string, string>
-  messageRole?: string
-  toolResultCount?: number
+/** GET /sessions/:id/trace 中的 LLM 请求快照 */
+export interface SessionTraceRequest {
+  /** 发往 provider 的完整 payload */
+  payload: unknown
+  capturedAt: string
 }
 
-/** GET /sessions/:id/traces 中的 turn 摘要 */
-export interface SessionTraceSummary {
-  turnIndex: number
-  entryCount: number
-  updatedAt?: string
-  /** 首条 provider_request 解析出的模型标识（若有） */
-  modelLabel?: string
+/** 解析后的 assistant 消息摘要 */
+export interface SessionTraceAssistantMessage {
+  content: unknown
+  toolCalls?: unknown[]
+  usage?: Record<string, unknown>
+  stopReason?: string
 }
 
-/** GET /sessions/:id/traces 响应 */
-export interface ListSessionTracesResponse {
-  sessionId: string
-  traces: SessionTraceSummary[]
+/** GET /sessions/:id/trace 中的 LLM 响应快照 */
+export interface SessionTraceResponse {
+  /** 原始 HTTP status */
+  status: number
+  /** thinking 块拼接文本（若有） */
+  thinking?: string
+  message: SessionTraceAssistantMessage
+  capturedAt: string
 }
 
-/** GET /sessions/:id/traces/:turnIndex 响应 */
+/** GET /sessions/:id/trace 响应 */
 export interface GetSessionTraceResponse {
   sessionId: string
-  turnIndex: number
-  entries: LlmTraceEntry[]
+  request?: SessionTraceRequest
+  response?: SessionTraceResponse
+  updatedAt?: string
 }
