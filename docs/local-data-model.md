@@ -1,6 +1,12 @@
 # Muse 本地数据模型
 
-本文描述 Muse daemon 在用户机器上的目录布局、核心概念，以及与后端市场的关系。实现时以本文为准；类型定义逐步沉淀到 `@muse-ai/shared`。
+> **已过期（Deprecated）**  
+> 本文基于 pi-agent-core / jiti extension 时代的设想，**不再作为实现依据**。  
+> 请改用 **[`architecture.md`](./architecture.md)**（Flue 运行时、目录布局、API 与能力组合）。
+
+---
+
+本文描述 Muse daemon 在用户机器上的目录布局、核心概念，以及与后端市场的关系。类型定义曾计划沉淀到 `@muse-ai/shared`。
 
 ## 设计原则
 
@@ -250,4 +256,5 @@ Session 元数据示意（类型见 `@muse-ai/shared` 的 `SessionMeta`）：
 
 ## 相关文档
 
-- pi 参考实现：`/Users/kingen/code/pi`（extensions、skills、prompt 模板、session JSONL）
+- **当前架构**：[`architecture.md`](./architecture.md)
+- pi 参考实现（历史）：`/Users/kingen/code/pi`（extensions、skills、prompt 模板、session JSONL）
