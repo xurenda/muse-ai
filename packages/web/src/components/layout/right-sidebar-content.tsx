@@ -22,7 +22,7 @@ export function RightSidebarContent() {
   if (activePanel === 'trace' && sessionId) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <TracePanel sessionId={sessionId} isSending={isSending} onClose={closePanel} />
+        <TracePanel sessionId={sessionId} isSending={isSending} />
       </div>
     )
   }

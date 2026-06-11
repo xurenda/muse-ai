@@ -45,12 +45,11 @@ export function useSessionTraces(options: UseSessionTracesOptions) {
         return
       }
 
-      const latestTurn = response.traces[response.traces.length - 1]?.turnIndex
       setSelectedTurnIndex((current) => {
         if (current !== null && response.traces.some((trace) => trace.turnIndex === current)) {
           return current
         }
-        return latestTurn ?? null
+        return null
       })
     } catch (listError) {
       const message = listError instanceof Error ? listError.message : String(listError)

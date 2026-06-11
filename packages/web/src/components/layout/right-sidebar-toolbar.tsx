@@ -1,6 +1,6 @@
 import type { HeaderItem } from '@/constants/app-header'
 import { HeaderActions } from '@/components/layout/header-actions'
-import { RightSidebarAddMenu } from '@/components/layout/right-sidebar-add-menu'
+import { RightSidebarAddMenu, RightSidebarPanelRefresh } from '@/components/layout/right-sidebar-add-menu'
 
 interface RightSidebarToolbarProps {
   open: boolean
@@ -11,7 +11,10 @@ interface RightSidebarToolbarProps {
 export function RightSidebarToolbar({ open, onToggle, right = [] }: RightSidebarToolbarProps) {
   return (
     <div className="flex h-11 shrink-0 items-center px-2.5">
-      <RightSidebarAddMenu />
+      <div className="flex min-w-0 items-center gap-1">
+        <RightSidebarAddMenu />
+        <RightSidebarPanelRefresh />
+      </div>
       <HeaderActions
         className="ml-auto"
         right={right}

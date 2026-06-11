@@ -26,4 +26,4 @@ export const RIGHT_SIDEBAR_DEFAULT_WIDTH = 320
 export const RIGHT_SIDEBAR_MIN_WIDTH = 240
 
 /** 右侧边栏最大宽度（px） */
-export const RIGHT_SIDEBAR_MAX_WIDTH = 480
+export const RIGHT_SIDEBAR_MAX_WIDTH = 640

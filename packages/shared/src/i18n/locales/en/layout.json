@@ -15,8 +15,9 @@
   },
   "rightSidebar": {
     "addMenu": "Add panel",
+    "panelMenu": "{{panel}} panel menu",
     "actions": {
-      "trace": "Trace"
+      "trace": "LLM Trace"
     }
   }
 }
