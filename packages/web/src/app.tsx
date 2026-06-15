@@ -1,6 +1,6 @@
-import { DEFAULT_PORTS } from "@muse-ai/shared";
+import { DEFAULT_PORTS } from '@muse-ai/shared'
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL ?? `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`;
+const backendUrl = import.meta.env.VITE_BACKEND_URL ?? `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`
 
 export function App() {
   return (
@@ -19,5 +19,5 @@ export function App() {
       </dl>
       <p className="hint">聊天 UI 将在阶段 4 接入；当前请用 curl 验证 CLI / Server health。</p>
     </main>
-  );
+  )
 }

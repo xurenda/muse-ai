@@ -15,6 +15,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@earendil-works/pi-agent-core": "^0.79.3",
+    "@earendil-works/pi-ai": "^0.79.3",
     "@muse-ai/shared": "workspace:*"
   },
   "devDependencies": {

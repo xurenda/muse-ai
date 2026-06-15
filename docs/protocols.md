@@ -6,16 +6,16 @@
 
 Base URL：`http://127.0.0.1:3000`（默认）
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
-| POST | `/auth/login` | 登录（阶段 0 stub） |
-| POST | `/auth/register` | 注册（阶段 3） |
-| GET | `/devices` | 设备列表 |
-| POST | `/devices/pair` | CLI 配对 |
-| POST | `/devices/heartbeat` | CLI 心跳 + endpoint 注册 |
-| GET/POST | `/providers` | LLM Provider 管理（阶段 3） |
-| POST | `/v1/chat/completions` | LLM 代理（阶段 3） |
+| 方法     | 路径                   | 说明                        |
+| -------- | ---------------------- | --------------------------- |
+| GET      | `/health`              | 健康检查                    |
+| POST     | `/auth/login`          | 登录（阶段 0 stub）         |
+| POST     | `/auth/register`       | 注册（阶段 3）              |
+| GET      | `/devices`             | 设备列表                    |
+| POST     | `/devices/pair`        | CLI 配对                    |
+| POST     | `/devices/heartbeat`   | CLI 心跳 + endpoint 注册    |
+| GET/POST | `/providers`           | LLM Provider 管理（阶段 3） |
+| POST     | `/v1/chat/completions` | LLM 代理（阶段 3）          |
 
 ### GET /health
 
@@ -50,14 +50,14 @@ Base URL：由 Backend 设备列表返回的 `endpoint`，默认 `http://127.0.0
 
 鉴权：`Authorization: Bearer <device-access-token>`
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
-| GET | `/agents` | 本地 agent 列表 |
-| GET | `/sessions` | Session 列表 |
-| POST | `/sessions` | 创建 Session（阶段 1） |
-| POST | `/chat` | 发起对话（阶段 1） |
-| GET | `/events` | SSE 事件流（阶段 1） |
+| 方法 | 路径                   | 说明                                 |
+| ---- | ---------------------- | ------------------------------------ |
+| GET  | `/health`              | 健康检查                             |
+| GET  | `/agents`              | 本地 agent 列表                      |
+| GET  | `/sessions`            | Session 列表                         |
+| POST | `/sessions`            | 创建 Session（阶段 1）               |
+| POST | `/chat`                | 发起对话（阶段 1 骨架，阶段 3 接通） |
+| GET  | `/sessions/:id/events` | 按 Session 的 SSE 事件流（阶段 1）   |
 
 ### GET /health
 
@@ -82,16 +82,16 @@ data: {"type":"text_delta","delta":"你好"}
 
 ### 事件类型
 
-| type | 字段 | 说明 |
-|------|------|------|
-| `agent_start` | — | 一轮 agent 开始 |
-| `turn_start` | — | 单 turn 开始 |
-| `text_delta` | `delta` | 流式文本 |
-| `tool_start` | `toolCallId`, `toolName`, `args` | 工具开始 |
-| `tool_end` | `toolCallId`, `toolName`, `result`, `isError?` | 工具结束 |
-| `turn_end` | — | turn 结束 |
-| `agent_end` | — | agent 结束 |
-| `error` | `message` | 错误 |
+| type          | 字段                                           | 说明            |
+| ------------- | ---------------------------------------------- | --------------- |
+| `agent_start` | —                                              | 一轮 agent 开始 |
+| `turn_start`  | —                                              | 单 turn 开始    |
+| `text_delta`  | `delta`                                        | 流式文本        |
+| `tool_start`  | `toolCallId`, `toolName`, `args`               | 工具开始        |
+| `tool_end`    | `toolCallId`, `toolName`, `result`, `isError?` | 工具结束        |
+| `turn_end`    | —                                              | turn 结束       |
+| `agent_end`   | —                                              | agent 结束      |
+| `error`       | `message`                                      | 错误            |
 
 定义见 `packages/shared/src/types/sse-events.ts` 的 `museSseEventSchema`。
 

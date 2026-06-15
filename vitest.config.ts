@@ -1,12 +1,7 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    projects: [
-      "packages/shared",
-      "packages/core",
-      "packages/cli",
-      "packages/server",
-    ],
+    projects: ['packages/shared', 'packages/core', 'packages/cli', 'packages/server'],
   },
-});
+})

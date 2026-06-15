@@ -31,15 +31,15 @@
 
 ### 1. Monorepo 根目录
 
-| 文件 | 说明 |
-|------|------|
-| `package.json` | 根脚本：`build`、`dev:cli/server/web`、`test`、`test:run` |
-| `pnpm-workspace.yaml` | `packages/*` |
-| `tsconfig.base.json` | 共享 TS 严格配置 |
-| `vitest.config.ts` | 多项目：shared、core、cli、server |
-| `.gitignore` | node_modules、dist、.env 等 |
-| `README.md` | 安装、构建、三进程启动、health curl |
-| `AGENTS.md` | 贡献约定（命名、Vitest、架构约束、参考仓库路径） |
+| 文件                  | 说明                                                      |
+| --------------------- | --------------------------------------------------------- |
+| `package.json`        | 根脚本：`build`、`dev:cli/server/web`、`test`、`test:run` |
+| `pnpm-workspace.yaml` | `packages/*`                                              |
+| `tsconfig.base.json`  | 共享 TS 严格配置                                          |
+| `vitest.config.ts`    | 多项目：shared、core、cli、server                         |
+| `.gitignore`          | node_modules、dist、.env 等                               |
+| `README.md`           | 安装、构建、三进程启动、health curl                       |
+| `AGENTS.md`           | 贡献约定（命名、Vitest、架构约束、参考仓库路径）          |
 
 ### 2. `@muse-ai/shared`
 
@@ -62,10 +62,10 @@ packages/shared/src/
 
 **默认端口：**
 
-| 服务 | 端口 |
-|------|------|
-| Server | 3000 |
-| CLI | 7421 |
+| 服务    | 端口 |
+| ------- | ---- |
+| Server  | 3000 |
+| CLI     | 7421 |
 | Web dev | 5173 |
 
 **测试：** `test/constants/api-paths.test.ts`（6 项）
@@ -80,19 +80,19 @@ packages/shared/src/
 
 本地命令 `muse`，daemon 基于 **Hono** + `@hono/node-server`。
 
-| 路径/命令 | 说明 |
-|-----------|------|
-| `muse start` | 启动 daemon，默认 `127.0.0.1:7421` |
-| `GET /health` | 健康检查 |
-| `GET /agents` | 占位，返回 `{ agents: [] }` |
-| `GET /sessions` | 占位，返回 `{ sessions: [] }` |
+| 路径/命令       | 说明                               |
+| --------------- | ---------------------------------- |
+| `muse start`    | 启动 daemon，默认 `127.0.0.1:7421` |
+| `GET /health`   | 健康检查                           |
+| `GET /agents`   | 占位，返回 `{ agents: [] }`        |
+| `GET /sessions` | 占位，返回 `{ sessions: [] }`      |
 
 **环境变量：**
 
-| 变量 | 说明 |
-|------|------|
-| `MUSE_CLI_HOST` | 监听地址，默认 `127.0.0.1` |
-| `MUSE_CLI_PORT` | 端口，默认 `7421` |
+| 变量                | 说明                                       |
+| ------------------- | ------------------------------------------ |
+| `MUSE_CLI_HOST`     | 监听地址，默认 `127.0.0.1`                 |
+| `MUSE_CLI_PORT`     | 端口，默认 `7421`                          |
 | `MUSE_CORS_ORIGINS` | 逗号分隔，默认允许 `http://localhost:5173` |
 
 **测试：** `test/daemon/server.test.ts`（3 项）
@@ -105,11 +105,11 @@ Backend API，Docker Compose 放在本包内。
 
 **API（阶段 0）：**
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/health` | 健康检查 |
+| 方法 | 路径          | 说明                                   |
+| ---- | ------------- | -------------------------------------- |
+| GET  | `/health`     | 健康检查                               |
 | POST | `/auth/login` | stub：校验 Zod 后返回固定 `stub-token` |
-| GET | `/devices` | 占位，返回 `{ devices: [] }` |
+| GET  | `/devices`    | 占位，返回 `{ devices: [] }`           |
 
 **配置：** `packages/server/.env.example`（`PORT`、`DATABASE_URL`、`REDIS_URL`）
 
@@ -125,10 +125,10 @@ Vite 7 + React 19 占位页，展示 Backend URL 与 CLI 默认端口。
 
 ### 7. 文档
 
-| 文档 | 说明 |
-|------|------|
+| 文档                | 说明                                |
+| ------------------- | ----------------------------------- |
 | `docs/protocols.md` | Server/CLI REST 与 SSE 事件 v0 草案 |
-| `docs/v0.1/` | 本目录，按阶段记录交付 |
+| `docs/v0.1/`        | 本目录，按阶段记录交付              |
 
 ---
 
@@ -160,10 +160,10 @@ curl http://127.0.0.1:7421/health
 - `~/.muse` 本地目录与 Session JSONL（阶段 1）
 - 真实鉴权、Postgres/Redis 连接（阶段 3）
 - Web 聊天与 SSE 客户端（阶段 4）
-- ESLint / Prettier 配置（可按需在阶段 1 前补）
+- ESLint / Prettier / husky / lint-staged（阶段 1 已完成）
 
 ---
 
 ## 下一阶段
 
-见 [phase-1.md](./phase-1.md)：封装 `MuseHarness`、内置 tools、`POST /chat` + SSE `/events`。
+见 [phase-1.md](./phase-1.md)：工具链、`MuseHarness` 骨架、内置 tools、`POST /sessions` + `GET /sessions/:id/events`（完整 curl 对话收流见阶段 3）。

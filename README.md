@@ -7,7 +7,7 @@
 
 ## 环境要求
 
-- Node.js >= 20
+- Node.js >= 22.19.0
 - pnpm >= 10
 - Docker（仅 Server 依赖：Postgres、Redis）
 
@@ -22,6 +22,10 @@ pnpm build
 
 # 单元测试
 pnpm test:run
+
+# 代码检查与格式化
+pnpm lint
+pnpm format:check
 
 # 1. 启动后端依赖
 cd packages/server && docker compose up -d && cd ../..
@@ -45,17 +49,17 @@ curl http://127.0.0.1:7421/health   # cli
 
 ## 包说明
 
-| 包 | 说明 |
-|----|------|
-| `@muse-ai/shared` | 类型、API 路径、SSE 协议 |
-| `@muse-ai/core` | Agent 组装（阶段 1） |
-| `@muse-ai/cli` | `muse` 命令与 daemon |
+| 包                | 说明                      |
+| ----------------- | ------------------------- |
+| `@muse-ai/shared` | 类型、API 路径、SSE 协议  |
+| `@muse-ai/core`   | Agent 组装（阶段 1）      |
+| `@muse-ai/cli`    | `muse` 命令与 daemon      |
 | `@muse-ai/server` | 后端 API + docker-compose |
-| `@muse-ai/web` | Web 前端 |
+| `@muse-ai/web`    | Web 前端                  |
 
 ## 参考仓库（本机）
 
-| 项目 | 路径 |
-|------|------|
-| pi | `/Users/kingen/code/pi` |
+| 项目      | 路径                           |
+| --------- | ------------------------------ |
+| pi        | `/Users/kingen/code/pi`        |
 | Paperclip | `/Users/kingen/code/paperclip` |

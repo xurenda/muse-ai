@@ -3,6 +3,8 @@
 **状态**：⬜ 未开始  
 **预估周期**：~1–2 周
 
+> **协作说明**：进行本阶段时，在此期间有什么问题，我们都可以进行讨论。
+
 ---
 
 ## 目标
@@ -26,6 +28,7 @@ Persona + Skills 可组装成 Agent，切换 agent 后 system prompt 与 skills 
 
 - 新建/切换 agent 后对话行为符合所选 Persona + Skills
 - `~/.muse/agents/`、`personas/`、`skills/` 目录结构稳定
+- Agent 可声明 `activeToolNames`（tools 实现见 [阶段 4](./phase-4.md)，本阶段可为空列表）
 
 ---
 

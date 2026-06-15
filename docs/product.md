@@ -6,13 +6,13 @@
 
 ## 要解决什么问题
 
-| 痛点 | MuseAI 的回应 |
-|------|---------------|
+| 痛点                                 | MuseAI 的回应                               |
+| ------------------------------------ | ------------------------------------------- |
 | 通用聊天产品无法操作本地文件、跑命令 | CLI 作为 agent runtime，内置文件/Shell 工具 |
-| Agent 能力写死在产品里，难以扩展 | Persona + Skills + Tools 可组合，后期有市场 |
-| API Key 散落在各客户端，难以管理 | Backend 统一托管 Provider，CLI 不存 Key |
-| 长对话上下文有限、无法回顾分支 | 树形 Session（基于 pi AgentHarness JSONL） |
-| 用多个终端/agent 时难以统一管理 | Web 统一入口，可管理多个 CLI 设备（后期） |
+| Agent 能力写死在产品里，难以扩展     | Persona + Skills + Tools 可组合，后期有市场 |
+| API Key 散落在各客户端，难以管理     | Backend 统一托管 Provider，CLI 不存 Key     |
+| 长对话上下文有限、无法回顾分支       | 树形 Session（基于 pi AgentHarness JSONL）  |
+| 用多个终端/agent 时难以统一管理      | Web 统一入口，可管理多个 CLI 设备（后期）   |
 
 ## 不是什么
 
@@ -39,19 +39,19 @@ Agent（运行实例）
 └── Runtime Config        cwd、权限策略等
 ```
 
-| 资产 | 能否单独运行 | 存储位置 |
-|------|-------------|----------|
-| Persona | 否 | `~/.muse/personas/` + 市场（后期） |
-| Skill | 否 | `~/.muse/skills/` + 市场（后期） |
-| Agent | **是** | `~/.muse/agents/` |
+| 资产    | 能否单独运行 | 存储位置                           |
+| ------- | ------------ | ---------------------------------- |
+| Persona | 否           | `~/.muse/personas/` + 市场（后期） |
+| Skill   | 否           | `~/.muse/skills/` + 市场（后期）   |
+| Agent   | **是**       | `~/.muse/agents/`                  |
 
 ### 三层产品
 
-| 层 | 包/部署 | 职责 |
-|----|---------|------|
-| **CLI** | `@muse-ai/cli`，命令 `muse` | Agent runtime、Session 持久化、HTTP+SSE 服务 |
-| **Backend** | Docker Compose | 账号、LLM Provider 代理、设备注册、市场（后期） |
-| **Web** | `pnpm dev` / 静态部署 | 聊天 UI、Session 树、Agent 组装、设置 |
+| 层          | 包/部署                     | 职责                                            |
+| ----------- | --------------------------- | ----------------------------------------------- |
+| **CLI**     | `@muse-ai/cli`，命令 `muse` | Agent runtime、Session 持久化、HTTP+SSE 服务    |
+| **Backend** | Docker Compose              | 账号、LLM Provider 代理、设备注册、市场（后期） |
+| **Web**     | `pnpm dev` / 静态部署       | 聊天 UI、Session 树、Agent 组装、设置           |
 
 ## 关键体验
 
@@ -96,12 +96,12 @@ Agent（运行实例）
 
 ## 与竞品/参考项目的关系
 
-| 项目 | 借鉴什么 | 不做什么 |
-|------|----------|----------|
-| [pi AgentHarness](https://github.com/badlogicgames/pi-mono) | Session 树、Skills、steer/followUp、compact | 不直接用 pi-coding-agent CLI |
-| [Paperclip](https://github.com/paperclipai/paperclip) | 控制面/执行面分离；后期多 agent 的 assignee、结构化 HITL | 第一期不做 company/issue 模型 |
-| [SkillOpt](https://github.com/microsoft/SkillOpt) | Skill 文档验证门控式优化 | 第一期不做 |
-| [Thought-Retriever](https://arxiv.org/abs/2604.12231) | 跨会话检索推理摘要 | 第一期不做 |
+| 项目                                                        | 借鉴什么                                                 | 不做什么                      |
+| ----------------------------------------------------------- | -------------------------------------------------------- | ----------------------------- |
+| [pi AgentHarness](https://github.com/badlogicgames/pi-mono) | Session 树、Skills、steer/followUp、compact              | 不直接用 pi-coding-agent CLI  |
+| [Paperclip](https://github.com/paperclipai/paperclip)       | 控制面/执行面分离；后期多 agent 的 assignee、结构化 HITL | 第一期不做 company/issue 模型 |
+| [SkillOpt](https://github.com/microsoft/SkillOpt)           | Skill 文档验证门控式优化                                 | 第一期不做                    |
+| [Thought-Retriever](https://arxiv.org/abs/2604.12231)       | 跨会话检索推理摘要                                       | 第一期不做                    |
 
 ## 第一期成功标准
 

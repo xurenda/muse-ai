@@ -4,19 +4,21 @@
 
 产品背景与架构见 [`docs/`](./docs/README.md)。
 
+当前阶段进度见 [`docs/current-phase.md`](./docs/current-phase.md)。**进行任一阶段时，在此期间有什么问题，我们都可以进行讨论**——实现前优先阅读对应 `docs/v0.1/phase-N.md`。
+
 ---
 
 ## Monorepo
 
 本仓库为 **pnpm monorepo**：
 
-| 包 | 说明 |
-|----|------|
-| `packages/shared`（`@muse-ai/shared`） | 跨包共享的常量、类型、协议、i18n、公共函数 |
-| `packages/core`（`@muse-ai/core`） | Agent 组装、资产加载；**唯一**封装 `@earendil-works/pi-agent-core` / `@earendil-works/pi-ai` 的地方 |
-| `packages/server`（`@muse-ai/server`） | 后端：账号、LLM Provider 代理、设备注册；**Docker Compose 在此包** |
-| `packages/cli`（`@muse-ai/cli`） | 客户端 daemon 与 `muse` 命令；agent runtime |
-| `packages/web`（`@muse-ai/web`） | Web 前端 |
+| 包                                     | 说明                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `packages/shared`（`@muse-ai/shared`） | 跨包共享的常量、类型、协议、i18n、公共函数                                                          |
+| `packages/core`（`@muse-ai/core`）     | Agent 组装、资产加载；**唯一**封装 `@earendil-works/pi-agent-core` / `@earendil-works/pi-ai` 的地方 |
+| `packages/server`（`@muse-ai/server`） | 后端：账号、LLM Provider 代理、设备注册；**Docker Compose 在此包**                                  |
+| `packages/cli`（`@muse-ai/cli`）       | 客户端 daemon 与 `muse` 命令；agent runtime                                                         |
+| `packages/web`（`@muse-ai/web`）       | Web 前端                                                                                            |
 
 说明：
 
@@ -42,10 +44,10 @@ CLI 与 Web 用 `pnpm dev`；**仅 server 包**使用 Docker Compose（`packages
 
 以下为本机 clone 的上游/参考项目，实现 Agent runtime 或多 agent 编排时可只读探索，**不要**直接 copy 进本仓库：
 
-| 项目 | 本地路径 | 用途 |
-|------|----------|------|
-| **pi**（AgentHarness） | `/Users/kingen/code/pi` | `@earendil-works/pi-agent-core`、`pi-ai`；Session 树、Skills、steer/followUp |
-| **Paperclip** | `/Users/kingen/code/paperclip` | 多 agent 编排、控制面/执行面分离（后期 Workflow 参考） |
+| 项目                   | 本地路径                       | 用途                                                                         |
+| ---------------------- | ------------------------------ | ---------------------------------------------------------------------------- |
+| **pi**（AgentHarness） | `/Users/kingen/code/pi`        | `@earendil-works/pi-agent-core`、`pi-ai`；Session 树、Skills、steer/followUp |
+| **Paperclip**          | `/Users/kingen/code/paperclip` | 多 agent 编排、控制面/执行面分离（后期 Workflow 参考）                       |
 
 本仓库内调研笔记（非正式 spec）：
 
@@ -67,15 +69,15 @@ CLI 与 Web 用 `pnpm dev`；**仅 server 包**使用 Docker Compose（`packages
 
 ## 文件与目录命名
 
-| 类型 | 规范 | 示例 |
-|------|------|------|
-| 文件名 | 小写 + 连字符（kebab-case） | `device-registry.ts` |
-| React 组件 `.tsx` | kebab-case；导出组件名为 PascalCase | `message-list.tsx` → `export function MessageList` |
-| 类名 | PascalCase | `class MuseHarness` |
-| 函数名、变量名 | camelCase | `function helloWorld()` |
-| 常量 | UPPER_SNAKE_CASE | `const API_BASE = ''` |
-| 枚举 | 枚举名 PascalCase；成员按场景选 PascalCase 或 UPPER_SNAKE_CASE | — |
-| 测试文件 | 与 `src` 内源文件同基名 + `.test.ts` / `.test.tsx`；放在与 `src` 同级的 `test/` 下，目录结构镜像 `src` | `src/utils/parse-sse.ts` → `test/utils/parse-sse.test.ts` |
+| 类型              | 规范                                                                                                   | 示例                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| 文件名            | 小写 + 连字符（kebab-case）                                                                            | `device-registry.ts`                                      |
+| React 组件 `.tsx` | kebab-case；导出组件名为 PascalCase                                                                    | `message-list.tsx` → `export function MessageList`        |
+| 类名              | PascalCase                                                                                             | `class MuseHarness`                                       |
+| 函数名、变量名    | camelCase                                                                                              | `function helloWorld()`                                   |
+| 常量              | UPPER_SNAKE_CASE                                                                                       | `const API_BASE = ''`                                     |
+| 枚举              | 枚举名 PascalCase；成员按场景选 PascalCase 或 UPPER_SNAKE_CASE                                         | —                                                         |
+| 测试文件          | 与 `src` 内源文件同基名 + `.test.ts` / `.test.tsx`；放在与 `src` 同级的 `test/` 下，目录结构镜像 `src` | `src/utils/parse-sse.ts` → `test/utils/parse-sse.test.ts` |
 
 - **工具模块、通用函数/类型、HTTP 封装**等使用**能说明职责**的普适命名；**不要**仅为对齐仓库名而加 `muse` / `Muse` 前缀（CLI 命令 `muse` 与 npm scope `@muse-ai/*` 除外）。
 
@@ -94,7 +96,9 @@ CLI 与 Web 用 `pnpm dev`；**仅 server 包**使用 Docker Compose（`packages
 
 ## 代码风格
 
-- 遵循仓库 **Prettier** 与 **ESLint** 配置；不要为绕过规则而滥用 `eslint-disable`。
+- 遵循仓库 **Prettier**（`.prettierrc.json`）与 **ESLint**（`eslint.config.js`）配置；不要为绕过规则而滥用 `eslint-disable`。
+- **提交前**：husky + lint-staged 对 staged 文件自动 `eslint --fix` 与 `prettier --write`。
+- 常用命令：`pnpm lint`、`pnpm lint:fix`、`pnpm format`、`pnpm format:check`。
 
 TypeScript：
 
@@ -128,9 +132,9 @@ TypeScript：
 
 **新增可复用基元时，在本节补一行说明**。
 
-| 基元 | 位置 | 用法 |
-|------|------|------|
-| _（随开发补充）_ | — | — |
+| 基元             | 位置 | 用法 |
+| ---------------- | ---- | ---- |
+| _（随开发补充）_ | —    | —    |
 
 ### 可访问性与交互
 
