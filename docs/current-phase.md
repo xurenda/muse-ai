@@ -38,13 +38,14 @@
 ### 完成一个阶段
 
 1. 在 [`v0.1/phase-N.md`](./v0.1/phase-N.md) 填写 **完成记录**（产出清单、验收命令与结果），顶部 **状态** 改为 `✅ 已完成`
-2. **提交代码**，并在该 `phase-N.md` 顶部附上 **Commit** id（完整 40 位或短 hash 均可，推荐短 hash 7 位），例如：` **Commit**：\`a1b2c3d\``
-3. 同步 [`v0.1/README.md`](./v0.1/README.md) 该阶段为 `✅ 已完成`
-4. 更新本文顶部 **当前** 为下一阶段；表格中完成项改 `✅`，下一阶段标 `← **当前**`
-5. **下一步** 改链到下一阶段文档
-6. 若 v0.1 全部完成，**当前** 可写 `v0.1 已交付`，并更新 [roadmap.md](./roadmap.md) 版本状态
+2. **提交代码**（阶段交付 commit），记下 `git rev-parse --short HEAD`
+3. 在 [`v0.1/phase-N.md`](./v0.1/phase-N.md) 顶部附上 **Commit** id，**单独再 commit 一次文档**（避免 amend 导致 hash 与文档不一致）
+4. 同步 [`v0.1/README.md`](./v0.1/README.md) 该阶段为 `✅ 已完成`
+5. 更新本文顶部 **当前** 为下一阶段；表格中完成项改 `✅`，下一阶段标 `← **当前**`
+6. **下一步** 改链到下一阶段文档
+7. 若 v0.1 全部完成，**当前** 可写 `v0.1 已交付`，并更新 [roadmap.md](./roadmap.md) 版本状态
 
-> 若 commit 与文档更新分两次提交：先 commit 代码，再在 `phase-N.md` 写上该 commit id；文档改动可单独 follow-up commit，**phase-N.md 里记录的是阶段交付对应的主 commit**。
+> **Commit** 记录的是**阶段交付 commit**（含代码与测试），不是后续只改文档的 commit。
 
 ### 阶段内部分完成
 
