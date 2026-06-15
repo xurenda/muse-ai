@@ -1,6 +1,8 @@
 # 阶段 1：CLI Runtime 内核
 
-**状态**：🔲 进行中  
+**状态**：✅ 已完成  
+**完成日期**：2026-06-15  
+**Commit**：`71649a9`  
 **预估周期**：~2 周
 
 > **协作说明**：进行本阶段时，在此期间有什么问题，我们都可以进行讨论。
@@ -56,17 +58,19 @@
 
 ## 完成记录
 
-_（阶段交付时填写：产出清单、验收命令、`git rev-parse --short HEAD`）_
+| 模块           | 路径                                                        |
+| -------------- | ----------------------------------------------------------- |
+| MuseHarness    | `packages/core/src/muse-harness.ts`                         |
+| Session 存储   | `packages/core/src/session-store.ts`、`session-registry.ts` |
+| ~/.muse 初始化 | `packages/cli/src/paths.ts`                                 |
+| SSE 总线       | `packages/cli/src/daemon/event-hub.ts`                      |
+| Chat 骨架      | `packages/cli/src/daemon/chat-service.ts`                   |
+| Daemon 路由    | `packages/cli/src/daemon/server.ts`                         |
+| 工具链         | `eslint.config.js`、`.husky/pre-commit`、`.prettierrc.json` |
 
-### 已实现摘要（待交付 commit）
-
-| 模块         | 路径                                                        |
-| ------------ | ----------------------------------------------------------- |
-| Session 存储 | `packages/core/src/session-store.ts`、`session-registry.ts` |
-| SSE 总线     | `packages/cli/src/daemon/event-hub.ts`                      |
-| Chat 骨架    | `packages/cli/src/daemon/chat-service.ts`                   |
-| Daemon 路由  | `packages/cli/src/daemon/server.ts`                         |
+### 验收
 
 ```bash
-pnpm test:run   # 27 tests passed
+pnpm lint && pnpm format:check && pnpm test:run
+# 27 tests passed
 ```

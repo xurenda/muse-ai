@@ -50,7 +50,7 @@
 
 ---
 
-#### 阶段 1：CLI Runtime 内核（~2 周） — [进行中](./v0.1/phase-1.md)
+#### 阶段 1：CLI Runtime 内核（~2 周） — [交付记录](./v0.1/phase-1.md) ✅
 
 - ESLint + Prettier + husky + lint-staged；Node `>= 22.19.0`
 - `MuseHarness` 封装 AgentHarness（`getApiKey` 占位，`tools: []`）
