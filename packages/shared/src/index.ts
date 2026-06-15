@@ -1,7 +1,26 @@
 export { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, sessionEventsPath, type CliApiPath, type ServerApiPath } from './constants/api-paths.js'
 export { DEFAULT_AGENT_ID } from './constants/default-agent.js'
+export {
+  BUILTIN_CODING_AGENT_ID,
+  BUILTIN_GENERAL_AGENT_ID,
+  BUILTIN_PERSONA_CODING,
+  BUILTIN_PERSONA_GENERAL,
+  BUILTIN_SKILL_GIT,
+  BUILTIN_SKILL_REVIEW,
+} from './constants/builtin-agents.js'
 export { loginRequestSchema, loginResponseSchema, registerRequestSchema, type LoginRequest, type LoginResponse, type RegisterRequest } from './types/auth.js'
-export { agentDefinitionSchema, personaSchema, type AgentDefinition, type Persona } from './types/agent.js'
+export {
+  agentDefinitionSchema,
+  modelRefSchema,
+  personaSchema,
+  skillMetaSchema,
+  thinkingLevelSchema,
+  type AgentDefinition,
+  type ModelRef,
+  type Persona,
+  type SkillMeta,
+  type ThinkingLevel,
+} from './types/agent.js'
 export { createSessionRequestSchema, sessionMetaSchema, type CreateSessionRequest, type SessionMeta } from './types/session.js'
 export {
   deviceHeartbeatRequestSchema,

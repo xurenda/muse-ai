@@ -1,0 +1,8 @@
+{
+  "id": "coding",
+  "name": "编程助手",
+  "description": "软件工程、代码审查与 Git 工作流",
+  "systemPromptPath": "system.md",
+  "defaultModel": "anthropic/claude-sonnet-4-20250514",
+  "thinkingLevel": "low"
+}

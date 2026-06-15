@@ -24,7 +24,7 @@ export class MuseHarness {
       session: options.session,
       model: options.model,
       tools,
-      activeToolNames: tools.map(tool => tool.name),
+      activeToolNames: options.activeToolNames ?? tools.map(tool => tool.name),
       systemPrompt: options.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
       getApiKeyAndHeaders: options.getApiKeyAndHeaders ?? placeholderGetApiKeyAndHeaders,
       thinkingLevel: options.thinkingLevel ?? 'off',

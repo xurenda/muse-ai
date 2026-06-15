@@ -5,6 +5,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev:cli": "pnpm --filter @muse-ai/cli dev",
+    "muse": "pnpm --filter @muse-ai/cli exec tsx src/cli.ts",
     "dev:server": "pnpm --filter @muse-ai/server dev",
     "dev:web": "pnpm --filter @muse-ai/web dev",
     "lint": "eslint .",

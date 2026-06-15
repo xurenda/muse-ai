@@ -1,11 +1,10 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { MuseSseEvent } from '@muse-ai/shared'
-import { DEFAULT_AGENT_ID, sessionEventsPath } from '@muse-ai/shared'
+import { BUILTIN_CODING_AGENT_ID, BUILTIN_GENERAL_AGENT_ID, sessionEventsPath } from '@muse-ai/shared'
 import { loadCliConfig } from '@/config.js'
-import { ChatService } from '@/daemon/chat-service.js'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
 import { createCliApp } from '@/daemon/server.js'
@@ -53,13 +52,22 @@ describe('createCliApp', () => {
     expect(body).toMatchObject({ ok: true, service: 'cli' })
   })
 
+  it('GET /agents 应返回内置 Agent 列表', async () => {
+    const { app } = await createTestApp()
+    const res = await app.request('http://localhost/agents')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { agents: Array<{ id: string; name: string }> }
+    expect(body.agents.some(a => a.id === BUILTIN_GENERAL_AGENT_ID)).toBe(true)
+    expect(body.agents.some(a => a.id === BUILTIN_CODING_AGENT_ID)).toBe(true)
+  })
+
   it('POST /sessions 与 GET /sessions 应持久化元数据', async () => {
     const { app } = await createTestApp()
 
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID, name: 'demo' }),
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID, name: 'demo' }),
     })
     expect(createRes.status).toBe(201)
     const created = (await createRes.json()) as { session: { id: string } }
@@ -73,13 +81,40 @@ describe('createCliApp', () => {
     expect(registry).toContain(created.session.id)
   })
 
+  it('POST /sessions 省略 agentId 时应使用默认 Agent', async () => {
+    const { app } = await createTestApp()
+
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'default-agent' }),
+    })
+    expect(createRes.status).toBe(201)
+    const created = (await createRes.json()) as { session: { agentId: string } }
+    expect(created.session.agentId).toBe(BUILTIN_GENERAL_AGENT_ID)
+  })
+
+  it('POST /sessions 应使用 config.activeAgentId', async () => {
+    const { app, tempHome } = await createTestApp()
+    await writeFile(join(tempHome, 'config.json'), `${JSON.stringify({ version: 1, activeAgentId: BUILTIN_CODING_AGENT_ID }, null, 2)}\n`)
+
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    expect(createRes.status).toBe(201)
+    const created = (await createRes.json()) as { session: { agentId: string } }
+    expect(created.session.agentId).toBe(BUILTIN_CODING_AGENT_ID)
+  })
+
   it('GET /sessions/:id/events 应返回 event-stream', async () => {
     const { app } = await createTestApp()
 
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -97,7 +132,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -119,7 +154,7 @@ describe('ChatService', () => {
 
   it('enqueue 应向 EventHub 推送占位事件', async () => {
     const { deps } = await createTestApp()
-    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_CODING_AGENT_ID })
     const received: MuseSseEvent[] = []
     const abort = new AbortController()
 
@@ -130,11 +165,12 @@ describe('ChatService', () => {
       }),
     )
 
-    const chatService = new ChatService(deps.sessionStore, deps.eventHub)
-    await chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
+    await deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 20))
 
-    expect(received.some(e => e.type === 'text_delta')).toBe(true)
+    const textDelta = received.find(e => e.type === 'text_delta')
+    expect(textDelta?.type === 'text_delta' && textDelta.delta).toContain('编程助手')
+    expect(textDelta?.type === 'text_delta' && textDelta.delta).toContain('skills=git, review')
     expect(received.some(e => e.type === 'agent_end')).toBe(true)
   })
 })

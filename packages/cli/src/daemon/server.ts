@@ -32,7 +32,10 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     return c.json(body)
   })
 
-  app.get(CLI_API_PATHS.AGENTS, c => c.json({ agents: [] }))
+  app.get(CLI_API_PATHS.AGENTS, async c => {
+    const agents = await deps.agentRegistry.listAgents()
+    return c.json({ agents })
+  })
 
   app.get(CLI_API_PATHS.SESSIONS, async c => {
     const sessions = await deps.sessionStore.list()
@@ -40,13 +43,19 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
   })
 
   app.post(CLI_API_PATHS.SESSIONS, async c => {
-    const body: unknown = await c.req.json()
+    const body: unknown = await c.req.json().catch(() => ({}))
     const parsed = createSessionRequestSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
     }
 
-    const session = await deps.sessionStore.create(parsed.data)
+    const agentId = parsed.data.agentId ?? (await deps.resolveDefaultAgentId())
+    const agent = await deps.agentRegistry.getAgent(agentId)
+    if (!agent) {
+      return c.json({ error: 'agent_not_found', message: `Agent 不存在: ${agentId}` }, 404)
+    }
+
+    const session = await deps.sessionStore.create({ ...parsed.data, agentId })
     sessionMetaSchema.parse(session)
     return c.json({ session }, 201)
   })

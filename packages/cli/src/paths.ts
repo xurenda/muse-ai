@@ -9,6 +9,8 @@ export interface MuseConfig {
   version: typeof MUSE_CONFIG_VERSION
   /** Backend 根 URL，阶段 3 登录后写入 */
   backendUrl?: string
+  /** 新建 Session 的默认 Agent；`muse agent use` 写入 */
+  activeAgentId?: string
 }
 
 export interface MusePaths {
@@ -77,4 +79,16 @@ export async function loadMuseConfig(paths: MusePaths = getMusePaths()): Promise
     throw new Error(`无效的 Muse 配置: ${paths.config}`)
   }
   return parsed as MuseConfig
+}
+
+/** 合并写入 config.json（保留未传入字段） */
+export async function saveMuseConfig(patch: Partial<MuseConfig>, paths: MusePaths = getMusePaths()): Promise<MuseConfig> {
+  const current = (await pathExists(paths.config)) ? await loadMuseConfig(paths) : { ...DEFAULT_CONFIG }
+  const next: MuseConfig = {
+    ...current,
+    ...patch,
+    version: MUSE_CONFIG_VERSION,
+  }
+  await writeFile(paths.config, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
+  return next
 }

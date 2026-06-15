@@ -1,8 +1,16 @@
 export const CORE_VERSION = '0.0.0'
 
+export {
+  MuseAgentRegistry,
+  composeSystemPrompt,
+  type AgentRuntimeContext,
+  type CreateAgentInput,
+  type LoadedPersona,
+  type MuseAssetRoots,
+} from './agent-registry.js'
 export { MuseHarness } from './muse-harness.js'
 export { placeholderGetApiKeyAndHeaders } from './get-api-key.js'
-export { MuseSessionStore, type MuseSessionStoreOptions } from './session-store.js'
+export { MuseSessionStore, type CreateSessionParams, type MuseSessionStoreOptions } from './session-store.js'
 export {
   loadSessionRegistry,
   saveSessionRegistry,

@@ -9,6 +9,8 @@ export interface MuseHarnessOptions {
   model: Model<string>
   systemPrompt?: AgentHarnessOptions['systemPrompt']
   tools?: AgentTool[]
+  /** 阶段 4 前通常为空；由 Agent 定义声明 */
+  activeToolNames?: string[]
   thinkingLevel?: ThinkingLevel
   /** 阶段 3 接 Backend Provider 代理；默认使用占位实现 */
   getApiKeyAndHeaders?: AgentHarnessOptions['getApiKeyAndHeaders']

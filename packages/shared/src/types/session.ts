@@ -11,7 +11,8 @@ export const sessionMetaSchema = z.object({
 export type SessionMeta = z.infer<typeof sessionMetaSchema>
 
 export const createSessionRequestSchema = z.object({
-  agentId: z.string().uuid(),
+  /** 省略时使用 config.activeAgentId，再回退内置默认 Agent */
+  agentId: z.string().uuid().optional(),
   name: z.string().optional(),
 })
 

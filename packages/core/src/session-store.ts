@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { JsonlSessionRepo, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
 import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
-import type { CreateSessionRequest, SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
 
 export interface MuseSessionStoreOptions {
@@ -11,6 +11,11 @@ export interface MuseSessionStoreOptions {
   registryPath: string
   /** Agent 工作目录，写入 pi Session header */
   cwd: string
+}
+
+export interface CreateSessionParams {
+  agentId: string
+  name?: string
 }
 
 /** 基于 pi JsonlSessionRepo 的本地 Session 存储，并用 registry 保存 agentId 等 Muse 元数据 */
@@ -59,7 +64,7 @@ export class MuseSessionStore {
     }
   }
 
-  async create(request: CreateSessionRequest): Promise<SessionMeta> {
+  async create(request: CreateSessionParams): Promise<SessionMeta> {
     await this.ensureRegistry()
     const id = randomUUID()
     const session = await this.repo.create({ cwd: this.cwd, id })

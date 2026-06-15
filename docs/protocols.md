@@ -109,6 +109,8 @@ data: {"type":"text_delta","delta":"你好"}
 
 `mode`：`prompt` | `steer` | `follow_up`
 
+`agentId` 可省略：使用 `~/.muse/config.json` 的 `activeAgentId`，再回退内置「通用助手」。
+
 ---
 
 ## 数据模型摘要

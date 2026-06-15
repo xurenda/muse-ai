@@ -1,0 +1,8 @@
+{
+  "id": "general",
+  "name": "通用助手",
+  "description": "日常问答与通用任务",
+  "systemPromptPath": "system.md",
+  "defaultModel": "anthropic/claude-sonnet-4-20250514",
+  "thinkingLevel": "off"
+}
