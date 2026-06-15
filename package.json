@@ -1,0 +1,23 @@
+{
+  "name": "muse-ai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:cli": "pnpm --filter @muse-ai/cli dev",
+    "dev:server": "pnpm --filter @muse-ai/server dev",
+    "dev:web": "pnpm --filter @muse-ai/web dev",
+    "test": "vitest",
+    "test:run": "pnpm build && vitest run",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.12.1"
+}

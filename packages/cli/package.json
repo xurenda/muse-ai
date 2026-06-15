@@ -1,0 +1,32 @@
+{
+  "name": "@muse-ai/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "muse": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/cli.ts",
+    "start": "node dist/cli.js start",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@muse-ai/shared": "workspace:*",
+    "@hono/node-server": "^1.19.3",
+    "hono": "^4.9.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}
