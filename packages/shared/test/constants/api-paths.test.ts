@@ -16,6 +16,10 @@ describe('api-paths', () => {
     expect(CLI_API_PATHS.SESSION_EVENTS).toBe('/sessions/:sessionId/events')
   })
 
+  it('应包含设备配对初始化路径', () => {
+    expect(SERVER_API_PATHS.DEVICES_PAIR_INIT).toBe('/devices/pair/init')
+  })
+
   it('默认端口应符合架构约定', () => {
     expect(DEFAULT_PORTS.SERVER).toBe(3000)
     expect(DEFAULT_PORTS.CLI).toBe(7421)

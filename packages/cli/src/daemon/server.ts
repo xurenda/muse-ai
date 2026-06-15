@@ -5,7 +5,9 @@ import { streamSSE } from 'hono/streaming'
 import { CLI_API_PATHS, chatRequestSchema, createHealthResponse, createSessionRequestSchema, healthResponseSchema, sessionMetaSchema } from '@muse-ai/shared'
 import type { CliConfig } from '../config.js'
 import { ChatServiceError } from './chat-service.js'
+import { createCliAuthMiddleware } from './auth-middleware.js'
 import { createSseSubscriber } from './event-hub.js'
+import { startDeviceHeartbeat } from './heartbeat.js'
 import type { CliDaemonDeps } from './deps.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -16,6 +18,7 @@ function isUuid(value: string): boolean {
 
 export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
   const app = new Hono()
+  const requireAuth = createCliAuthMiddleware(deps.authState)
 
   app.use(
     '*',
@@ -32,17 +35,17 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     return c.json(body)
   })
 
-  app.get(CLI_API_PATHS.AGENTS, async c => {
+  app.get(CLI_API_PATHS.AGENTS, requireAuth, async c => {
     const agents = await deps.agentRegistry.listAgents()
     return c.json({ agents })
   })
 
-  app.get(CLI_API_PATHS.SESSIONS, async c => {
+  app.get(CLI_API_PATHS.SESSIONS, requireAuth, async c => {
     const sessions = await deps.sessionStore.list()
     return c.json({ sessions })
   })
 
-  app.post(CLI_API_PATHS.SESSIONS, async c => {
+  app.post(CLI_API_PATHS.SESSIONS, requireAuth, async c => {
     const body: unknown = await c.req.json().catch(() => ({}))
     const parsed = createSessionRequestSchema.safeParse(body)
     if (!parsed.success) {
@@ -60,7 +63,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     return c.json({ session }, 201)
   })
 
-  app.get('/sessions/:sessionId/events', async c => {
+  app.get('/sessions/:sessionId/events', requireAuth, async c => {
     const sessionId = c.req.param('sessionId')
     if (!isUuid(sessionId)) {
       return c.json({ error: 'invalid_session_id' }, 400)
@@ -88,7 +91,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     })
   })
 
-  app.post(CLI_API_PATHS.CHAT, async c => {
+  app.post(CLI_API_PATHS.CHAT, requireAuth, async c => {
     const body: unknown = await c.req.json()
     const parsed = chatRequestSchema.safeParse(body)
     if (!parsed.success) {
@@ -111,6 +114,13 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
 
 export function startCliServer(config: CliConfig, deps: CliDaemonDeps): void {
   const app = createCliApp(config, deps)
+
+  if (deps.authState.deviceToken) {
+    startDeviceHeartbeat(config)
+    console.log('[muse] 设备已配对，心跳已启动')
+  } else {
+    console.warn('[muse] 未配对设备：CLI API 暂不强制鉴权；执行 muse pair <配对码> 后启用')
+  }
 
   serve({
     fetch: app.fetch,

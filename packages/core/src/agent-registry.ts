@@ -34,7 +34,46 @@ export interface CreateAgentInput {
   description?: string
 }
 
-const DEFAULT_MODEL_REF = 'anthropic/claude-sonnet-4-20250514'
+const DEFAULT_MODEL_REF = 'openai/deepseek-v4-flash'
+
+function createOpenAiCompatibleModel(modelId: string): Model<'openai-completions'> {
+  return {
+    id: modelId,
+    name: modelId,
+    api: 'openai-completions',
+    provider: 'openai',
+    baseUrl: 'https://api.openai.com/v1',
+    reasoning: false,
+    input: ['text'],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 128_000,
+    maxTokens: 8_192,
+  }
+}
+
+function parseModelRef(ref: string): Model<string> {
+  const slash = ref.indexOf('/')
+  if (slash <= 0) {
+    throw new Error(`无效的 model 引用: ${ref}`)
+  }
+  const provider = ref.slice(0, slash)
+  const modelId = ref.slice(slash + 1)
+
+  if (provider === 'openai') {
+    try {
+      const known = (getModel as (p: string, id: string) => Model<string>)(provider, modelId)
+      if (known?.id && known.baseUrl) {
+        return known
+      }
+    } catch {
+      // 未知 OpenAI 兼容 model id，走通用 completions 配置
+    }
+    return createOpenAiCompatibleModel(modelId)
+  }
+
+  return (getModel as (p: string, id: string) => Model<string>)(provider, modelId)
+}
+
 const AGENT_FILE = 'agent.json'
 const PERSONA_FILE = 'persona.json'
 
@@ -56,16 +95,6 @@ async function listSubdirs(root: string): Promise<string[]> {
   if (!(await pathAccessible(root))) return []
   const entries = await readdir(root, { withFileTypes: true })
   return entries.filter(entry => entry.isDirectory()).map(entry => entry.name)
-}
-
-function parseModelRef(ref: string): Model<string> {
-  const slash = ref.indexOf('/')
-  if (slash <= 0) {
-    throw new Error(`无效的 model 引用: ${ref}`)
-  }
-  const provider = ref.slice(0, slash)
-  const modelId = ref.slice(slash + 1)
-  return (getModel as (provider: string, modelId: string) => Model<string>)(provider, modelId)
 }
 
 /** 组装 Persona system.md 与 Skills 索引块 */

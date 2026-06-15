@@ -20,3 +20,4 @@ export {
   type SessionRegistryFile,
 } from './session-registry.js'
 export type { MuseHarnessOptions } from './types.js'
+export { mapHarnessEventToSse } from './harness-events.js'

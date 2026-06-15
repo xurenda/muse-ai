@@ -21,7 +21,7 @@ async function createTestApp() {
     skills: join(tempHome, 'skills'),
     mcps: join(tempHome, 'mcps'),
   }
-  const deps = createCliDaemonDeps({ musePaths, cwd: tempHome })
+  const deps = await createCliDaemonDeps({ musePaths, cwd: tempHome })
   const app = createCliApp(loadCliConfig({}), deps)
   return { app, deps, tempHome }
 }
@@ -152,7 +152,7 @@ describe('ChatService', () => {
     delete process.env.MUSE_HOME
   })
 
-  it('enqueue 应向 EventHub 推送占位事件', async () => {
+  it('enqueue 未配对时应推送错误事件', async () => {
     const { deps } = await createTestApp()
     const session = await deps.sessionStore.create({ agentId: BUILTIN_CODING_AGENT_ID })
     const received: MuseSseEvent[] = []
@@ -166,11 +166,10 @@ describe('ChatService', () => {
     )
 
     await deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    const textDelta = received.find(e => e.type === 'text_delta')
-    expect(textDelta?.type === 'text_delta' && textDelta.delta).toContain('编程助手')
-    expect(textDelta?.type === 'text_delta' && textDelta.delta).toContain('skills=git, review')
+    const errorEvent = received.find(e => e.type === 'error')
+    expect(errorEvent?.type === 'error' && errorEvent.message).toContain('未配对')
     expect(received.some(e => e.type === 'agent_end')).toBe(true)
   })
 })

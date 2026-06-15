@@ -4,6 +4,7 @@ export const SERVER_API_PATHS = {
   AUTH_LOGIN: '/auth/login',
   AUTH_REGISTER: '/auth/register',
   DEVICES: '/devices',
+  DEVICES_PAIR_INIT: '/devices/pair/init',
   DEVICES_PAIR: '/devices/pair',
   DEVICES_HEARTBEAT: '/devices/heartbeat',
   PROVIDERS: '/providers',

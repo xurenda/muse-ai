@@ -17,12 +17,20 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@muse-ai/shared": "workspace:*",
     "@hono/node-server": "^1.19.3",
-    "hono": "^4.9.6"
+    "@muse-ai/shared": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.9.6",
+    "ioredis": "^5.11.1",
+    "jose": "^6.2.3",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.19.19",
+    "@types/pg": "^8.20.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }

@@ -1,9 +1,57 @@
 import { Hono } from 'hono'
-import { SERVER_API_PATHS, createHealthResponse, healthResponseSchema, loginRequestSchema, loginResponseSchema } from '@muse-ai/shared'
+import { SERVER_API_PATHS, createHealthResponse, healthResponseSchema } from '@muse-ai/shared'
 import type { ServerConfig } from './config.js'
+import { createDb, initDatabase } from './db/client.js'
+import { createDeviceAuthMiddleware } from './middleware/device-auth.js'
+import { createUserAuthMiddleware } from './middleware/user-auth.js'
+import { createRedis } from './redis/client.js'
+import { registerAuthRoutes, registerDeviceRoutes } from './routes/auth-devices.js'
+import { registerLlmProxyRoutes } from './routes/llm-proxy.js'
+import { registerProviderRoutes } from './routes/providers.js'
+import { AuthService } from './services/auth-service.js'
+import { DeviceService } from './services/device-service.js'
+import { LlmProxyService } from './services/llm-proxy-service.js'
+import { ProviderService } from './services/provider-service.js'
+import type { ServerVariables } from './types.js'
 
-export function createServerApp(_config: ServerConfig): Hono {
-  const app = new Hono()
+export interface ServerContext {
+  config: ServerConfig
+  authService: AuthService
+  providerService: ProviderService
+  deviceService: DeviceService
+  llmProxyService: LlmProxyService
+  close: () => Promise<void>
+}
+
+export async function createServerContext(config: ServerConfig): Promise<ServerContext> {
+  const { db, pool } = createDb(config.databaseUrl)
+  await initDatabase(pool)
+
+  const redis = createRedis(config.redisUrl)
+  await redis.connect()
+
+  const authService = new AuthService(db, config.jwtSecret)
+  const providerService = new ProviderService(db, config.encryptionKey)
+  const deviceService = new DeviceService(db, redis)
+  const llmProxyService = new LlmProxyService()
+
+  return {
+    config,
+    authService,
+    providerService,
+    deviceService,
+    llmProxyService,
+    close: async () => {
+      await redis.quit()
+      await pool.end()
+    },
+  }
+}
+
+export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVariables }> {
+  const app = new Hono<{ Variables: ServerVariables }>()
+  const userAuth = createUserAuthMiddleware(ctx.authService)
+  const deviceAuth = createDeviceAuthMiddleware(ctx.deviceService)
 
   app.get(SERVER_API_PATHS.HEALTH, c => {
     const body = createHealthResponse('server', '0.0.0')
@@ -11,26 +59,10 @@ export function createServerApp(_config: ServerConfig): Hono {
     return c.json(body)
   })
 
-  /** 阶段 3：替换为真实鉴权 */
-  app.post(SERVER_API_PATHS.AUTH_LOGIN, async c => {
-    const json: unknown = await c.req.json()
-    const parsed = loginRequestSchema.safeParse(json)
-    if (!parsed.success) {
-      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
-    }
-
-    const stub = loginResponseSchema.parse({
-      accessToken: 'stub-token',
-      user: {
-        id: '550e8400-e29b-41d4-a716-446655440001',
-        email: parsed.data.email,
-      },
-    })
-
-    return c.json(stub)
-  })
-
-  app.get(SERVER_API_PATHS.DEVICES, c => c.json({ devices: [] }))
+  registerAuthRoutes(app, ctx.authService)
+  registerProviderRoutes(app, ctx.providerService, userAuth)
+  registerDeviceRoutes(app, ctx.deviceService, userAuth, deviceAuth)
+  registerLlmProxyRoutes(app, ctx.providerService, ctx.llmProxyService, deviceAuth)
 
   return app
 }

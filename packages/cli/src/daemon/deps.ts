@@ -3,6 +3,8 @@ import { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 import { ChatService } from './chat-service.js'
+import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
+import { resolveBackendUrl } from '../backend/llm-auth.js'
 import { SessionEventHub } from './event-hub.js'
 
 export interface CliDaemonDeps {
@@ -11,9 +13,14 @@ export interface CliDaemonDeps {
   chatService: ChatService
   agentRegistry: MuseAgentRegistry
   resolveDefaultAgentId: () => Promise<string>
+  authState: CliAuthState
 }
 
-export function createCliDaemonDeps(options?: { musePaths?: ReturnType<typeof getMusePaths>; cwd?: string; bundledAssetsRoot?: string }): CliDaemonDeps {
+export async function createCliDaemonDeps(options?: {
+  musePaths?: ReturnType<typeof getMusePaths>
+  cwd?: string
+  bundledAssetsRoot?: string
+}): Promise<CliDaemonDeps> {
   const musePaths = options?.musePaths ?? getMusePaths()
   const cwd = options?.cwd ?? process.cwd()
   const assetRoots =
@@ -40,7 +47,21 @@ export function createCliDaemonDeps(options?: { musePaths?: ReturnType<typeof ge
 
   const agentRegistry = new MuseAgentRegistry({ roots: assetRoots, cwd })
   const eventHub = new SessionEventHub()
-  const chatService = new ChatService(sessionStore, eventHub, agentRegistry)
+
+  const resolveBackendAuth = async () => {
+    try {
+      const museConfig = await loadMuseConfig(musePaths)
+      if (!museConfig.deviceToken) return undefined
+      return {
+        backendUrl: resolveBackendUrl(museConfig.backendUrl),
+        deviceToken: museConfig.deviceToken,
+      }
+    } catch {
+      return undefined
+    }
+  }
+
+  const chatService = new ChatService(sessionStore, eventHub, agentRegistry, cwd, resolveBackendAuth)
 
   const resolveDefaultAgentId = async (): Promise<string> => {
     let activeAgentId: string | undefined
@@ -53,5 +74,13 @@ export function createCliDaemonDeps(options?: { musePaths?: ReturnType<typeof ge
     return agentRegistry.resolveDefaultAgentId(activeAgentId)
   }
 
-  return { sessionStore, eventHub, chatService, agentRegistry, resolveDefaultAgentId }
+  let authState: CliAuthState = {}
+  try {
+    const museConfig = await loadMuseConfig(musePaths)
+    authState = resolveCliAuthState(museConfig)
+  } catch {
+    authState = {}
+  }
+
+  return { sessionStore, eventHub, chatService, agentRegistry, resolveDefaultAgentId, authState }
 }

@@ -7,8 +7,11 @@ export const MUSE_CONFIG_VERSION = 1 as const
 
 export interface MuseConfig {
   version: typeof MUSE_CONFIG_VERSION
-  /** Backend 根 URL，阶段 3 登录后写入 */
+  /** Backend 根 URL */
   backendUrl?: string
+  /** 设备配对后写入 */
+  deviceId?: string
+  deviceToken?: string
   /** 新建 Session 的默认 Agent；`muse agent use` 写入 */
   activeAgentId?: string
 }

@@ -32,5 +32,14 @@ export {
   type DevicePairRequest,
   type DevicePairResponse,
 } from './types/device.js'
+export { pairInitResponseSchema, type PairInitResponse } from './types/pair.js'
+export {
+  providerCreateSchema,
+  providerSummarySchema,
+  providerUpdateSchema,
+  type ProviderCreate,
+  type ProviderSummary,
+  type ProviderUpdate,
+} from './types/provider.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'

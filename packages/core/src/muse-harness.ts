@@ -1,5 +1,6 @@
 import { AgentHarness, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
 import type { AgentHarnessEvent, AgentTool, Session } from '@earendil-works/pi-agent-core'
+import type { AssistantMessage, ImageContent } from '@earendil-works/pi-ai'
 import { placeholderGetApiKeyAndHeaders } from './get-api-key.js'
 import type { MuseHarnessOptions } from './types.js'
 
@@ -33,5 +34,17 @@ export class MuseHarness {
 
   subscribe(listener: (event: AgentHarnessEvent) => void | Promise<void>): () => void {
     return this.harness.subscribe(listener)
+  }
+
+  prompt(text: string, options?: { images?: ImageContent[] }): Promise<AssistantMessage> {
+    return this.harness.prompt(text, options)
+  }
+
+  steer(text: string, options?: { images?: ImageContent[] }): Promise<void> {
+    return this.harness.steer(text, options)
+  }
+
+  followUp(text: string, options?: { images?: ImageContent[] }): Promise<void> {
+    return this.harness.followUp(text, options)
   }
 }
