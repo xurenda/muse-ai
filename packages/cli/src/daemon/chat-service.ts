@@ -1,6 +1,7 @@
 import { MuseHarness, mapHarnessEventToSse, type MuseAgentRegistry, type MuseSessionStore } from '@muse-ai/core'
 import type { ChatRequest, MuseSseEvent } from '@muse-ai/shared'
 import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
+import { resolveActiveTools } from '@/tools/index.js'
 import type { SessionEventHub } from './event-hub.js'
 
 function formatDispatchError(error: unknown): string {
@@ -61,10 +62,12 @@ export class ChatService {
 
     const context = await this.agentRegistry.resolveRuntimeContext(agentId)
     const harnessOptions = this.agentRegistry.buildHarnessOptions(context, piSession, this.cwd)
+    const tools = resolveActiveTools(context.agent.activeToolNames, this.cwd)
     const model = withProxyBaseUrl(harnessOptions.model, backendAuth.backendUrl)
 
     const harness = new MuseHarness({
       ...harnessOptions,
+      tools,
       model,
       getApiKeyAndHeaders: createBackendGetApiKeyAndHeaders(backendAuth),
     })

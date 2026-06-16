@@ -1,6 +1,7 @@
 # 阶段 4：内置 Tools
 
-**状态**：⬜ 未开始  
+**状态**：✅ 已完成  
+**完成日期**：2026-06-15  
 **预估周期**：~2–3 周
 
 > **协作说明**：进行本阶段时，在此期间有什么问题，我们都可以进行讨论。
@@ -11,70 +12,94 @@
 
 参考 [`@earendil-works/pi-coding-agent`](https://github.com/earendil-works/pi)（**只读探索，不添加 npm 依赖**）在 Muse 内实现完整 coding-agent 级内置 tools，并接入 `MuseHarness` / Agent 定义。
 
-本阶段**不做**最简版 `read_file`/`list_dir`/`run_command` 占位；行为、安全边界与 pi 对齐后再交付。
+---
+
+## 子阶段
+
+| 子阶段  | 范围                                             | 状态 |
+| ------- | ------------------------------------------------ | ---- |
+| **4.1** | 基础设施 + `read` / `ls` / `bash` + Harness 接入 | ✅   |
+| **4.2** | `write` / `edit` + `file-mutation-queue`         | ✅   |
+| **4.3** | `grep` / `find`（系统 PATH，无自动下载）         | ✅   |
 
 ---
 
-## 为何独立成阶段
+## 设计决策
 
-| 考量          | 说明                                                                                                         |
-| ------------- | ------------------------------------------------------------------------------------------------------------ |
-| 复杂度        | pi-coding-agent 的 tools 含 path 解析、truncation、trust、Operations 可插拔、ToolDefinition 与 render 分层等 |
-| 架构约束      | 仓库约定**不依赖** `pi-coding-agent` 包，需按需移植/改写进 `packages/cli/tools/`                             |
-| 前置已就绪    | `MuseHarness` + `NodeExecutionEnv` 已封装；`tools: []` 可跑通阶段 1–3 的纯文本对话                           |
-| 与 Agent 衔接 | 阶段 2 的 Agent 定义负责 `activeToolNames`；本阶段提供可注册的 tool 全集                                     |
-
----
-
-## 参考范围（pi-coding-agent `core/tools/`）
-
-| 模块                                                  | 说明                                           | v0.1 优先级 |
-| ----------------------------------------------------- | ---------------------------------------------- | ----------- |
-| `read`                                                | offset/limit、truncation、图片、ReadOperations | P0          |
-| `ls`                                                  | 目录列表（pi 工具名 `ls`，非 `list_dir`）      | P0          |
-| `bash`                                                | shell 执行、timeout、输出截断、trust 联动      | P0          |
-| `write` / `edit`                                      | 文件变更、`withFileMutationQueue`              | P1          |
-| `grep` / `find`                                       | 依赖 rg/fd 或 Operations 抽象                  | P2          |
-| `path-utils` / `truncate` / `tool-definition-wrapper` | 公共基础设施                                   | P0          |
-
-本地参考路径：`/Users/kingen/code/pi/packages/coding-agent/src/core/tools/`。
+| 项           | 决策                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| 路径策略     | 与 pi 一致：**不限制 cwd**，支持绝对路径与 `~` 展开                                              |
+| bash timeout | 默认**无超时**；LLM 传 `timeout`（秒）时才启用                                                   |
+| read         | **文本 only**，不移植图片 resize                                                                 |
+| grep/find    | v0.1：**仅系统 PATH**（`rg`、`fd`/`fdfind`），未安装则明确报错；**不**从 GitHub/Backend 自动下载 |
+| rg/fd 后续   | Backend 工具链分发见 [roadmap.md](../roadmap.md) **v0.4+**                                       |
+| 工具落点     | `packages/cli/src/tools/`，直接实现 `AgentTool`                                                  |
+| Agent 分工   | 通用：`read`+`ls`；编程：全套含 `grep`/`find`                                                    |
+| core 边界    | `buildHarnessOptions` 仍返回 `tools: []`；由 CLI `ChatService` 注入                              |
 
 ---
 
-## 计划任务
+## 任务清单
 
-- [ ] 调研 pi-coding-agent tools 分层：`ToolDefinition` vs `AgentTool`、`Operations` 接口
-- [ ] `packages/cli/tools/` 目录与 `createMuseTools(cwd, options)` 工厂
-- [ ] 移植/改写 P0：`read`、`ls`、`bash`（含 path 沙箱、truncation、默认超时）
-- [ ] P1：`write`、`edit` + 文件变更序列化（参考 `file-mutation-queue`）
-- [ ] P2：`grep`、`find`（评估是否捆绑 rg/fd 或要求系统已安装）
-- [ ] 项目 trust 策略（参考 `trust-manager`，Web 场景可简化为配置级）
-- [ ] 与 `MuseAgentRegistry` 集成：按 Agent 启用 tool 子集
-- [ ] 单元测试：path 解析、truncation、timeout、越界 cwd
+- [x] 4.1：`read` / `ls` / `bash` + 基础设施 + Harness 接入
+- [x] 4.2：`write` / `edit` + `file-mutation-queue` + `edit-diff`
+- [x] 4.3：`grep` / `find` + `system-binary`（PATH 解析）
 
 ---
 
-## 验收标准
+## 实际产出
 
-- 阶段 3 已接通 LLM 的前提下，**编程助手 Agent** 可实际触发 `read`/`ls`/`bash`（至少 P0）
-- `tool_start` / `tool_end` SSE 事件含可展示的 `args` / `result`
-- `pnpm test:run` 通过（含 tools 单测）
-- 不引入 `@earendil-works/pi-coding-agent` 依赖
+### `@muse-ai/cli` — `src/tools/`
+
+| 模块                                                               | 说明                                    |
+| ------------------------------------------------------------------ | --------------------------------------- |
+| `truncate.ts`                                                      | 行/字节截断、`truncateLine`（grep）     |
+| `paths.ts` / `path-utils.ts`                                       | 路径解析                                |
+| `shell-utils.ts` / `output-accumulator.ts`                         | bash                                    |
+| `read.ts` / `ls.ts` / `bash.ts`                                    | P0                                      |
+| `write.ts` / `edit.ts` / `edit-diff.ts` / `file-mutation-queue.ts` | P1                                      |
+| `grep.ts` / `find.ts` / `system-binary.ts`                         | P2（PATH only）                         |
+| `index.ts`                                                         | `createAllTools` / `resolveActiveTools` |
+
+**接入：** `chat-service.ts` → `resolveActiveTools` → `MuseHarness`。
+
+**内置 Agent `activeToolNames`：**
+
+| Agent    | 工具                                                  |
+| -------- | ----------------------------------------------------- |
+| 通用助手 | `read`, `ls`                                          |
+| 编程助手 | `read`, `ls`, `bash`, `write`, `edit`, `grep`, `find` |
+
+### `@muse-ai/core`
+
+- 再导出 `AgentTool` / `AgentToolResult` 类型供 CLI tools 使用
 
 ---
 
-## 依赖关系
+## 验收
 
+```bash
+pnpm test:run
+# 78 passed（含 tools 单测）
+
+# 编程助手 + 已配对 CLI + Provider：
+pnpm muse agent use 00000000-0000-4000-8000-000000000002
+pnpm muse chat "在当前目录 grep package.json 里的 name 字段"
+# 需系统已安装 rg；SSE 应含 tool_start/tool_end
 ```
-阶段 1 MuseHarness (tools: [])
-    → 阶段 2 Agent 定义 (activeToolNames)
-    → 阶段 3 Backend + 纯文本 curl/SSE 验证
-    → 阶段 4 本阶段（tools 接入 Harness）
-    → 阶段 5 Web tool call 卡片
-```
 
 ---
 
-## 完成记录
+## 未做 / 留到后续
 
-_（阶段完成后在此填写）_
+| 能力               | 阶段  | 说明                                       |
+| ------------------ | ----- | ------------------------------------------ |
+| Backend 分发 rg/fd | v0.4+ | [roadmap.md](../roadmap.md) CLI 工具链分发 |
+| Web tool call 卡片 | 5     | SSE 数据已就绪                             |
+| read 图片          | —     | v0.1 刻意文本 only                         |
+
+---
+
+## 下一阶段
+
+见 [phase-5.md](./phase-5.md)：Web 聊天 MVP（tool call 卡片、设备选择等）。

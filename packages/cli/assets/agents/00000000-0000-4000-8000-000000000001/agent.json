@@ -4,7 +4,7 @@
   "personaId": "general",
   "skillIds": [],
   "description": "内置通用对话 Agent",
-  "activeToolNames": [],
+  "activeToolNames": ["read", "ls"],
   "createdAt": "2026-01-01T00:00:00.000Z",
   "updatedAt": "2026-01-01T00:00:00.000Z"
 }

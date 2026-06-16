@@ -23,7 +23,9 @@
     "@muse-ai/core": "workspace:*",
     "@muse-ai/shared": "workspace:*",
     "@hono/node-server": "^1.19.3",
-    "hono": "^4.9.6"
+    "hono": "^4.9.6",
+    "diff": "^8.0.4",
+    "typebox": "^1.1.38"
   },
   "devDependencies": {
     "@types/node": "^22.19.19",

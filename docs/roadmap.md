@@ -90,10 +90,10 @@
 
 ---
 
-#### 阶段 4：内置 Tools（~2–3 周） — [计划](./v0.1/phase-4.md)
+#### 阶段 4：内置 Tools（~2–3 周） — [交付记录](./v0.1/phase-4.md) ✅
 
 - 参考 pi-coding-agent 移植 `read` / `ls` / `bash`（P0）及 write/edit/grep/find
-- `packages/cli/tools/`、`createMuseTools`、path 沙箱与 truncation
+- `packages/cli/tools/`、`resolveActiveTools`、truncation（路径策略与 pi 一致，不限制 cwd）
 - 与 Agent `activeToolNames` 集成
 
 **里程碑**：编程助手可实际 tool call；SSE `tool_start`/`tool_end` 有真实数据。
@@ -149,13 +149,14 @@
 
 ## v0.4+（第四期及以后）
 
-| 主题              | 内容                                                      |
-| ----------------- | --------------------------------------------------------- |
-| Workflow          | 线性流水线：coding → review → commit                      |
-| 多 Agent 轻编排   | 任务分解、assignee、状态机（借鉴 Paperclip 子集，非全套） |
-| 成本治理          | Token 预算、超限 pause                                    |
-| AI 自动组装 Agent | 用户描述任务 → 自动选/建 agent                            |
-| ClipHub 式模板    | 整包 agent 配置分享（远期）                               |
+| 主题               | 内容                                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workflow           | 线性流水线：coding → review → commit                                                                                                                       |
+| 多 Agent 轻编排    | 任务分解、assignee、状态机（借鉴 Paperclip 子集，非全套）                                                                                                  |
+| 成本治理           | Token 预算、超限 pause                                                                                                                                     |
+| AI 自动组装 Agent  | 用户描述任务 → 自动选/建 agent                                                                                                                             |
+| ClipHub 式模板     | 整包 agent 配置分享（远期）                                                                                                                                |
+| **CLI 工具链分发** | Backend 托管 `rg`/`fd` 等平台二进制 manifest + 下载 API；CLI 已配对时自动拉取到 `~/.muse/bin/`（v0.1 仅要求系统 PATH，见 [phase-4.md](./v0.1/phase-4.md)） |
 
 ---
 
