@@ -8,6 +8,7 @@ import { DevicesPage } from '@/pages/devices-page'
 import { LoginPage } from '@/pages/login-page'
 import { RegisterPage } from '@/pages/register-page'
 import { GeneralSettingsPage } from '@/pages/settings/general-settings-page'
+import { ModelsSettingsPage } from '@/pages/settings/models-settings-page'
 import { ProvidersSettingsPage } from '@/pages/settings/providers-settings-page'
 import { GuestLayout, ProtectedLayout } from '@/routes/guards'
 
@@ -29,6 +30,7 @@ export function App() {
             <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<Navigate to="general" replace />} />
               <Route path="general" element={<GeneralSettingsPage />} />
+              <Route path="models" element={<ModelsSettingsPage />} />
               <Route path="providers" element={<ProvidersSettingsPage />} />
             </Route>
           </Route>

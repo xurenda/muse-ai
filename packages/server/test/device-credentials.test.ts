@@ -22,12 +22,18 @@ function createMockContext(overrides?: Partial<ServerContext>): ServerContext {
       }),
       verifyAccessToken: vi.fn().mockResolvedValue({ id: USER_ID, email: 'dev@muse.ai' }),
     },
-    providerService: {
-      list: vi.fn().mockResolvedValue([]),
-      create: vi.fn(),
-      update: vi.fn(),
-      remove: vi.fn(),
-      resolveDefaultForUser: vi.fn(),
+    settingsService: {
+      getModelsConfig: vi.fn(),
+      updateModelsConfig: vi.fn(),
+      getProvidersConfig: vi.fn(),
+      saveProviderApiKey: vi.fn(),
+      deleteProviderApiKey: vi.fn(),
+      saveBuiltinProviderAdvanced: vi.fn(),
+      saveCustomProvider: vi.fn(),
+      deleteCustomProvider: vi.fn(),
+    },
+    providerResolver: {
+      resolve: vi.fn(),
     },
     deviceService: {
       createPairCode: vi.fn(),
@@ -43,7 +49,6 @@ function createMockContext(overrides?: Partial<ServerContext>): ServerContext {
     },
     llmProxyService: {
       forward: vi.fn(),
-      forwardForUser: vi.fn(),
     },
     close: async () => {},
     ...overrides,

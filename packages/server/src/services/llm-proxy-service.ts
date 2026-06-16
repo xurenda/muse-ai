@@ -1,5 +1,4 @@
-import type { ResolvedProvider } from './provider-service.js'
-import { ProviderError } from './provider-service.js'
+import type { ResolvedProxyProvider } from './provider-resolver.js'
 
 function joinUrl(baseUrl: string, path: string): string {
   const base = baseUrl.replace(/\/$/, '')
@@ -7,26 +6,33 @@ function joinUrl(baseUrl: string, path: string): string {
   return `${base}${suffix}`
 }
 
+function buildForwardHeaders(provider: ResolvedProxyProvider, incoming: Headers): Headers {
+  const headers = new Headers()
+  headers.set('Content-Type', incoming.get('content-type') ?? 'application/json')
+
+  for (const [key, value] of Object.entries(provider.headers)) {
+    if (key.trim()) {
+      headers.set(key.trim(), value)
+    }
+  }
+
+  if (provider.apiKey) {
+    headers.set('Authorization', `Bearer ${provider.apiKey}`)
+  }
+
+  return headers
+}
+
 export class LlmProxyService {
-  async forward(provider: ResolvedProvider, body: unknown, signal?: AbortSignal): Promise<Response> {
-    const targetUrl = joinUrl(provider.baseUrl, '/chat/completions')
-    const response = await fetch(targetUrl, {
+  async forward(provider: ResolvedProxyProvider, path: string, body: unknown, incomingHeaders: Headers, signal?: AbortSignal): Promise<Response> {
+    const targetUrl = joinUrl(provider.baseUrl, path)
+    const headers = buildForwardHeaders(provider, incomingHeaders)
+
+    return fetch(targetUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${provider.apiKey}`,
-      },
+      headers,
       body: JSON.stringify(body),
       signal,
     })
-    return response
-  }
-
-  async forwardForUser(resolve: () => Promise<ResolvedProvider | undefined>, body: unknown, signal?: AbortSignal): Promise<Response> {
-    const provider = await resolve()
-    if (!provider) {
-      throw new ProviderError('no_provider', '未配置 LLM Provider：请先在 Web 设置页添加 OpenAI 兼容 Provider 并设为默认')
-    }
-    return this.forward(provider, body, signal)
   }
 }

@@ -1,23 +1,78 @@
 {
-  "title": "Providers",
-  "subtitle": "API keys are stored on the backend; the CLI calls models through the proxy.",
+  "settings": "Settings",
+  "back": "Back to chat",
   "nav": {
     "general": "General",
+    "models": "Models",
     "providers": "Providers"
   },
-  "back": "Back to chat",
-  "name": "Name",
-  "baseUrl": "Base URL",
-  "apiKey": "API Key",
-  "isDefault": "Set as default",
-  "add": "Add provider",
-  "listTitle": "Configured providers",
-  "save": "Save",
-  "delete": "Delete",
-  "empty": "No providers configured",
-  "added": "Provider added",
-  "updated": "Provider updated",
-  "deleted": "Provider deleted",
-  "failed": "Operation failed",
-  "defaultBadge": "Default"
+  "models": {
+    "description": "Choose the default model for agent conversations. Only configured providers are shown.",
+    "loading": "Loading…",
+    "provider": "Provider",
+    "model": "Model",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "noProviders": "No provider credentials configured yet. Add an API key or local service on the Providers page first.",
+    "goToProviders": "Go to provider settings"
+  },
+  "providers": {
+    "description": "Configure API keys or local / custom model services (e.g. Ollama). Credentials are stored on the backend; the CLI calls through the proxy.",
+    "loading": "Loading…",
+    "apiKeySection": "API Key",
+    "customSection": "Local / custom",
+    "showMore": "More providers",
+    "showLess": "Show less",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Paste API Key",
+    "apiKeyRequired": "API Key is required",
+    "save": "Save",
+    "saving": "Saving…",
+    "failed": "Operation failed",
+    "clear": "Clear",
+    "authStatus": {
+      "configured": "Configured",
+      "missing": "Not configured"
+    },
+    "itemDescription": {
+      "configured": "API Key saved on backend"
+    },
+    "health": {
+      "ready": "Credentials ready",
+      "broken": "Credentials configured but currently unusable"
+    },
+    "advanced": {
+      "title": "Advanced",
+      "baseUrl": "Base URL override",
+      "baseUrlPlaceholder": "Leave empty to use built-in default",
+      "headers": "Request headers",
+      "headerKey": "Header name",
+      "headerValue": "Header value",
+      "addHeader": "Add header",
+      "extraModels": "Extra models",
+      "modelHeaders": "Model headers",
+      "addModel": "Add model"
+    },
+    "custom": {
+      "empty": "No custom providers",
+      "add": "Add",
+      "addTitle": "Add custom provider",
+      "editTitle": "Edit custom provider",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "id": "Provider ID",
+      "idRequired": "Provider ID is required",
+      "baseUrl": "Base URL",
+      "baseUrlRequired": "Base URL is required",
+      "api": "API type",
+      "apiKeyOptional": "API Key (optional)",
+      "models": "Models",
+      "modelId": "Model ID",
+      "modelName": "Display name (optional)",
+      "modelsRequired": "Add at least one model",
+      "addModel": "Add model"
+    }
+  }
 }

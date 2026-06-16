@@ -8,9 +8,6 @@ import {
   type LoginResponse,
   type PairInitResponse,
   type RegisterRequest,
-  type ProviderCreate,
-  type ProviderSummary,
-  type ProviderUpdate,
 } from '@muse-ai/shared'
 import { backendBaseUrl } from '@/lib/config'
 
@@ -92,41 +89,5 @@ export async function checkCliHealth(endpoint: string, accessToken: string): Pro
     return body.ok === true && body.service === 'cli'
   } catch {
     return false
-  }
-}
-
-export async function listProviders(userToken: string): Promise<ProviderSummary[]> {
-  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.PROVIDERS}`, { headers: authHeaders(userToken) })
-  const body = await parseJsonResponse<{ providers: ProviderSummary[] }>(res)
-  return body.providers
-}
-
-export async function createProvider(userToken: string, request: ProviderCreate): Promise<ProviderSummary> {
-  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.PROVIDERS}`, {
-    method: 'POST',
-    headers: authHeaders(userToken),
-    body: JSON.stringify(request),
-  })
-  const body = await parseJsonResponse<{ provider: ProviderSummary }>(res)
-  return body.provider
-}
-
-export async function updateProvider(userToken: string, providerId: string, request: ProviderUpdate): Promise<ProviderSummary> {
-  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.PROVIDERS}/${providerId}`, {
-    method: 'PUT',
-    headers: authHeaders(userToken),
-    body: JSON.stringify(request),
-  })
-  const body = await parseJsonResponse<{ provider: ProviderSummary }>(res)
-  return body.provider
-}
-
-export async function deleteProvider(userToken: string, providerId: string): Promise<void> {
-  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.PROVIDERS}/${providerId}`, {
-    method: 'DELETE',
-    headers: authHeaders(userToken),
-  })
-  if (!res.ok) {
-    await parseJsonResponse(res)
   }
 }

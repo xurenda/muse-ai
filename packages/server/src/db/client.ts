@@ -18,17 +18,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS providers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  base_url TEXT NOT NULL,
-  api_key_encrypted TEXT NOT NULL,
-  is_default BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS devices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -39,10 +28,40 @@ CREATE TABLE IF NOT EXISTS devices (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS providers_user_id_idx ON providers(user_id);
 CREATE INDEX IF NOT EXISTS devices_user_id_idx ON devices(user_id);
 
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS access_token_encrypted TEXT;
+
+DROP TABLE IF EXISTS providers CASCADE;
+
+CREATE TABLE IF NOT EXISTS user_provider_credentials (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider_id TEXT NOT NULL,
+  credential_encrypted TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_provider_config (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider_id TEXT NOT NULL,
+  base_url TEXT,
+  api TEXT,
+  headers_json TEXT NOT NULL DEFAULT '[]',
+  models_json TEXT NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  default_provider TEXT,
+  default_model TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS user_provider_credentials_user_id_idx ON user_provider_credentials(user_id);
+CREATE INDEX IF NOT EXISTS user_provider_config_user_id_idx ON user_provider_config(user_id);
 `
 
 export async function initDatabase(pool: pg.Pool): Promise<void> {

@@ -9,7 +9,9 @@ export const SERVER_API_PATHS = {
   DEVICES_HEARTBEAT: '/devices/heartbeat',
   /** 路由模式；实际路径用 `deviceCredentialsPath(deviceId)` */
   DEVICE_CREDENTIALS: '/devices/:deviceId/credentials',
-  PROVIDERS: '/providers',
+  SETTINGS_PROVIDERS: '/settings/providers',
+  SETTINGS_MODELS_CONFIG: '/settings/models-config',
+  /** LLM 代理根路径；实际转发路径为 `/v1/*` */
   LLM_PROXY: '/v1/chat/completions',
 } as const
 

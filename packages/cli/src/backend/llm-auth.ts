@@ -11,11 +11,16 @@ function normalizeBackendUrl(url: string): string {
 
 /** 将 LLM 请求导向 Muse Server OpenAI 兼容代理；apiKey 使用 device token */
 export function createBackendGetApiKeyAndHeaders(config: BackendLlmAuthConfig) {
-  return async (): Promise<{ apiKey: string; headers?: Record<string, string> } | undefined> => {
+  return async (model: { provider: string }): Promise<{ apiKey: string; headers?: Record<string, string> } | undefined> => {
     if (!config.deviceToken) {
       return undefined
     }
-    return { apiKey: config.deviceToken }
+    return {
+      apiKey: config.deviceToken,
+      headers: {
+        'X-Muse-Provider': model.provider,
+      },
+    }
   }
 }
 

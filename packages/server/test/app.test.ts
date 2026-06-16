@@ -19,12 +19,18 @@ function createMockContext(): ServerContext {
       }),
       verifyAccessToken: vi.fn(),
     },
-    providerService: {
-      list: vi.fn().mockResolvedValue([]),
-      create: vi.fn(),
-      update: vi.fn(),
-      remove: vi.fn(),
-      resolveDefaultForUser: vi.fn(),
+    settingsService: {
+      getModelsConfig: vi.fn(),
+      updateModelsConfig: vi.fn(),
+      getProvidersConfig: vi.fn(),
+      saveProviderApiKey: vi.fn(),
+      deleteProviderApiKey: vi.fn(),
+      saveBuiltinProviderAdvanced: vi.fn(),
+      saveCustomProvider: vi.fn(),
+      deleteCustomProvider: vi.fn(),
+    },
+    providerResolver: {
+      resolve: vi.fn(),
     },
     deviceService: {
       createPairCode: vi.fn(),
@@ -35,7 +41,6 @@ function createMockContext(): ServerContext {
     },
     llmProxyService: {
       forward: vi.fn(),
-      forwardForUser: vi.fn(),
     },
     close: async () => {},
   }

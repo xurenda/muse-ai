@@ -15,6 +15,14 @@ export {
 export { BUILTIN_TOOL_DESCRIPTORS, BUILTIN_TOOL_NAMES } from './constants/builtin-tools.js'
 export { DEFAULT_AGENT_ID } from './constants/default-agent.js'
 export {
+  API_KEY_PROVIDER_IDS,
+  CUSTOM_PROVIDER_API_OPTIONS,
+  DEFAULT_PROVIDER_API,
+  PROVIDER_API_VALUES,
+  PROVIDER_DISPLAY_NAMES,
+  type ProviderApi,
+} from './constants/provider-labels.js'
+export {
   BUILTIN_CODING_AGENT_ID,
   BUILTIN_GENERAL_AGENT_ID,
   BUILTIN_PERSONA_CODING,
@@ -23,6 +31,7 @@ export {
   BUILTIN_SKILL_REVIEW,
 } from './constants/builtin-agents.js'
 export { loginRequestSchema, loginResponseSchema, registerRequestSchema, type LoginRequest, type LoginResponse, type RegisterRequest } from './types/auth.js'
+export type { ApiKeyCredential, AuthCredential, AuthStorageData, OAuthCredential } from './types/credential.js'
 export {
   agentDefinitionSchema,
   modelRefSchema,
@@ -35,6 +44,8 @@ export {
   type SkillMeta,
   type ThinkingLevel,
 } from './types/agent.js'
+export type { MuseModelDefinition, MuseModelsConfig, MuseProviderDefinition } from './types/models-config.js'
+export type { ProviderAdvancedConfig, ProviderExtraModelEntry, ProviderHeaderEntry, UpsertProviderAdvancedConfigRequest } from './types/provider-advanced.js'
 export {
   createSessionRequestSchema,
   sessionMetaSchema,
@@ -71,13 +82,23 @@ export {
 } from './types/device.js'
 export { pairInitResponseSchema, type PairInitResponse } from './types/pair.js'
 export {
-  providerCreateSchema,
-  providerSummarySchema,
-  providerUpdateSchema,
-  type ProviderCreate,
-  type ProviderSummary,
-  type ProviderUpdate,
-} from './types/provider.js'
+  updateModelsConfigRequestSchema,
+  updateProviderApiKeyRequestSchema,
+  upsertCustomProviderRequestSchema,
+  upsertProviderAdvancedConfigRequestSchema,
+  type ApiKeyProviderItem,
+  type CustomProviderItem,
+  type ModelsConfigProviderOption,
+  type ModelsConfigResponse,
+  type ProviderAuthStatus,
+  type ProviderHealthStatus,
+  type ProviderModelOption,
+  type ProvidersConfigResponse,
+  type UpdateModelsConfigRequest,
+  type UpdateProviderApiKeyRequest,
+  type UpsertCustomProviderRequest,
+} from './types/settings-api.js'
+export { maskApiKey } from './utils/mask-api-key.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
 export {

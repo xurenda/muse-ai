@@ -17,6 +17,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@earendil-works/pi-ai": "^0.79.3",
     "@hono/node-server": "^1.19.3",
     "@muse-ai/shared": "workspace:*",
     "bcryptjs": "^3.0.3",

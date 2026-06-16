@@ -8,17 +8,20 @@ import { createUserAuthMiddleware } from './middleware/user-auth.js'
 import { createRedis } from './redis/client.js'
 import { registerAuthRoutes, registerDeviceRoutes } from './routes/auth-devices.js'
 import { registerLlmProxyRoutes } from './routes/llm-proxy.js'
-import { registerProviderRoutes } from './routes/providers.js'
+import { registerSettingsRoutes } from './routes/settings.js'
 import { AuthService } from './services/auth-service.js'
 import { DeviceService } from './services/device-service.js'
 import { LlmProxyService } from './services/llm-proxy-service.js'
-import { ProviderService } from './services/provider-service.js'
+import { ProviderResolver } from './services/provider-resolver.js'
+import { SettingsService } from './services/settings-service.js'
+import { CredentialStore } from './stores/credential-store.js'
 import type { ServerVariables } from './types.js'
 
 export interface ServerContext {
   config: ServerConfig
   authService: AuthService
-  providerService: ProviderService
+  settingsService: SettingsService
+  providerResolver: ProviderResolver
   deviceService: DeviceService
   llmProxyService: LlmProxyService
   close: () => Promise<void>
@@ -32,14 +35,17 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
   await redis.connect()
 
   const authService = new AuthService(db, config.jwtSecret)
-  const providerService = new ProviderService(db, config.encryptionKey)
+  const credentialStore = new CredentialStore(db, config.encryptionKey)
+  const settingsService = new SettingsService(db, credentialStore)
+  const providerResolver = new ProviderResolver(db, credentialStore)
   const deviceService = new DeviceService(db, redis, config.encryptionKey)
   const llmProxyService = new LlmProxyService()
 
   return {
     config,
     authService,
-    providerService,
+    settingsService,
+    providerResolver,
     deviceService,
     llmProxyService,
     close: async () => {
@@ -59,7 +65,7 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
     cors({
       origin: ctx.config.corsOrigins,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-Muse-Provider'],
     }),
   )
 
@@ -70,9 +76,9 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
   })
 
   registerAuthRoutes(app, ctx.authService)
-  registerProviderRoutes(app, ctx.providerService, userAuth)
+  registerSettingsRoutes(app, ctx.settingsService, userAuth)
   registerDeviceRoutes(app, ctx.deviceService, userAuth, deviceAuth)
-  registerLlmProxyRoutes(app, ctx.providerService, ctx.llmProxyService, deviceAuth)
+  registerLlmProxyRoutes(app, ctx.providerResolver, ctx.llmProxyService, deviceAuth)
 
   return app
 }
