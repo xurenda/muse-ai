@@ -62,11 +62,11 @@ packages/shared/src/
 
 **默认端口：**
 
-| 服务    | 端口 |
-| ------- | ---- |
-| Server  | 3000 |
-| CLI     | 7421 |
-| Web dev | 5173 |
+| 服务    | 端口  |
+| ------- | ----- |
+| Server  | 65435 |
+| CLI     | 65433 |
+| Web dev | 65434 |
 
 **测试：** `test/constants/api-paths.test.ts`（6 项）
 
@@ -80,20 +80,20 @@ packages/shared/src/
 
 本地命令 `muse`，daemon 基于 **Hono** + `@hono/node-server`。
 
-| 路径/命令       | 说明                               |
-| --------------- | ---------------------------------- |
-| `muse start`    | 启动 daemon，默认 `127.0.0.1:7421` |
-| `GET /health`   | 健康检查                           |
-| `GET /agents`   | 占位，返回 `{ agents: [] }`        |
-| `GET /sessions` | 占位，返回 `{ sessions: [] }`      |
+| 路径/命令       | 说明                                |
+| --------------- | ----------------------------------- |
+| `muse start`    | 启动 daemon，默认 `127.0.0.1:65433` |
+| `GET /health`   | 健康检查                            |
+| `GET /agents`   | 占位，返回 `{ agents: [] }`         |
+| `GET /sessions` | 占位，返回 `{ sessions: [] }`       |
 
 **环境变量：**
 
-| 变量                | 说明                                       |
-| ------------------- | ------------------------------------------ |
-| `MUSE_CLI_HOST`     | 监听地址，默认 `127.0.0.1`                 |
-| `MUSE_CLI_PORT`     | 端口，默认 `7421`                          |
-| `MUSE_CORS_ORIGINS` | 逗号分隔，默认允许 `http://localhost:5173` |
+| 变量                | 说明                                        |
+| ------------------- | ------------------------------------------- |
+| `MUSE_CLI_HOST`     | 监听地址，默认 `127.0.0.1`                  |
+| `MUSE_CLI_PORT`     | 端口，默认 `65433`                          |
+| `MUSE_CORS_ORIGINS` | 逗号分隔，默认允许 `http://localhost:65434` |
 
 **测试：** `test/daemon/server.test.ts`（3 项）
 
@@ -145,10 +145,10 @@ pnpm dev:server        # 终端 1
 pnpm dev:cli           # 终端 2
 pnpm dev:web           # 终端 3
 
-curl http://127.0.0.1:3000/health
+curl http://127.0.0.1:65435/health
 # {"ok":true,"service":"server","version":"0.0.0"}
 
-curl http://127.0.0.1:7421/health
+curl http://127.0.0.1:65433/health
 # {"ok":true,"service":"cli","version":"0.0.0"}
 ```
 

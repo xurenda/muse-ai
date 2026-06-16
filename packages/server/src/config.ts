@@ -7,7 +7,7 @@ export interface ServerConfig {
   redisUrl: string
   jwtSecret: string
   encryptionKey: string
-  /** 允许跨域的 Web 来源，如 http://localhost:5173 */
+  /** 允许跨域的 Web 来源，如 http://localhost:65434 */
   corsOrigins: string[]
 }
 

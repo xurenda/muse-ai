@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { deviceCredentialsPath } from '@muse-ai/shared'
+import { deviceCredentialsPath, DEFAULT_PORTS } from '@muse-ai/shared'
 import { loadServerConfig } from '@/config.js'
 import { createServerApp, type ServerContext } from '@/app.js'
 
@@ -35,7 +35,7 @@ function createMockContext(overrides?: Partial<ServerContext>): ServerContext {
       listForUser: vi.fn().mockResolvedValue([]),
       getCredentialsForUser: vi.fn().mockResolvedValue({
         deviceId: DEVICE_ID,
-        endpoint: 'http://127.0.0.1:7421',
+        endpoint: `http://127.0.0.1:${DEFAULT_PORTS.CLI}`,
         accessToken: 'device-token',
       }),
       heartbeat: vi.fn(),
@@ -61,7 +61,7 @@ describe('device credentials', () => {
     const body = await res.json()
     expect(body).toEqual({
       deviceId: DEVICE_ID,
-      endpoint: 'http://127.0.0.1:7421',
+      endpoint: `http://127.0.0.1:${DEFAULT_PORTS.CLI}`,
       accessToken: 'device-token',
     })
     expect(ctx.deviceService.getCredentialsForUser).toHaveBeenCalledWith(USER_ID, DEVICE_ID)

@@ -153,25 +153,25 @@ pnpm test:run
 # Server + Docker + CLI 运行中；packages/server/.env 已配置
 
 # 注册 & Provider（示例：DeepSeek OpenAI 兼容）
-curl -s -X POST http://127.0.0.1:3000/auth/register \
+curl -s -X POST http://127.0.0.1:65435/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"dev@muse.ai","password":"password123"}'
 
-curl -s -X POST http://127.0.0.1:3000/providers \
+curl -s -X POST http://127.0.0.1:65435/providers \
   -H "Authorization: Bearer <user-jwt>" \
   -H 'Content-Type: application/json' \
   -d '{"name":"DeepSeek","apiKey":"sk-...","baseUrl":"https://api.deepseek.com/v1","isDefault":true}'
 
 # 配对
-curl -s -X POST http://127.0.0.1:3000/devices/pair/init -H "Authorization: Bearer <user-jwt>"
+curl -s -X POST http://127.0.0.1:65435/devices/pair/init -H "Authorization: Bearer <user-jwt>"
 pnpm muse pair <pairCode>
 
 # 对话（已配对需 Bearer device-token）
 pnpm muse chat "你好"
 
 # 设备在线
-curl -s http://127.0.0.1:3000/devices -H "Authorization: Bearer <user-jwt>"
-# → online: true, endpoint: http://127.0.0.1:7421
+curl -s http://127.0.0.1:65435/devices -H "Authorization: Bearer <user-jwt>"
+# → online: true, endpoint: http://127.0.0.1:65433
 
 # 重启续聊：同一 sessionId 再次 POST /chat，上下文保留（验收 2026-06-15 通过）
 ```

@@ -78,7 +78,7 @@
 | -------------- | ----------------------------------------- | ----------------------------------------------------------- |
 | Web→CLI token  | `GET /devices/:id/credentials`            | user JWT 鉴权；列表接口不暴露 token                         |
 | Device token   | 复用配对签发的 device accessToken         | AES-GCM 加密存 DB；**已配对旧设备需重新 `muse pair`**       |
-| Server CORS    | `hono/cors` + `MUSE_CORS_ORIGINS`         | 默认含 Web dev origin（5173）                               |
+| Server CORS    | `hono/cors` + `MUSE_CORS_ORIGINS`         | 默认含 Web dev origin（65434）                              |
 | UI 栈          | Tailwind v4 + Radix + CVA；React Router   | 与 AGENTS.md 一致                                           |
 | i18n           | **本阶段搭脚手架**                        | `shared/i18n` + Web `useTranslation`；locale：`zh`、`en`    |
 | thinking SSE   | **拆分 `thinking_delta`**                 | Web 分区展示；`muse chat` 默认仍只打正文                    |

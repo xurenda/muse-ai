@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const deviceSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
-  /** 浏览器直连 CLI 的 base URL，如 https://cli.example.com:7421 */
+  /** 浏览器直连 CLI 的 base URL，如 https://cli.example.com:65433 */
   endpoint: z.string().url().optional(),
   online: z.boolean(),
   lastSeenAt: z.string().datetime().optional(),

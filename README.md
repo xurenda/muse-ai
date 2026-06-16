@@ -43,8 +43,8 @@ pnpm dev:web
 ## 健康检查
 
 ```bash
-curl http://127.0.0.1:3000/health   # server
-curl http://127.0.0.1:7421/health   # cli
+curl http://127.0.0.1:65435/health   # server
+curl http://127.0.0.1:65433/health   # cli
 ```
 
 ## 包说明

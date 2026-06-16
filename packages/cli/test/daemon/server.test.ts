@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { MuseSseEvent } from '@muse-ai/shared'
-import { BUILTIN_CODING_AGENT_ID, BUILTIN_GENERAL_AGENT_ID, sessionEventsPath } from '@muse-ai/shared'
+import { BUILTIN_CODING_AGENT_ID, BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS, sessionEventsPath } from '@muse-ai/shared'
 import { loadCliConfig } from '@/config.js'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
@@ -27,9 +27,9 @@ async function createTestApp() {
 }
 
 describe('loadCliConfig', () => {
-  it('应使用默认端口 7421', () => {
+  it('应使用默认端口 65433', () => {
     const config = loadCliConfig({})
-    expect(config.port).toBe(7421)
+    expect(config.port).toBe(DEFAULT_PORTS.CLI)
     expect(config.host).toBe('127.0.0.1')
   })
 

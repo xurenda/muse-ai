@@ -22,8 +22,9 @@ describe('api-paths', () => {
   })
 
   it('默认端口应符合架构约定', () => {
-    expect(DEFAULT_PORTS.SERVER).toBe(3000)
-    expect(DEFAULT_PORTS.CLI).toBe(7421)
+    expect(DEFAULT_PORTS.SERVER).toBe(65435)
+    expect(DEFAULT_PORTS.CLI).toBe(65433)
+    expect(DEFAULT_PORTS.WEB_DEV).toBe(65434)
   })
 })
 

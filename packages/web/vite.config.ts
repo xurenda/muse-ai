@@ -1,3 +1,4 @@
+import { DEFAULT_PORTS } from '@muse-ai/shared'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
@@ -11,6 +12,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: DEFAULT_PORTS.WEB_DEV,
   },
 })

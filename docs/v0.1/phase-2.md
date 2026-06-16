@@ -150,10 +150,10 @@ pnpm muse agent list
 pnpm muse agent use 00000000-0000-4000-8000-000000000002   # 切换编程助手
 
 # daemon 运行中
-curl -s http://127.0.0.1:7421/agents | jq .
-curl -s -X POST http://127.0.0.1:7421/sessions \
+curl -s http://127.0.0.1:65433/agents | jq .
+curl -s -X POST http://127.0.0.1:65433/sessions \
   -H 'Content-Type: application/json' -d '{}'              # 使用 activeAgentId
-curl -s -X POST http://127.0.0.1:7421/chat \
+curl -s -X POST http://127.0.0.1:65433/chat \
   -H 'Content-Type: application/json' \
   -d '{"sessionId":"<id>","message":"hello","mode":"prompt"}'
 # SSE text_delta 含 Agent 名、skills 与 prompt 摘要

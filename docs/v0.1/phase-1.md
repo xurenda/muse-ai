@@ -125,12 +125,12 @@ pnpm lint && pnpm format:check && pnpm test:run
 pnpm dev:cli   # 或 muse start
 
 # 创建 Session
-curl -s -X POST http://127.0.0.1:7421/sessions \
+curl -s -X POST http://127.0.0.1:65433/sessions \
   -H 'Content-Type: application/json' \
   -d '{"agentId":"00000000-0000-4000-8000-000000000001"}'
 
 # 发起占位对话（daemon 运行中）
-curl -s -X POST http://127.0.0.1:7421/chat \
+curl -s -X POST http://127.0.0.1:65433/chat \
   -H 'Content-Type: application/json' \
   -d '{"sessionId":"<上一步 id>","message":"你好","mode":"prompt"}'
 # → {"accepted":true}；SSE 端可收到占位 text_delta

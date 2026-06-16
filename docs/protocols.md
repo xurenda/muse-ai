@@ -4,7 +4,7 @@
 
 ## Server REST
 
-Base URL：`http://127.0.0.1:3000`（默认）
+Base URL：`http://127.0.0.1:65435`（默认）
 
 | 方法     | 路径                       | 说明                        |
 | -------- | -------------------------- | --------------------------- |
@@ -47,7 +47,7 @@ Base URL：`http://127.0.0.1:3000`（默认）
 
 ## CLI REST
 
-Base URL：由 Backend 设备列表返回的 `endpoint`，默认 `http://127.0.0.1:7421`
+Base URL：由 Backend 设备列表返回的 `endpoint`，默认 `http://127.0.0.1:65433`
 
 鉴权：`Authorization: Bearer <device-access-token>`
 

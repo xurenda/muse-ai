@@ -67,7 +67,7 @@ Backend **不转发**聊天 SSE；只提供 CLI 的**端点地址**和**鉴权 t
 Web 与 CLI 在同一台机器：
 
 ```
-Web (localhost:5173) ──► CLI (localhost:7421)
+Web (localhost:65434) ──► CLI (localhost:65433)
 ```
 
 难点少：CORS 允许 dev origin、配对 token 校验即可。
@@ -77,7 +77,7 @@ Web (localhost:5173) ──► CLI (localhost:7421)
 Web 在浏览器里，CLI 在远程机器：
 
 ```
-Web (https://app.example.com) ──► CLI (https://cli-user.example.com:7421)
+Web (https://app.example.com) ──► CLI (https://cli-user.example.com:65433)
          ▲
          └── Backend 只返回 { endpoint, accessToken }，不转发流
 ```
@@ -224,4 +224,4 @@ muse start
 pnpm --filter @muse-ai/web dev
 ```
 
-Web 环境变量示例：`VITE_BACKEND_URL=http://localhost:3000`（Backend）、CLI 地址从设备 API 动态获取，不写死。
+Web 环境变量示例：`VITE_BACKEND_URL=http://localhost:65435`（Backend）、CLI 地址从设备 API 动态获取，不写死。

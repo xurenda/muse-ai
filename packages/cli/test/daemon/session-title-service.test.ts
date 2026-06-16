@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSessionStore } from '@muse-ai/core'
 import type { SessionMeta } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@muse-ai/shared'
 import { SessionEventHub } from '@/daemon/event-hub.js'
 import { SessionTitleService } from '@/daemon/session-title-service.js'
 import type { SessionSettingsService } from '@/daemon/session-settings-service.js'
@@ -71,7 +72,7 @@ describe('SessionTitleService', () => {
     )
 
     const service = new SessionTitleService(sessionStore as MuseSessionStore, sessionSettingsService as SessionSettingsService, eventHub, async () => ({
-      backendUrl: 'http://127.0.0.1:3000',
+      backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
       deviceToken: 'device-token',
     }))
 
@@ -79,7 +80,7 @@ describe('SessionTitleService', () => {
 
     expect(sessionStore.updateName).toHaveBeenCalledWith(sessionId, 'Todo App 规划', 'auto_llm')
     expect(fetch).toHaveBeenCalledWith(
-      'http://127.0.0.1:3000/v1/chat/completions',
+      `http://127.0.0.1:${DEFAULT_PORTS.SERVER}/v1/chat/completions`,
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('"thinking":{"type":"disabled"}'),
@@ -117,7 +118,7 @@ describe('SessionTitleService', () => {
       sessionStore as MuseSessionStore,
       { get: vi.fn() } as unknown as SessionSettingsService,
       new SessionEventHub(),
-      async () => ({ backendUrl: 'http://127.0.0.1:3000', deviceToken: 'device-token' }),
+      async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
     )
 
     await service.maybeGenerateAfterTurn('550e8400-e29b-41d4-a716-446655440000')
@@ -170,7 +171,7 @@ describe('SessionTitleService', () => {
         })),
       } as SessionSettingsService,
       new SessionEventHub(),
-      async () => ({ backendUrl: 'http://127.0.0.1:3000', deviceToken: 'device-token' }),
+      async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
     )
 
     await service.maybeGenerateAfterTurn(sessionId)

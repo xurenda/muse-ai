@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { DEFAULT_PORTS } from '@muse-ai/shared'
 import { loadServerConfig } from '@/config.js'
 import { createServerApp, type ServerContext } from '@/app.js'
 
@@ -41,9 +42,9 @@ function createMockContext(): ServerContext {
 }
 
 describe('loadServerConfig', () => {
-  it('应使用默认端口 3000', () => {
+  it('应使用默认端口 65435', () => {
     const config = loadServerConfig(TEST_ENV)
-    expect(config.port).toBe(3000)
+    expect(config.port).toBe(DEFAULT_PORTS.SERVER)
     expect(config.databaseUrl).toContain('postgresql://')
   })
 
@@ -53,8 +54,8 @@ describe('loadServerConfig', () => {
 
   it('应默认允许 Web dev 来源 CORS', () => {
     const config = loadServerConfig(TEST_ENV)
-    expect(config.corsOrigins).toContain('http://localhost:5173')
-    expect(config.corsOrigins).toContain('http://127.0.0.1:5173')
+    expect(config.corsOrigins).toContain(`http://localhost:${DEFAULT_PORTS.WEB_DEV}`)
+    expect(config.corsOrigins).toContain(`http://127.0.0.1:${DEFAULT_PORTS.WEB_DEV}`)
   })
 })
 
@@ -94,11 +95,11 @@ describe('createServerApp', () => {
     const res = await app.request('http://localhost/auth/register', {
       method: 'OPTIONS',
       headers: {
-        Origin: 'http://localhost:5173',
+        Origin: `http://localhost:${DEFAULT_PORTS.WEB_DEV}`,
         'Access-Control-Request-Method': 'POST',
       },
     })
     expect(res.status).toBe(204)
-    expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
+    expect(res.headers.get('access-control-allow-origin')).toBe(`http://localhost:${DEFAULT_PORTS.WEB_DEV}`)
   })
 })

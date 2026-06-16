@@ -74,7 +74,7 @@ export type CliApiPath = (typeof CLI_API_PATHS)[keyof typeof CLI_API_PATHS]
 
 /** 默认服务端口 */
 export const DEFAULT_PORTS = {
-  SERVER: 3000,
-  CLI: 7421,
-  WEB_DEV: 5173,
+  SERVER: 65435,
+  CLI: 65433,
+  WEB_DEV: 65434,
 } as const
