@@ -62,6 +62,23 @@
     "high": "High",
     "xhigh": "XHigh"
   },
+  "thinkingLevelsShort": {
+    "off": "Off",
+    "minimal": "Min",
+    "low": "Low",
+    "medium": "Med",
+    "high": "High",
+    "xhigh": "XHigh"
+  },
+  "modelPicker": {
+    "searchPlaceholder": "Search models",
+    "editModels": "Edit models…",
+    "reasoningLevel": "Reasoning level",
+    "reasoningSliderMin": "Faster",
+    "reasoningSliderMax": "Smarter",
+    "triggerAriaLabel": "Select model and reasoning level",
+    "empty": "No matching models"
+  },
   "mode": {
     "prompt": "Prompt",
     "steer": "Steer",

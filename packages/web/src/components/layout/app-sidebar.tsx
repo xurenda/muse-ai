@@ -19,7 +19,7 @@ export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
   return (
     <aside className="flex h-full min-h-0 flex-col">
       <SidebarToolbar open={open} onToggle={onToggle} />
-      <nav className="flex flex-col gap-0.5 px-2 pb-2">
+      <nav className="flex flex-col gap-stack-sm px-panel-x pb-panel-x">
         {items.map(item => (
           <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} end={item.end} />
         ))}

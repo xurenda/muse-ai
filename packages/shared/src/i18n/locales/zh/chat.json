@@ -55,11 +55,28 @@
   "fork": "Fork",
   "thinkingLevels": {
     "off": "关闭",
-    "minimal": "Minimal",
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High",
-    "xhigh": "XHigh"
+    "minimal": "极低",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "xhigh": "极高"
+  },
+  "thinkingLevelsShort": {
+    "off": "关",
+    "minimal": "微",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "xhigh": "极高"
+  },
+  "modelPicker": {
+    "searchPlaceholder": "搜索模型",
+    "editModels": "编辑模型…",
+    "reasoningLevel": "推理等级",
+    "reasoningSliderMin": "更快",
+    "reasoningSliderMax": "更聪明",
+    "triggerAriaLabel": "选择模型与推理等级",
+    "empty": "没有匹配的模型"
   },
   "mode": {
     "prompt": "Prompt",

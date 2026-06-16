@@ -42,10 +42,10 @@ export function SidebarUserMenu() {
   const displayName = auth?.user.email ? getUserDisplayName(auth.user.email) : tc('appName')
 
   return (
-    <div className="mt-auto px-2 pb-1.5">
+    <div className="mt-auto px-panel-x pb-panel-x">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" className={cn('ui-menu-item w-full rounded-lg px-2 py-1.5 text-sidebar-foreground')}>
+          <button type="button" className={cn('ui-menu-item w-full rounded-control text-sidebar-foreground')}>
             <span className="flex size-6 shrink-0 items-center justify-center text-sidebar-foreground">
               <User className="size-4" strokeWidth={2} />
             </span>
@@ -54,7 +54,7 @@ export function SidebarUserMenu() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" className="w-56">
-          <div className="px-3 py-2 text-sm font-medium">{displayName}</div>
+          <div className="px-menu-x py-menu-y text-sm font-medium">{displayName}</div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to="/settings">

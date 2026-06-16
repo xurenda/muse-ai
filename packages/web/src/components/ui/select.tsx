@@ -26,7 +26,7 @@ export function Select({ value, options, onValueChange, disabled, placeholder, c
           type="button"
           disabled={disabled}
           className={cn(
-            'flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border/50 bg-background px-2 py-1 text-sm text-foreground outline-none transition-colors hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring',
+            'flex w-full cursor-pointer items-center justify-between gap-inline rounded-control border border-border/50 bg-background px-field-x py-menu-y text-sm text-foreground outline-none transition-colors hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring',
             className,
           )}
         >

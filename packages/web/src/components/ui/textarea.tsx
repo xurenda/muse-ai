@@ -3,7 +3,7 @@ import { forwardRef, type TextareaHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 const fieldVariants = cva(
-  'w-full resize-none rounded-md border border-border/50 bg-background px-2 py-1.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground placeholder:opacity-100 hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full resize-none rounded-control border border-border/50 bg-background px-field-x py-menu-y text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground placeholder:opacity-100 hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50',
 )
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement>, VariantProps<typeof fieldVariants> {}

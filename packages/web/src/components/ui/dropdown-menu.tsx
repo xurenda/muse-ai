@@ -18,7 +18,7 @@ const DropdownMenuSubTrigger = forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'ui-menu-item cursor-pointer select-none rounded-md outline-none hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
+      'ui-menu-item cursor-pointer select-none rounded-control outline-none hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground',
       inset && 'pl-8',
       className,
     )}
@@ -35,7 +35,7 @@ const DropdownMenuSubContent = forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.SubContent
     ref={ref}
-    className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-1 text-foreground shadow-md', className)}
+    className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-popover text-foreground shadow-md', className)}
     {...props}
   />
 ))
@@ -47,7 +47,7 @@ const DropdownMenuContent = forwardRef<ElementRef<typeof DropdownMenuPrimitive.C
       <DropdownMenuPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
-        className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-1 text-foreground shadow-md', className)}
+        className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-popover text-foreground shadow-md', className)}
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
@@ -64,7 +64,7 @@ const DropdownMenuItem = forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'ui-menu-item relative cursor-pointer select-none rounded-md outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'ui-menu-item relative cursor-pointer select-none rounded-control outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
       className,
     )}
@@ -83,7 +83,7 @@ const DropdownMenuRadioItem = forwardRef<ElementRef<typeof DropdownMenuPrimitive
     <DropdownMenuPrimitive.RadioItem
       ref={ref}
       className={cn(
-        'ui-menu-item relative cursor-pointer select-none whitespace-nowrap rounded-md px-0 pl-7 pr-3 outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'ui-menu-item relative cursor-pointer select-none whitespace-nowrap rounded-control px-0 pl-7 pr-3 outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}

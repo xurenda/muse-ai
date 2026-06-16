@@ -4,7 +4,7 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md text-sm transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-control text-sm transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -15,8 +15,8 @@ const buttonVariants = cva(
         destructive: 'bg-destructive/15 font-medium text-destructive enabled:hover:bg-destructive/25',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-6 gap-1 px-2 text-xs',
+        default: 'h-9 px-menu-x py-menu-y',
+        sm: 'h-6 gap-inline-sm px-field-x text-xs',
         icon: 'size-6 shrink-0',
       },
     },

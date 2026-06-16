@@ -3,7 +3,7 @@ import { forwardRef, type InputHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 const fieldVariants = cva(
-  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground placeholder:opacity-100 hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-control border border-border/50 bg-background px-field-x py-field-y text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground placeholder:opacity-100 hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50',
 )
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement>, VariantProps<typeof fieldVariants> {}

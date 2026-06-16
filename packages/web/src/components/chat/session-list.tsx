@@ -62,15 +62,15 @@ export function SessionList({ sessions, isLoading, error, onRefresh }: SessionLi
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-2 pb-3">
-      <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">{t('sidebar.sessions')}</p>
+    <div className="flex min-h-0 flex-1 flex-col ui-sidebar-section">
+      <p className="px-panel-x pb-1 text-xs font-medium text-muted-foreground">{t('sidebar.sessions')}</p>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-        {isLoading ? <p className="px-2 py-1 text-xs text-muted-foreground">{t('sidebar.sessionsLoading')}</p> : null}
+      <div className="ui-sidebar-list min-h-0 flex-1 overflow-y-auto">
+        {isLoading ? <p className="px-panel-x py-1 text-xs text-muted-foreground">{t('sidebar.sessionsLoading')}</p> : null}
 
-        {!isLoading && error ? <p className="px-2 py-1 text-xs text-destructive">{error}</p> : null}
+        {!isLoading && error ? <p className="px-panel-x py-1 text-xs text-destructive">{error}</p> : null}
 
-        {!isLoading && !error && sessions.length === 0 ? <p className="px-2 py-1 text-xs text-muted-foreground">{t('sidebar.sessionsEmpty')}</p> : null}
+        {!isLoading && !error && sessions.length === 0 ? <p className="px-panel-x py-1 text-xs text-muted-foreground">{t('sidebar.sessionsEmpty')}</p> : null}
 
         {sessions.map(session => {
           const label = getSessionLabel(session, t('sidebar.newChat'))
@@ -79,11 +79,11 @@ export function SessionList({ sessions, isLoading, error, onRefresh }: SessionLi
             <div
               key={session.id}
               className={cn(
-                'group flex min-w-0 items-center rounded-lg',
+                'group flex min-w-0 items-center rounded-control',
                 isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
               )}
             >
-              <NavLink to={`/chat/${session.id}`} className="ui-menu-item min-w-0 flex-1 rounded-lg bg-transparent hover:bg-transparent">
+              <NavLink to={`/chat/${session.id}`} className="ui-menu-item min-w-0 flex-1 rounded-control bg-transparent hover:bg-transparent">
                 <span className="truncate">{label}</span>
               </NavLink>
 

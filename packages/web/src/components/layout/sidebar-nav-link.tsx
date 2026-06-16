@@ -15,7 +15,7 @@ export function SidebarNavLink({ to, icon: Icon, label, end }: SidebarNavLinkPro
       to={to}
       end={end}
       className={({ isActive }) =>
-        cn('ui-menu-item rounded-lg', isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60')
+        cn('ui-menu-item rounded-control', isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60')
       }
     >
       <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />

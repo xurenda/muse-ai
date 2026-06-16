@@ -21,12 +21,22 @@ interface SessionChatFooterProps {
 }
 
 function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled, onUpdate, onSend }: SessionChatFooterProps) {
+  const { auth } = useAuth()
   const [composerText, setComposerText] = useState('')
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-stack">
       <ChatSessionBar deviceSession={deviceSession} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdate} />
-      <ChatComposer value={composerText} onChange={setComposerText} streaming={streaming} disabled={disabled} onSend={onSend} />
+      <ChatComposer
+        value={composerText}
+        onChange={setComposerText}
+        streaming={streaming}
+        disabled={disabled}
+        userToken={auth?.accessToken}
+        sessionSettings={sessionSettings}
+        onUpdateSessionSettings={onUpdate}
+        onSend={onSend}
+      />
     </div>
   )
 }
@@ -109,7 +119,7 @@ export function ChatPage() {
             </div>
           </div>
 
-          <div className="shrink-0 px-4 pb-4 pt-2">
+          <div className="shrink-0 px-page-x pb-panel-y pt-stack">
             <SessionChatFooter
               key={routeSessionId}
               deviceSession={deviceSession}
