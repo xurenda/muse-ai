@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 interface SessionRenameDialogProps {
   open: boolean
@@ -14,6 +13,7 @@ interface SessionRenameDialogProps {
 export function SessionRenameDialog({ open, initialName, onOpenChange, onConfirm }: SessionRenameDialogProps) {
   const { t } = useTranslation('layout')
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(initialName)
   const [submitting, setSubmitting] = useState(false)
 
@@ -22,6 +22,12 @@ export function SessionRenameDialog({ open, initialName, onOpenChange, onConfirm
     if (!dialog) return
     if (open && !dialog.open) {
       dialog.showModal()
+      requestAnimationFrame(() => {
+        const input = inputRef.current
+        if (!input) return
+        input.focus()
+        input.select()
+      })
     }
     if (!open && dialog.open) {
       dialog.close()
@@ -53,15 +59,17 @@ export function SessionRenameDialog({ open, initialName, onOpenChange, onConfirm
       onClose={handleClose}
     >
       <form onSubmit={event => void handleSubmit(event)}>
-        <h2 className="text-sm font-semibold">{t('sidebar.renameSessionTitle')}</h2>
-        <div className="mt-3 space-y-2">
-          <Label htmlFor="session-rename-input">{t('sidebar.renameSession')}</Label>
+        <h2 id="session-rename-title" className="text-sm font-semibold">
+          {t('sidebar.renameSessionTitle')}
+        </h2>
+        <div className="mt-3">
           <Input
+            ref={inputRef}
             id="session-rename-input"
             value={name}
             maxLength={100}
             placeholder={t('sidebar.renameSessionPlaceholder')}
-            autoFocus
+            aria-labelledby="session-rename-title"
             onChange={event => setName(event.target.value)}
           />
         </div>

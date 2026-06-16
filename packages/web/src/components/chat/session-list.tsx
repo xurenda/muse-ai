@@ -32,6 +32,19 @@ export function SessionList({ sessions, isLoading, error, onRefresh }: SessionLi
   const { pathname } = useLocation()
   const [renameTarget, setRenameTarget] = useState<SessionMeta | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
+  const handleSessionMenuOpenChange = (sessionId: string, open: boolean) => {
+    setOpenMenuId(open ? sessionId : null)
+    if (!open) {
+      queueMicrotask(() => {
+        const activeElement = document.activeElement
+        if (activeElement instanceof HTMLElement) {
+          activeElement.blur()
+        }
+      })
+    }
+  }
 
   const handleRename = async (name: string) => {
     if (!deviceSession || !renameTarget) return
@@ -61,25 +74,24 @@ export function SessionList({ sessions, isLoading, error, onRefresh }: SessionLi
 
         {sessions.map(session => {
           const label = getSessionLabel(session, t('sidebar.newChat'))
+          const isActive = pathname === `/chat/${session.id}`
           return (
-            <div key={session.id} className="group flex items-center gap-0.5">
-              <NavLink
-                to={`/chat/${session.id}`}
-                className={({ isActive }) =>
-                  cn(
-                    'ui-menu-item min-w-0 flex-1 rounded-lg',
-                    isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
-                  )
-                }
-              >
+            <div
+              key={session.id}
+              className={cn(
+                'group flex min-w-0 items-center rounded-lg',
+                isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
+              )}
+            >
+              <NavLink to={`/chat/${session.id}`} className="ui-menu-item min-w-0 flex-1 rounded-lg bg-transparent hover:bg-transparent">
                 <span className="truncate">{label}</span>
               </NavLink>
 
-              <DropdownMenu>
+              <DropdownMenu open={openMenuId === session.id} onOpenChange={open => handleSessionMenuOpenChange(session.id, open)}>
                 <DropdownMenuTrigger asChild>
                   <IconButton
                     type="button"
-                    className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    className={cn('mr-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-100', openMenuId === session.id && 'opacity-100')}
                     aria-label={t('sidebar.sessionActions')}
                     onClick={event => event.preventDefault()}
                   >
