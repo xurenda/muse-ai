@@ -4,19 +4,20 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md text-sm transition-colors outline-none focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:opacity-90',
-        outline: 'border border-border bg-card hover:bg-border/40',
-        ghost: 'hover:bg-border/40',
-        destructive: 'bg-destructive/20 text-destructive hover:bg-destructive/30',
+        default: 'bg-primary font-medium text-primary-foreground enabled:hover:bg-primary/90',
+        outline:
+          'font-normal text-muted-foreground enabled:hover:bg-foreground/6 enabled:hover:text-foreground data-[state=open]:bg-foreground/6 data-[state=open]:text-foreground',
+        ghost: 'font-normal text-muted-foreground enabled:hover:bg-foreground/6 enabled:hover:text-foreground',
+        destructive: 'bg-destructive/15 font-medium text-destructive enabled:hover:bg-destructive/25',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 px-3 text-xs',
-        lg: 'h-11 px-6',
+        default: 'h-9 px-4 py-2',
+        sm: 'h-6 gap-1 px-2 text-xs',
+        icon: 'size-6 shrink-0',
       },
     },
     defaultVariants: {
@@ -32,6 +33,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Va
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : 'button'
-  return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+  return <Comp className={cn(buttonVariants({ variant, size }), className)} ref={ref} {...props} />
 })
 Button.displayName = 'Button'

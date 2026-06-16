@@ -11,6 +11,7 @@
   "createFailed": "Create failed",
   "existing": "Existing agents",
   "noAgents": "No agents yet",
+  "noDevice": "Connect a device from the sidebar before managing agents.",
   "selectPersona": "Select persona",
   "selectSkillsHint": "Choose skills to inject",
   "selectToolsHint": "Choose built-in tools to enable"

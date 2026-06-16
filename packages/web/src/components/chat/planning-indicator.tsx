@@ -1,0 +1,11 @@
+import { useTranslation } from 'react-i18next'
+
+export function PlanningIndicator() {
+  const { t } = useTranslation('chat')
+
+  return (
+    <p className="text-sm text-muted-foreground">
+      <span className="process-shimmer">{t('planning.label')}</span>
+    </p>
+  )
+}

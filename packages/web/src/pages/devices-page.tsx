@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Device, PairInitResponse } from '@muse-ai/shared'
 import { BackendApiError, checkCliHealth, getDeviceCredentials, initDevicePair, listDevices } from '@/api/backend-client'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { PageShell } from '@/components/layout/page-shell'
+import { SettingsRow } from '@/components/settings/settings-row'
+import { SettingsSection } from '@/components/settings/settings-section'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 
 export function DevicesPage() {
   const { t } = useTranslation('device')
   const { t: tc } = useTranslation('common')
-  const { t: ta } = useTranslation('auth')
-  const { auth, logout, setDeviceSession } = useAuth()
+  const { auth, setDeviceSession } = useAuth()
   const navigate = useNavigate()
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,59 +83,41 @@ export function DevicesPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl p-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          <Button type="button" variant="outline" size="sm" onClick={logout}>
-            {ta('logout')}
+    <PageShell title={t('title')} subtitle={t('subtitle')}>
+      {error ? <p className="px-1 text-sm text-destructive">{error}</p> : null}
+
+      <SettingsSection title={t('pairTitle')}>
+        <div className="flex flex-col gap-4 px-4 py-3.5">
+          <Button type="button" onClick={() => void onGeneratePairCode()} disabled={pairLoading}>
+            {pairLoading ? tc('loading') : t('pairGenerate')}
           </Button>
-        </div>
-      </header>
-
-      <section className="mb-8 rounded-lg border border-border bg-card p-6">
-        <h2 className="mb-4 text-lg font-medium">{t('pairTitle')}</h2>
-        <Button type="button" onClick={() => void onGeneratePairCode()} disabled={pairLoading}>
-          {pairLoading ? tc('loading') : t('pairGenerate')}
-        </Button>
-        {pairInfo ? (
-          <div className="mt-4 space-y-2 rounded-md border border-border bg-background p-4">
-            <p className="text-sm">
-              {t('pairCode')}: <span className="font-mono text-lg tracking-widest text-primary">{pairInfo.pairCode}</span>
-            </p>
-            <p className="text-xs text-muted-foreground">{t('pairExpires', { expiresAt: new Date(pairInfo.expiresAt).toLocaleString() })}</p>
-            <p className="text-sm text-muted-foreground">{t('pairHint')}</p>
-            <code className="block rounded bg-card px-3 py-2 font-mono text-sm">{t('pairCommand', { code: pairInfo.pairCode })}</code>
-          </div>
-        ) : null}
-      </section>
-
-      {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
-
-      <section className="space-y-3">
-        {loading ? (
-          <p className="text-muted-foreground">{tc('loading')}</p>
-        ) : devices.length === 0 ? (
-          <p className="text-muted-foreground">{t('empty')}</p>
-        ) : (
-          devices.map(device => (
-            <div key={device.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4">
-              <div>
-                <p className="font-medium">{device.name}</p>
-                <p className="text-xs text-muted-foreground">{device.endpoint ?? '—'}</p>
-                <p className={`mt-1 text-xs ${device.online ? 'text-success' : 'text-muted-foreground'}`}>{device.online ? tc('online') : tc('offline')}</p>
-              </div>
-              <Button type="button" disabled={!device.online || connectingId === device.id} onClick={() => void onSelectDevice(device)}>
-                {connectingId === device.id ? t('connecting') : t('select')}
-              </Button>
+          {pairInfo ? (
+            <div className="space-y-2 rounded-lg border border-sidebar-border bg-background/60 p-4">
+              <p className="text-sm">
+                {t('pairCode')}: <span className="font-mono text-lg tracking-widest text-primary">{pairInfo.pairCode}</span>
+              </p>
+              <p className="text-xs text-muted-foreground">{t('pairExpires', { expiresAt: new Date(pairInfo.expiresAt).toLocaleString() })}</p>
+              <p className="text-sm text-muted-foreground">{t('pairHint')}</p>
+              <code className="block rounded bg-muted px-3 py-2 font-mono text-sm">{t('pairCommand', { code: pairInfo.pairCode })}</code>
             </div>
-          ))
-        )}
-      </section>
-    </div>
+          ) : null}
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={t('listTitle')}>
+        {loading ? <p className="px-4 py-3.5 text-sm text-muted-foreground">{tc('loading')}</p> : null}
+        {!loading && devices.length === 0 ? <p className="px-4 py-3.5 text-sm text-muted-foreground">{t('empty')}</p> : null}
+        {!loading
+          ? devices.map(device => (
+              <SettingsRow key={device.id} title={device.name} description={device.endpoint ?? '—'}>
+                <span className={`text-xs ${device.online ? 'text-success' : 'text-muted-foreground'}`}>{device.online ? tc('online') : tc('offline')}</span>
+                <Button type="button" size="sm" disabled={!device.online || connectingId === device.id} onClick={() => void onSelectDevice(device)}>
+                  {connectingId === device.id ? t('connecting') : t('select')}
+                </Button>
+              </SettingsRow>
+            ))
+          : null}
+      </SettingsSection>
+    </PageShell>
   )
 }

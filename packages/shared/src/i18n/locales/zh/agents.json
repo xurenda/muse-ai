@@ -11,6 +11,7 @@
   "createFailed": "创建失败",
   "existing": "已有 Agent",
   "noAgents": "暂无 Agent",
+  "noDevice": "请先在侧栏连接设备后再管理 Agent。",
   "selectPersona": "选择 Persona",
   "selectSkillsHint": "勾选要注入的 Skills",
   "selectToolsHint": "勾选要启用的内置 Tools"

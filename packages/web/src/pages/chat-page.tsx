@@ -1,25 +1,43 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LanguageSwitcher } from '@/components/language-switcher'
-import { ChatInput } from '@/components/chat/chat-input'
+import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
 import { ChatSessionBar } from '@/components/chat/chat-session-bar'
-import { SessionSidebar } from '@/components/chat/session-sidebar'
-import { SessionTreePanel } from '@/components/chat/session-tree-panel'
 import { Button } from '@/components/ui/button'
+import { useChatSessionContext } from '@/context/chat-session-context'
 import { useAuth } from '@/hooks/use-auth'
-import { useChatSession } from '@/hooks/use-chat-session'
+import type { StoredDeviceSession } from '@/lib/config'
+import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
+import type { ChatInputMode } from '@/lib/chat-types'
+
+interface SessionChatFooterProps {
+  deviceSession: StoredDeviceSession
+  sessionSettings: SessionSettingsResponse | null
+  streaming: boolean
+  disabled: boolean
+  onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
+  onSend: (text: string, mode: ChatInputMode) => void
+}
+
+function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled, onUpdate, onSend }: SessionChatFooterProps) {
+  const [composerText, setComposerText] = useState('')
+
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+      <ChatSessionBar deviceSession={deviceSession} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdate} />
+      <ChatComposer value={composerText} onChange={setComposerText} streaming={streaming} disabled={disabled} onSend={onSend} />
+    </div>
+  )
+}
 
 export function ChatPage() {
+  const { sessionId: routeSessionId } = useParams()
   const { t } = useTranslation('chat')
-  const { t: ta } = useTranslation('auth')
-  const { t: tc } = useTranslation('common')
-  const { deviceSession, logout } = useAuth()
+  const { t: tl } = useTranslation('layout')
+  const { deviceSession } = useAuth()
   const {
     status,
-    sessionId,
-    sessions,
-    sessionTree,
     sessionSettings,
     messages,
     streaming,
@@ -29,86 +47,84 @@ export function ChatPage() {
     treeError,
     sendMessage,
     updateSessionSettings,
-    selectSession,
-    newSession,
-    navigateToEntry,
-    forkFromEntry,
+    startNewSession,
     messagesEndRef,
-  } = useChatSession(deviceSession)
+  } = useChatSessionContext()
 
   const connectionErrorMessage = connectionError === 'cli_unreachable' ? t('errorCliUnreachable') : connectionError
 
-  if (!deviceSession) return null
+  if (!deviceSession) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="max-w-md text-sm text-muted-foreground">{t('noDeviceHint')}</p>
+        <Button type="button" variant="outline" size="sm" asChild>
+          <Link to="/devices">{tl('sidebar.devices')}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  if (!routeSessionId) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="max-w-md text-sm text-muted-foreground">{t('newChatHint')}</p>
+        <Button type="button" onClick={() => void startNewSession()}>
+          {t('startNewSession')}
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border px-4 py-3">
-        <div>
-          <h1 className="text-lg font-semibold">{t('title')}</h1>
-          <p className="text-xs text-muted-foreground">{t('connectedDevice', { name: deviceSession.deviceName })}</p>
-          {sessionId ? <p className="font-mono text-[10px] text-muted-foreground/70">{sessionId}</p> : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <LanguageSwitcher />
-          <Button type="button" variant="outline" size="sm" onClick={() => void newSession()} disabled={status !== 'ready'}>
-            {t('newSession')}
-          </Button>
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link to="/devices">{tc('back')}</Link>
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={logout}>
-            {ta('logout')}
-          </Button>
-        </div>
-      </header>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {status === 'connecting' ? <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">{t('connecting')}</div> : null}
 
-      <div className="flex min-h-0 flex-1">
-        <SessionSidebar
-          sessions={sessions}
-          activeSessionId={sessionId}
-          disabled={status !== 'ready'}
-          onSelect={id => void selectSession(id)}
-          onNew={() => void newSession()}
-        />
+      {status === 'error' && connectionErrorMessage ? (
+        <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span className="mx-auto block max-w-3xl">{connectionErrorMessage}</span>
+        </div>
+      ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          {status === 'ready' ? (
-            <ChatSessionBar
+      {sendError ? (
+        <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <span className="mx-auto block max-w-3xl">{sendError}</span>
+        </div>
+      ) : null}
+      {settingsError ? (
+        <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <span className="mx-auto block max-w-3xl">{settingsError}</span>
+        </div>
+      ) : null}
+      {treeError ? (
+        <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <span className="mx-auto block max-w-3xl">{treeError}</span>
+        </div>
+      ) : null}
+
+      {status === 'ready' ? (
+        <>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
+            <div className="mx-auto flex w-full max-w-3xl flex-col">
+              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} />
+            </div>
+          </div>
+
+          <div className="shrink-0 px-4 pb-4 pt-2">
+            <SessionChatFooter
+              key={routeSessionId}
               deviceSession={deviceSession}
               sessionSettings={sessionSettings}
+              streaming={streaming}
               disabled={status !== 'ready'}
               onUpdate={async patch => {
                 const result = await updateSessionSettings(patch)
                 return result !== null
               }}
+              onSend={(text, mode) => void sendMessage(text, mode)}
             />
-          ) : null}
-
-          {status === 'connecting' ? <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">{t('connecting')}</div> : null}
-
-          {status === 'error' && connectionErrorMessage ? (
-            <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{connectionErrorMessage}</div>
-          ) : null}
-
-          {sendError ? <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">{sendError}</div> : null}
-          {settingsError ? <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">{settingsError}</div> : null}
-          {treeError ? <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">{treeError}</div> : null}
-
-          {status === 'ready' ? (
-            <>
-              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} />
-              <ChatInput streaming={streaming} disabled={status !== 'ready'} onSend={(text, mode) => void sendMessage(text, mode)} />
-            </>
-          ) : null}
-        </div>
-
-        <SessionTreePanel
-          tree={sessionTree}
-          disabled={status !== 'ready' || streaming}
-          onNavigate={entryId => void navigateToEntry(entryId)}
-          onFork={entryId => void forkFromEntry(entryId)}
-        />
-      </div>
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

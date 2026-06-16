@@ -8,6 +8,7 @@
   "pairExpires": "有效期至 {{expiresAt}}",
   "pairHint": "在运行 CLI 的机器上执行：",
   "pairCommand": "muse pair {{code}}",
+  "listTitle": "我的设备",
   "select": "连接此设备",
   "connecting": "正在连接…",
   "connectFailed": "无法连接 CLI",

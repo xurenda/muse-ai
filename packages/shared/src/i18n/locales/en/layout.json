@@ -1,0 +1,20 @@
+{
+  "sidebar": {
+    "newChat": "New chat",
+    "devices": "Devices",
+    "agents": "Agents",
+    "settings": "Settings",
+    "sessions": "Recent chats",
+    "sessionsLoading": "Loading…",
+    "sessionsEmpty": "No conversations yet",
+    "untitledSession": "Untitled"
+  },
+  "header": {
+    "sidebarToggle": "Toggle sidebar",
+    "sessionTreeToggle": "Toggle session tree",
+    "device": "Devices",
+    "deviceConnected": "Connected: {{name}}",
+    "deviceDisconnected": "No device connected",
+    "logout": "Log out"
+  }
+}

@@ -1,15 +1,14 @@
+import { cva, type VariantProps } from 'class-variance-authority'
 import { forwardRef, type InputHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, type = 'text', ...props }, ref) => (
-  <input
-    type={type}
-    className={cn(
-      'flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-      className,
-    )}
-    ref={ref}
-    {...props}
-  />
+const fieldVariants = cva(
+  'w-full rounded-md border border-border/50 bg-background px-2 py-1 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground placeholder:opacity-100 hover:border-border focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50',
+)
+
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement>, VariantProps<typeof fieldVariants> {}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, type = 'text', ...props }, ref) => (
+  <input type={type} className={cn(fieldVariants(), className)} ref={ref} {...props} />
 ))
 Input.displayName = 'Input'

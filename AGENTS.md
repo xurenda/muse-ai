@@ -132,9 +132,20 @@ TypeScript：
 
 **新增可复用基元时，在本节补一行说明**。
 
-| 基元             | 位置 | 用法 |
-| ---------------- | ---- | ---- |
-| _（随开发补充）_ | —    | —    |
+| 基元                                                   | 位置                                      | 用法                                   |
+| ------------------------------------------------------ | ----------------------------------------- | -------------------------------------- |
+| `Button`                                               | `components/ui/button.tsx`                | 主操作、outline/ghost/destructive 变体 |
+| `IconButton`                                           | `components/ui/icon-button.tsx`           | 侧栏/Header 图标按钮                   |
+| `Input` / `Textarea`                                   | `components/ui/input.tsx`、`textarea.tsx` | 表单字段                               |
+| `Select`                                               | `components/ui/select.tsx`                | 下拉单选（基于 DropdownMenu）          |
+| `Label`                                                | `components/ui/label.tsx`                 | 表单标签                               |
+| `DropdownMenu`                                         | `components/ui/dropdown-menu.tsx`         | 菜单、Select 底层                      |
+| `Tooltip`                                              | `components/ui/tooltip.tsx`               | 悬停提示                               |
+| `Toaster`                                              | `components/ui/sonner.tsx`                | 全局 toast（`sonner`）                 |
+| `ThemeSwitcher`                                        | `components/theme-switcher.tsx`           | light / dark / system 切换             |
+| `SettingsSection` / `SettingsRow` / `SettingsFieldRow` | `components/settings/`                    | 设置页分区、列表行、标签+控件行        |
+| `PageShell`                                            | `components/layout/page-shell.tsx`        | 非聊天页统一标题区 + max-w-3xl 内容区  |
+| `AuthLayout`                                           | `components/layout/auth-layout.tsx`       | 登录/注册居中卡片壳层                  |
 
 ### 可访问性与交互
 

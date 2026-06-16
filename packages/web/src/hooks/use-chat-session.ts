@@ -18,14 +18,14 @@ import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer
 import { createUserMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
 import type { StoredDeviceSession } from '@/lib/config'
 
-export type ChatSessionStatus = 'connecting' | 'ready' | 'error'
+export type ChatSessionStatus = 'idle' | 'connecting' | 'ready' | 'error'
+
+interface UseChatSessionOptions {
+  onSessionChange?: (sessionId: string) => void
+}
 
 function sessionStorageKey(deviceId: string): string {
   return `muse.chatSession.${deviceId}`
-}
-
-function readStoredSessionId(deviceId: string): string | null {
-  return sessionStorage.getItem(sessionStorageKey(deviceId))
 }
 
 function writeStoredSessionId(deviceId: string, sessionId: string): void {
@@ -47,8 +47,28 @@ function startSseSubscription(
   })
 }
 
-export function useChatSession(deviceSession: StoredDeviceSession | null) {
-  const [status, setStatus] = useState<ChatSessionStatus>('connecting')
+function resetChatState(setters: {
+  setSessionId: (value: string | null) => void
+  setSessionTree: (value: SessionTreeResponse | null) => void
+  setSessionSettings: (value: SessionSettingsResponse | null) => void
+  setMessages: (value: ChatMessage[]) => void
+  setConnectionError: (value: string | null) => void
+  setSendError: (value: string | null) => void
+  setSettingsError: (value: string | null) => void
+  setTreeError: (value: string | null) => void
+}) {
+  setters.setSessionId(null)
+  setters.setSessionTree(null)
+  setters.setSessionSettings(null)
+  setters.setMessages([])
+  setters.setConnectionError(null)
+  setters.setSendError(null)
+  setters.setSettingsError(null)
+  setters.setTreeError(null)
+}
+
+export function useChatSession(deviceSession: StoredDeviceSession | null, routeSessionId: string | undefined, options?: UseChatSessionOptions) {
+  const [status, setStatus] = useState<ChatSessionStatus>('idle')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [sessionTree, setSessionTree] = useState<SessionTreeResponse | null>(null)
@@ -61,6 +81,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
+  const onSessionChangeRef = useRef(options?.onSessionChange)
+
+  useEffect(() => {
+    onSessionChangeRef.current = options?.onSessionChange
+  }, [options?.onSessionChange])
 
   const streaming = checkStreaming(messages)
 
@@ -79,7 +104,10 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
   )
 
   const refreshSessions = useCallback(async () => {
-    if (!deviceSession) return
+    if (!deviceSession) {
+      setSessions([])
+      return
+    }
     setSessions(await listCliSessions(deviceSession.endpoint, deviceSession.accessToken))
   }, [deviceSession])
 
@@ -107,14 +135,14 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
   }, [refreshTree])
 
   const connectSession = useCallback(
-    async (id: string, options?: { resetMessages?: boolean }) => {
+    async (id: string, connectOptions?: { resetMessages?: boolean }) => {
       if (!deviceSession) return
       sseAbortRef.current?.abort()
 
       setStatus('connecting')
       setConnectionError(null)
       setSendError(null)
-      if (options?.resetMessages) {
+      if (connectOptions?.resetMessages) {
         setMessages([])
       }
 
@@ -151,11 +179,48 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
   )
 
   useEffect(() => {
-    if (!deviceSession) return undefined
+    sseAbortRef.current?.abort()
+    sseAbortRef.current = null
+
+    let cancelled = false
+
+    const resetToIdle = () => {
+      setStatus('idle')
+      resetChatState({
+        setSessionId,
+        setSessionTree,
+        setSessionSettings,
+        setMessages,
+        setConnectionError,
+        setSendError,
+        setSettingsError,
+        setTreeError,
+      })
+    }
+
+    if (!deviceSession) {
+      queueMicrotask(() => {
+        if (cancelled) return
+        resetToIdle()
+      })
+      return () => {
+        cancelled = true
+      }
+    }
+
+    if (!routeSessionId) {
+      queueMicrotask(() => {
+        if (cancelled) return
+        resetToIdle()
+        void refreshSessions()
+      })
+      return () => {
+        cancelled = true
+      }
+    }
 
     const ds = deviceSession
-    let cancelled = false
-    const abort = new AbortController()
+    const targetSessionId = routeSessionId
 
     async function init() {
       try {
@@ -163,15 +228,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
         if (!healthy) {
           throw new Error('cli_unreachable')
         }
-
-        let id = readStoredSessionId(ds.deviceId)
-        if (!id) {
-          const session = await createCliSession(ds.endpoint, ds.accessToken, {})
-          id = session.id
-        }
-
         if (cancelled) return
-        await connectSession(id, { resetMessages: true })
+        await connectSession(targetSessionId, { resetMessages: true })
       } catch (error: unknown) {
         if (cancelled) return
         if (error instanceof Error && error.message === 'cli_unreachable') {
@@ -189,11 +247,10 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
 
     return () => {
       cancelled = true
-      abort.abort()
       sseAbortRef.current?.abort()
       sseAbortRef.current = null
     }
-  }, [deviceSession, connectSession])
+  }, [deviceSession, routeSessionId, connectSession, refreshSessions])
 
   const sendMessage = useCallback(
     async (text: string, mode: ChatInputMode) => {
@@ -230,34 +287,31 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
     [deviceSession, sessionId],
   )
 
-  const selectSession = useCallback(
-    async (id: string) => {
-      if (!deviceSession || id === sessionId) return
+  const createSession = useCallback(
+    async (agentId?: string) => {
+      if (!deviceSession) return null
       try {
-        await connectSession(id, { resetMessages: true })
+        const settings = sessionSettings ?? (routeSessionId ? await loadSettings(routeSessionId) : null)
+        const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
+          agentId: agentId ?? settings?.agentId,
+        })
+        await refreshSessions()
+        return session.id
       } catch (error: unknown) {
         setConnectionError(error instanceof Error ? error.message : String(error))
         setStatus('error')
+        return null
       }
     },
-    [connectSession, deviceSession, sessionId],
+    [deviceSession, loadSettings, refreshSessions, routeSessionId, sessionSettings],
   )
 
-  const newSession = useCallback(
-    async (agentId?: string) => {
-      if (!deviceSession) return
-      try {
-        const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
-          agentId: agentId ?? sessionSettings?.agentId,
-        })
-        await connectSession(session.id, { resetMessages: true })
-      } catch (error: unknown) {
-        setConnectionError(error instanceof Error ? error.message : String(error))
-        setStatus('error')
-      }
-    },
-    [connectSession, deviceSession, sessionSettings],
-  )
+  const startNewSession = useCallback(async () => {
+    const id = await createSession()
+    if (id) {
+      onSessionChangeRef.current?.(id)
+    }
+  }, [createSession])
 
   const navigateToEntry = useCallback(
     async (entryId: string | null) => {
@@ -279,12 +333,12 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
       if (!deviceSession || !sessionId) return
       try {
         const forked = await forkSession(deviceSession.endpoint, deviceSession.accessToken, sessionId, { entryId })
-        await connectSession(forked.id, { resetMessages: true })
+        onSessionChangeRef.current?.(forked.id)
       } catch (error: unknown) {
         setTreeError(error instanceof Error ? error.message : String(error))
       }
     },
-    [connectSession, deviceSession, sessionId],
+    [deviceSession, sessionId],
   )
 
   return {
@@ -301,8 +355,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null) {
     treeError,
     sendMessage,
     updateSessionSettings,
-    selectSession,
-    newSession,
+    startNewSession,
     navigateToEntry,
     forkFromEntry,
     refreshSessions,

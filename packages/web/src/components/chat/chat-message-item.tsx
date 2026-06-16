@@ -1,40 +1,44 @@
 import { useTranslation } from 'react-i18next'
-import type { ChatMessage } from '@/lib/chat-types'
+import type { AssistantChatMessage, ChatMessage } from '@/lib/chat-types'
+import { isAssistantMessage } from '@/lib/chat-types'
+import { AssistantThinkingBlock } from '@/components/chat/assistant-thinking-block'
+import { AssistantToolGroup } from '@/components/chat/assistant-tool-group'
 import { MarkdownContent } from '@/components/chat/markdown-content'
-import { ThinkingBlock, ToolCallCard } from '@/components/chat/message-parts'
-import { cn } from '@/lib/utils'
+import { PlanningIndicator } from '@/components/chat/planning-indicator'
+import { UserMessage } from '@/components/chat/user-message'
 
 interface ChatMessageItemProps {
   message: ChatMessage
+  showPlanning?: boolean
 }
 
-export function ChatMessageItem({ message }: ChatMessageItemProps) {
+function AssistantMessageItem({ message, showPlanning }: { message: AssistantChatMessage; showPlanning?: boolean }) {
+  const hasAnswer = message.text.trim().length > 0
+  const hasToolCalls = message.toolCalls.length > 0
+
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      <AssistantThinkingBlock content={message.thinking} streaming={message.streaming} hasToolCalls={hasToolCalls} hasAnswer={hasAnswer} />
+      <AssistantToolGroup tools={message.toolCalls} />
+      <MarkdownContent content={message.text} />
+      {showPlanning ? <PlanningIndicator /> : null}
+      {message.error ? <p className="text-sm text-destructive">{message.error}</p> : null}
+    </div>
+  )
+}
+
+export function ChatMessageItem({ message, showPlanning }: ChatMessageItemProps) {
   const { t } = useTranslation('chat')
 
   if (message.role === 'user') {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-lg bg-primary/15 px-4 py-3">
-          {message.mode !== 'prompt' ? <p className="mb-1 text-[10px] uppercase tracking-wide text-primary">{t(`mode.${message.mode}`)}</p> : null}
-          <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-        </div>
-      </div>
-    )
+    const modeLabel = message.mode !== 'prompt' ? t(`mode.${message.mode}`) : undefined
+    return <UserMessage content={message.content} modeLabel={modeLabel} />
   }
 
-  return (
-    <div className="flex justify-start">
-      <div className={cn('max-w-[95%] rounded-lg border border-border bg-card px-4 py-3', message.error && 'border-destructive/50')}>
-        <ThinkingBlock content={message.thinking} streaming={message.streaming && Boolean(message.thinking)} />
-        {message.toolCalls.map(tool => (
-          <ToolCallCard key={tool.toolCallId} toolName={tool.toolName} args={tool.args} result={tool.result} isError={tool.isError} status={tool.status} />
-        ))}
-        <MarkdownContent content={message.text} />
-        {message.streaming && !message.text && !message.thinking && message.toolCalls.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('assistantThinking')}</p>
-        ) : null}
-        {message.error ? <p className="mt-2 text-sm text-destructive">{message.error}</p> : null}
-      </div>
-    </div>
-  )
+  return <AssistantMessageItem message={message} showPlanning={showPlanning} />
+}
+
+export function shouldShowPlanning(message: ChatMessage): boolean {
+  if (!isAssistantMessage(message) || !message.streaming) return false
+  return !message.text.trim() && !message.thinking.trim() && message.toolCalls.length === 0
 }

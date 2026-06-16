@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SessionTreeNode, SessionTreeResponse } from '@muse-ai/shared'
-import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { buildSessionTreeItems, isNodeOnActivePath, nodeLabel, type SessionTreeItem } from '@/lib/session-tree-utils'
 import { cn } from '@/lib/utils'
+import { GitBranchPlus } from 'lucide-react'
 
 interface SessionTreePanelProps {
   tree: SessionTreeResponse | null
@@ -35,27 +36,33 @@ function TreeNodeRow({
 
   return (
     <li>
-      <div className={cn('group flex items-start gap-1 rounded-md px-1 py-1', active && 'bg-primary/10')} style={{ paddingLeft: `${item.depth * 12 + 4}px` }}>
+      <div
+        className={cn('group flex items-start gap-0.5 rounded-lg py-0.5', active && 'bg-sidebar-accent/80')}
+        style={{ paddingLeft: `${item.depth * 10 + 4}px` }}
+      >
         <button
           type="button"
           disabled={disabled || !canNavigate}
-          className={cn('min-w-0 flex-1 text-left text-xs', canNavigate ? 'hover:text-primary' : 'cursor-default text-muted-foreground')}
+          className={cn(
+            'ui-menu-item min-w-0 flex-1 rounded-lg px-2 py-1.5 text-xs',
+            canNavigate ? 'text-sidebar-foreground hover:bg-sidebar-accent/60' : 'cursor-default text-muted-foreground',
+            active && 'bg-sidebar-accent text-sidebar-accent-foreground',
+          )}
           onClick={() => onNavigate(node.id)}
         >
-          <span className="mr-1 rounded bg-muted px-1 py-0.5 text-[10px] uppercase">{node.type}</span>
+          <span className="mr-1.5 rounded bg-muted px-1 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">{node.type}</span>
           <span className="break-words">{nodeLabel(node)}</span>
         </button>
         {canFork ? (
-          <Button
+          <IconButton
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 shrink-0 px-1 text-[10px] opacity-0 group-hover:opacity-100"
+            className="mt-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
             disabled={disabled}
+            aria-label={t('fork')}
             onClick={() => onFork(node.id)}
           >
-            {t('fork')}
-          </Button>
+            <GitBranchPlus className="size-3.5" strokeWidth={2} />
+          </IconButton>
         ) : null}
       </div>
       {item.children.length > 0 ? (
@@ -74,16 +81,16 @@ export function SessionTreePanel({ tree, disabled, onNavigate, onFork }: Session
   const items = useMemo(() => (tree ? buildSessionTreeItems(tree.entries) : []), [tree])
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-border bg-card/40">
-      <div className="border-b border-border px-3 py-2">
-        <h2 className="text-sm font-medium">{t('sessionTreeTitle')}</h2>
-        <p className="text-[10px] text-muted-foreground">{t('sessionTreeHint')}</p>
+    <aside className="flex h-full min-h-0 w-full flex-col bg-sidebar">
+      <div className="border-b border-sidebar-border px-3 py-2.5">
+        <h2 className="text-sm font-medium text-sidebar-foreground">{t('sessionTreeTitle')}</h2>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{t('sessionTreeHint')}</p>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {!tree || items.length === 0 ? (
           <p className="px-2 py-4 text-xs text-muted-foreground">{t('sessionTreeEmpty')}</p>
         ) : (
-          <ul>
+          <ul className="flex flex-col gap-0.5">
             {items.map(item => (
               <TreeNodeRow
                 key={item.node.id}

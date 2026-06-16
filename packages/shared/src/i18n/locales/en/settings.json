@@ -1,11 +1,17 @@
 {
   "title": "Providers",
   "subtitle": "API keys are stored on the backend; the CLI calls models through the proxy.",
+  "nav": {
+    "general": "General",
+    "providers": "Providers"
+  },
+  "back": "Back to chat",
   "name": "Name",
   "baseUrl": "Base URL",
   "apiKey": "API Key",
   "isDefault": "Set as default",
   "add": "Add provider",
+  "listTitle": "Configured providers",
   "save": "Save",
   "delete": "Delete",
   "empty": "No providers configured",

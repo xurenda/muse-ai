@@ -3,7 +3,29 @@
   "connectedDevice": "已连接设备：{{name}}",
   "connecting": "正在连接 CLI…",
   "emptyHint": "发送消息开始对话",
-  "send": "发送",
+  "noDeviceHint": "请先在侧栏进入「设备」页，连接 CLI 后再开始对话。",
+  "newChatHint": "开始新对话，或从左侧选择历史会话。",
+  "startNewSession": "开始新对话",
+  "thinking": {
+    "active": "思考中",
+    "doneBrief": "思考片刻"
+  },
+  "explore": {
+    "active": "探索中",
+    "doneBrief": "探索了 {{count}} 项",
+    "running": "执行中…"
+  },
+  "planning": {
+    "label": "规划下一步"
+  },
+  "input": {
+    "placeholder": "输入消息…",
+    "placeholderStreaming": "Agent 回复中：Enter 追加指令，Shift+Enter 排队下一条",
+    "send": "发送",
+    "steer": "追加",
+    "hintIdle": "Enter 发送",
+    "hintStreaming": "Enter 追加 · Shift+Enter 排队"
+  },
   "newSession": "新会话",
   "inputPlaceholder": "输入消息…（Enter 发送，Shift+Enter 换行）",
   "inputPlaceholderSteer": "Agent 运行中：可用 steer / follow_up 打断或追加",

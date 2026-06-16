@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { thinkingLevelSchema, type AgentDefinition, type SessionSettingsResponse, type ThinkingLevel } from '@muse-ai/shared'
 import { listCliAgents } from '@/api/cli-client'
-import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import type { StoredDeviceSession } from '@/lib/config'
 
 const THINKING_LEVELS = thinkingLevelSchema.options
@@ -50,48 +51,43 @@ function ChatSessionBarFields({ deviceSession, sessionSettings, disabled, onUpda
     setSaving(false)
   }
 
+  const agentOptions = agents.map(agent => ({ value: agent.id, label: agent.name }))
+  const thinkingOptions = THINKING_LEVELS.map(level => ({
+    value: level,
+    label: t(`thinkingLevels.${level}`),
+  }))
+
   return (
-    <div className="flex flex-wrap items-end gap-3 border-b border-border bg-card/50 px-4 py-3">
-      <div className="min-w-[10rem] flex-1">
-        <Label className="mb-1 block text-xs text-muted-foreground">{t('sessionAgent')}</Label>
-        <select
-          className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+    <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+      <div className="min-w-[8rem] flex-1">
+        <Label className="mb-1 block text-[11px] text-muted-foreground">{t('sessionAgent')}</Label>
+        <Select
           value={sessionSettings?.agentId ?? ''}
+          options={agentOptions}
+          placeholder="—"
           disabled={disabled || saving}
-          onChange={e => void applyAgent(e.target.value)}
-        >
-          {agents.map(agent => (
-            <option key={agent.id} value={agent.id}>
-              {agent.name}
-            </option>
-          ))}
-        </select>
+          onValueChange={value => void applyAgent(value)}
+        />
       </div>
-      <div className="min-w-[12rem] flex-[2]">
-        <Label className="mb-1 block text-xs text-muted-foreground">{t('sessionModel')}</Label>
-        <div className="flex gap-2">
-          <Input value={modelRef} onChange={e => setModelRef(e.target.value)} disabled={disabled || saving} />
+      <div className="min-w-[10rem] flex-[2]">
+        <Label className="mb-1 block text-[11px] text-muted-foreground">{t('sessionModel')}</Label>
+        <div className="flex gap-1.5">
+          <Input value={modelRef} onChange={e => setModelRef(e.target.value)} disabled={disabled || saving} className="h-8" />
           <Button type="button" size="sm" variant="outline" disabled={disabled || saving} onClick={() => void applyModel()}>
             OK
           </Button>
         </div>
       </div>
-      <div className="min-w-[8rem]">
-        <Label className="mb-1 block text-xs text-muted-foreground">{t('sessionThinking')}</Label>
-        <select
-          className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+      <div className="min-w-[7rem] flex-1">
+        <Label className="mb-1 block text-[11px] text-muted-foreground">{t('sessionThinking')}</Label>
+        <Select
           value={thinkingLevel}
+          options={thinkingOptions}
           disabled={disabled || saving}
-          onChange={e => void applyThinking(e.target.value as ThinkingLevel)}
-        >
-          {THINKING_LEVELS.map(level => (
-            <option key={level} value={level}>
-              {t(`thinkingLevels.${level}`)}
-            </option>
-          ))}
-        </select>
+          onValueChange={value => void applyThinking(value as ThinkingLevel)}
+        />
       </div>
-      <div className="flex gap-2 pb-0.5">
+      <div className="flex gap-1.5 pb-0.5">
         <Button type="button" size="sm" variant="outline" asChild>
           <Link to="/agents">{t('manageAgents')}</Link>
         </Button>

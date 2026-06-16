@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { register } from '@/api/backend-client'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { AuthLayout } from '@/components/layout/auth-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,7 +24,7 @@ export function RegisterPage() {
     try {
       const response = await register({ email, password })
       setAuth(loginResponseToStored(response))
-      navigate('/devices')
+      navigate('/chat')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('registerFailed'))
     } finally {
@@ -33,14 +33,18 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-6">
-      <div className="flex justify-end">
-        <LanguageSwitcher />
-      </div>
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">{t('registerTitle')}</h1>
-      </div>
-      <form className="space-y-4 rounded-lg border border-border bg-card p-6" onSubmit={onSubmit}>
+    <AuthLayout
+      title={t('registerTitle')}
+      footer={
+        <>
+          {t('hasAccount')}{' '}
+          <Link className="text-primary hover:underline" to="/login">
+            {t('goLogin')}
+          </Link>
+        </>
+      }
+    >
+      <form className="space-y-4" onSubmit={onSubmit}>
         <div className="space-y-2">
           <Label htmlFor="email">{t('email')}</Label>
           <Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -62,12 +66,6 @@ export function RegisterPage() {
           {loading ? '…' : t('registerSubmit')}
         </Button>
       </form>
-      <p className="text-center text-sm text-muted-foreground">
-        {t('hasAccount')}{' '}
-        <Link className="text-primary hover:underline" to="/login">
-          {t('goLogin')}
-        </Link>
-      </p>
-    </div>
+    </AuthLayout>
   )
 }

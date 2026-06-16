@@ -12,15 +12,7 @@ export function ProtectedLayout() {
 export function GuestLayout() {
   const { auth } = useAuth()
   if (auth) {
-    return <Navigate to="/devices" replace />
-  }
-  return <Outlet />
-}
-
-export function DeviceRequiredLayout() {
-  const { deviceSession } = useAuth()
-  if (!deviceSession) {
-    return <Navigate to="/devices" replace />
+    return <Navigate to="/chat" replace />
   }
   return <Outlet />
 }

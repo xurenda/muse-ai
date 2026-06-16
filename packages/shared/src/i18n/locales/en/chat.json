@@ -3,6 +3,29 @@
   "connectedDevice": "Connected: {{name}}",
   "connecting": "Connecting to CLI…",
   "emptyHint": "Send a message to start",
+  "noDeviceHint": "Open Devices in the sidebar and connect a CLI before chatting.",
+  "newChatHint": "Start a new conversation or pick one from the sidebar.",
+  "startNewSession": "Start new chat",
+  "thinking": {
+    "active": "Thinking",
+    "doneBrief": "Thought for a moment"
+  },
+  "explore": {
+    "active": "Exploring",
+    "doneBrief": "Explored {{count}} items",
+    "running": "Running…"
+  },
+  "planning": {
+    "label": "Planning next step"
+  },
+  "input": {
+    "placeholder": "Type a message…",
+    "placeholderStreaming": "Agent replying: Enter to steer, Shift+Enter to queue",
+    "send": "Send",
+    "steer": "Steer",
+    "hintIdle": "Enter to send",
+    "hintStreaming": "Enter steer · Shift+Enter queue"
+  },
   "send": "Send",
   "newSession": "New session",
   "inputPlaceholder": "Type a message… (Enter to send, Shift+Enter for newline)",

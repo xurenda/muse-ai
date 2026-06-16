@@ -10,5 +10,10 @@
   "offline": "离线",
   "language": "语言",
   "languageZh": "简体中文",
-  "languageEn": "English"
+  "languageEn": "English",
+  "theme": "主题",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "themeSystem": "跟随系统",
+  "underDevelopment": "此页面正在开发中，敬请期待。"
 }

@@ -1,0 +1,20 @@
+{
+  "sidebar": {
+    "newChat": "新对话",
+    "devices": "设备",
+    "agents": "Agent",
+    "settings": "设置",
+    "sessions": "最近对话",
+    "sessionsLoading": "加载中…",
+    "sessionsEmpty": "暂无历史对话",
+    "untitledSession": "未命名对话"
+  },
+  "header": {
+    "sidebarToggle": "切换侧边栏",
+    "sessionTreeToggle": "切换 Session 树",
+    "device": "设备",
+    "deviceConnected": "已连接：{{name}}",
+    "deviceDisconnected": "未连接设备",
+    "logout": "退出登录"
+  }
+}

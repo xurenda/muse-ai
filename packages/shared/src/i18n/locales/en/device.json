@@ -8,6 +8,7 @@
   "pairExpires": "Expires at {{expiresAt}}",
   "pairHint": "On the machine running the CLI:",
   "pairCommand": "muse pair {{code}}",
+  "listTitle": "My devices",
   "select": "Connect",
   "connecting": "Connecting…",
   "connectFailed": "Could not reach CLI",
