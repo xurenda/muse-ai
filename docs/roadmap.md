@@ -4,7 +4,7 @@
 
 | 版本         | 目标                                       | 状态   |
 | ------------ | ------------------------------------------ | ------ |
-| **v0.1 MVP** | 自用：CLI 聊天 + Web UI + Backend Provider | 未开始 |
+| **v0.1 MVP** | 自用：CLI 聊天 + Web UI + Backend Provider | 进行中 |
 | **v0.2**     | 市场 v1、输入增强、记忆 v1                 | 规划中 |
 | **v0.3**     | 自进化 v1、Backend MCP Hub                 | 规划中 |
 | **v0.4+**    | Workflow、多 Agent 轻编排                  | 规划中 |
@@ -100,7 +100,7 @@
 
 ---
 
-#### 阶段 5：Web 聊天 MVP（~2–3 周） — [计划](./v0.1/phase-5.md)
+#### 阶段 5：Web 聊天 MVP（~2–3 周） — [交付记录](./v0.1/phase-5.md) ✅
 
 - 登录、设备选择（读 Backend endpoint，直连 CLI SSE）
 - Agent 选择与简易组装 UI
@@ -113,7 +113,18 @@
 
 ---
 
-#### 阶段 6：打磨与自用（~1 周） — [计划](./v0.1/phase-6.md)
+#### 阶段 6：Web UI 改版（~2 周） — [交付记录](./v0.1/phase-6.md) ✅
+
+- 对齐参考 UI（`/Users/kingen/code/muse-ai`）：设计 token、light/dark、应用壳层
+- 可伸缩三栏布局、侧栏 Session 列表、聊天 Composer 与消息块
+- Shiki 代码高亮、thinking / tool 卡片视觉
+- `/settings/*` 设置侧栏；Providers / Devices / Agents / 登录注册页统一风格
+
+**里程碑**：界面达到可日常自用观感；**功能行为与阶段 5 一致**。
+
+---
+
+#### 阶段 7：打磨与自用（~1 周） — [计划](./v0.1/phase-7.md) ← **当前**
 
 - 断线重连、错误提示
 - Session compact（长对话）

@@ -219,10 +219,11 @@ pnpm dev:web
 
 | 能力                           | 阶段  | 说明                                                     |
 | ------------------------------ | ----- | -------------------------------------------------------- |
-| steer/follow_up 跨 HTTP 真打断 | 6+    | REST 每轮新建 Harness；streaming 内 steer 待常驻 runtime |
-| Session compact                | 6     | Harness `compact()`                                      |
-| token 用量统计                 | 6     | Web 展示                                                 |
-| 远程 CLI HTTPS 指南            | 6     | 文档                                                     |
+| steer/follow_up 跨 HTTP 真打断 | 7+    | REST 每轮新建 Harness；streaming 内 steer 待常驻 runtime |
+| Session compact                | 7     | Harness `compact()`                                      |
+| token 用量统计                 | 7     | Web 展示                                                 |
+| 远程 CLI HTTPS 指南            | 7     | 文档                                                     |
+| Web UI 视觉改版                | 6     | 见 [phase-6.md](./phase-6.md)                            |
 | 附件 / 多模态                  | v0.2+ | UI 占位可留                                              |
 | Backend 转发 SSE               | —     | 架构刻意不做                                             |
 
@@ -230,4 +231,4 @@ pnpm dev:web
 
 ## 下一阶段
 
-[阶段 6：打磨与自用](./phase-6.md) — 断线重连完善、Session compact、token 统计、文档与连续自用验收。
+[阶段 6：Web UI 改版](./phase-6.md) — 对齐参考仓库 UI；完成后进入 [阶段 7：打磨与自用](./phase-7.md)。
