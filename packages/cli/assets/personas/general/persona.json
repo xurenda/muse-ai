@@ -3,6 +3,6 @@
   "name": "通用助手",
   "description": "日常问答与通用任务",
   "systemPromptPath": "system.md",
-  "defaultModel": "openai/deepseek-v4-flash",
+  "defaultModel": "deepseek/deepseek-v4-flash",
   "thinkingLevel": "off"
 }

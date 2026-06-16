@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSseEvent } from '@muse-ai/shared'
 import { BUILTIN_CODING_AGENT_ID, BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS, sessionEventsPath } from '@muse-ai/shared'
 import { loadCliConfig } from '@/config.js'
@@ -303,5 +303,54 @@ describe('ChatService', () => {
     const errorEvent = received.find(e => e.type === 'error')
     expect(errorEvent?.type === 'error' && errorEvent.message).toContain('未配对')
     expect(received.some(e => e.type === 'agent_end')).toBe(true)
+  })
+
+  it('LLM 返回 error stopReason 时应推送 error 事件', async () => {
+    const { deps, tempHome } = await createTestApp()
+    await writeFile(
+      join(tempHome, 'config.json'),
+      `${JSON.stringify(
+        {
+          version: 1,
+          deviceToken: 'test-device-token',
+          backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL) => {
+        if (String(url).includes('/v1/chat/completions')) {
+          return new Response(JSON.stringify({ error: 'no_provider', message: '未配置 LLM Provider' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        return new Response('not found', { status: 404 })
+      }),
+    )
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const received: MuseSseEvent[] = []
+    const abort = new AbortController()
+
+    deps.eventHub.subscribe(
+      session.id,
+      createSseSubscriber(abort.signal, async event => {
+        received.push(event)
+      }),
+    )
+
+    await deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    const errorEvent = received.find(e => e.type === 'error')
+    expect(errorEvent?.type === 'error' && errorEvent.message).toContain('未配置 LLM Provider')
+    expect(received.some(e => e.type === 'agent_end')).toBe(true)
+
+    vi.unstubAllGlobals()
   })
 })

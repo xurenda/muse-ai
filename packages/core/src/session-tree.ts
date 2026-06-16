@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { buildSessionContext } from '@earendil-works/pi-agent-core'
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
 import type { SessionBranchMessage, SessionTreeNode } from '@muse-ai/shared'
+import { extractBranchMessageError } from './assistant-turn-error.js'
 
 function extractTextContent(content: unknown): string {
   if (typeof content === 'string') return content
@@ -25,7 +26,13 @@ export function mapSessionTreeEntry(entry: SessionTreeEntry): SessionTreeNode {
   switch (entry.type) {
     case 'message': {
       const role = entry.message.role
-      const preview = previewText(extractTextContent('content' in entry.message ? entry.message.content : ''))
+      let preview = previewText(extractTextContent('content' in entry.message ? entry.message.content : ''))
+      if (role === 'assistant') {
+        const branchError = extractBranchMessageError(entry.message)
+        if (branchError) {
+          preview = previewText(branchError)
+        }
+      }
       if (role === 'user' || role === 'assistant' || role === 'toolResult') {
         return {
           id: entry.id,
@@ -155,11 +162,14 @@ export function mapBranchMessages(messages: AgentMessage[]): SessionBranchMessag
   for (const message of messages) {
     if (!isDisplayBranchMessage(message)) continue
     const text = messageText(message)
-    if (!text.trim()) continue
+    const error = message.role === 'assistant' ? extractBranchMessageError(message) : null
+    if (message.role === 'user' && !text.trim()) continue
+    if (message.role === 'assistant' && !text.trim() && !error) continue
     result.push({
       id: 'id' in message && typeof message.id === 'string' ? message.id : randomUUID(),
       role: message.role,
       text,
+      error: error ?? undefined,
       timestamp: 'timestamp' in message && typeof message.timestamp === 'number' ? new Date(message.timestamp).toISOString() : undefined,
     })
   }

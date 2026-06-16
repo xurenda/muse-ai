@@ -24,12 +24,30 @@ export function createBackendGetApiKeyAndHeaders(config: BackendLlmAuthConfig) {
   }
 }
 
-/** 把 model.baseUrl 重写为 Backend 代理根路径 */
-export function withProxyBaseUrl<T extends { baseUrl: string }>(model: T, backendUrl: string): T {
+/** pi-ai 通过 baseUrl 推断 compat；经 Muse 代理后需按 provider 补丁，避免误发 developer role */
+const DEVELOPER_ROLE_PROVIDERS = new Set(['openai', 'openai-codex'])
+
+function resolveProxyCompatPatch(model: { provider: string; compat?: { supportsDeveloperRole?: boolean } }): {
+  supportsDeveloperRole?: boolean
+} {
+  if (model.compat?.supportsDeveloperRole !== undefined) {
+    return {}
+  }
+  if (DEVELOPER_ROLE_PROVIDERS.has(model.provider)) {
+    return {}
+  }
+  return { supportsDeveloperRole: false }
+}
+
+/** 把 model.baseUrl 重写为 Backend 代理根路径，并保留目标 Provider 的 compat 语义 */
+export function withProxyBaseUrl<T extends { baseUrl: string; provider: string; compat?: Record<string, unknown> }>(model: T, backendUrl: string): T {
   const base = normalizeBackendUrl(backendUrl)
+  const patch = resolveProxyCompatPatch(model)
+  const compat = patch.supportsDeveloperRole !== undefined || model.compat ? { ...model.compat, ...patch } : model.compat
   return {
     ...model,
     baseUrl: `${base}/v1`,
+    ...(compat ? { compat } : {}),
   }
 }
 

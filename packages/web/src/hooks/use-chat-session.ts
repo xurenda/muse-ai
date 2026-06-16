@@ -14,6 +14,7 @@ import {
   subscribeSessionEvents,
 } from '@/api/cli-client'
 import { branchMessagesToChat } from '@/lib/branch-messages'
+import { mergeBranchWithEphemeralTail } from '@/lib/merge-branch-messages'
 import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
 import { createUserMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
 import type { StoredDeviceSession } from '@/lib/config'
@@ -120,7 +121,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         const tree = await getSessionTree(deviceSession.endpoint, deviceSession.accessToken, id)
         setSessionTree(tree)
         if (replaceMessages) {
-          setMessages(branchMessagesToChat(tree.branch))
+          setMessages(prev => mergeBranchWithEphemeralTail(prev, tree.branch))
         }
       } catch (error: unknown) {
         setTreeError(error instanceof Error ? error.message : String(error))

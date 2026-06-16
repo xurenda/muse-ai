@@ -56,6 +56,8 @@ export const sessionBranchMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   text: z.string(),
+  /** LLM / 工具层失败时的可读错误（持久化自 session 树） */
+  error: z.string().optional(),
   timestamp: z.string().optional(),
 })
 

@@ -1,7 +1,7 @@
 import { getModel } from '@earendil-works/pi-ai'
 import type { Model } from '@earendil-works/pi-ai'
 
-const DEFAULT_MODEL_REF = 'openai/deepseek-v4-flash'
+const DEFAULT_MODEL_REF = 'deepseek/deepseek-v4-flash'
 
 function createOpenAiCompatibleModel(modelId: string): Model<'openai-completions'> {
   return {
@@ -34,8 +34,19 @@ export function parseModelRef(ref: string): Model<string> {
         return known
       }
     } catch {
-      // 未知 OpenAI 兼容 model id，走通用 completions 配置
+      // 未知 OpenAI 兼容 model id，尝试其他内置供应方
     }
+
+    // 兼容历史引用 openai/deepseek-v4-*（pi-ai 中实际归属 deepseek 供应方）
+    try {
+      const deepseek = (getModel as (p: string, id: string) => Model<string>)('deepseek', modelId)
+      if (deepseek?.id && deepseek.baseUrl) {
+        return deepseek
+      }
+    } catch {
+      // 非 deepseek 模型，走通用 OpenAI 兼容配置
+    }
+
     return createOpenAiCompatibleModel(modelId)
   }
 

@@ -37,4 +37,15 @@ describe('applySseEvent', () => {
       expect(assistant.toolCalls[0]?.result).toBe('content')
     }
   })
+
+  it('error 事件应写入 assistant.error', () => {
+    let messages = applySseEvent([], { type: 'agent_start' })
+    messages = applySseEvent(messages, { type: 'error', message: 'LLM 请求失败' })
+    const assistant = messages.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant') {
+      expect(assistant.error).toBe('LLM 请求失败')
+      expect(assistant.streaming).toBe(false)
+    }
+  })
 })

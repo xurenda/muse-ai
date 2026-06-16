@@ -34,9 +34,22 @@ export class ProviderResolver {
   }
 
   async resolve(userId: string, providerHint?: string): Promise<ResolvedProxyProvider | undefined> {
+    const hint = providerHint?.trim()
+    if (hint) {
+      const resolved = await this.tryResolve(userId, hint)
+      if (resolved) return resolved
+    }
+
+    const defaultProviderId = await this.resolveDefaultProviderId(userId)
+    if (defaultProviderId && defaultProviderId !== hint) {
+      return this.tryResolve(userId, defaultProviderId)
+    }
+
+    return undefined
+  }
+
+  private async tryResolve(userId: string, providerId: string): Promise<ResolvedProxyProvider | undefined> {
     const modelsStore = await this.configStore.readAll(userId)
-    const providerId = providerHint?.trim() || (await this.resolveDefaultProviderId(userId))
-    if (!providerId) return undefined
 
     const override = modelsStore.providers?.[providerId]
     const baseUrl = resolveProviderBaseUrl(providerId, override)

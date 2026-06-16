@@ -1,4 +1,12 @@
-import { MuseHarness, mapHarnessEventToSse, buildHarnessOptionsForSession, type MuseAgentRegistry, type MuseSessionStore } from '@muse-ai/core'
+import {
+  MuseHarness,
+  mapHarnessEventToSse,
+  buildHarnessOptionsForSession,
+  extractAssistantTurnError,
+  formatLlmErrorMessage,
+  type MuseAgentRegistry,
+  type MuseSessionStore,
+} from '@muse-ai/core'
 import type { ChatRequest, MuseSseEvent } from '@muse-ai/shared'
 import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { resolveActiveTools } from '@/tools/index.js'
@@ -93,16 +101,15 @@ export class ChatService {
     })
 
     try {
-      await this.dispatchMessage(harness, message, mode)
+      const assistantMessage = await this.dispatchMessage(harness, message, mode)
+      const turnError = extractAssistantTurnError(assistantMessage)
+      if (turnError) {
+        await this.eventHub.publish(sessionId, { type: 'error', message: turnError })
+      }
       await this.sessionStore.touch(sessionId)
       void this.sessionTitleService.maybeGenerateAfterTurn(sessionId).catch(() => {})
     } catch (error: unknown) {
-      const text = formatDispatchError(error)
-      const friendly =
-        text.includes('no_provider') || text.includes('未配置 LLM Provider')
-          ? '未配置 LLM Provider：请先在 Web 设置页添加 OpenAI 兼容 Provider 并设为默认'
-          : text
-      await this.publishError(sessionId, friendly)
+      await this.publishError(sessionId, formatLlmErrorMessage(formatDispatchError(error)))
     } finally {
       unsubscribe()
     }
@@ -112,12 +119,8 @@ export class ChatService {
    * REST 每轮新建 Harness（idle），steer/follow_up 仅适用于常驻 runtime 内打断。
    * Web 侧在 Agent 未 streaming 时不应选 steer/follow_up，此处 idle 时回落 prompt。
    */
-  private async dispatchMessage(harness: MuseHarness, message: string, mode: ChatRequest['mode']): Promise<void> {
-    if (mode === 'prompt') {
-      await harness.prompt(message)
-      return
-    }
-    await harness.prompt(message)
+  private async dispatchMessage(harness: MuseHarness, message: string, _mode: ChatRequest['mode']) {
+    return harness.prompt(message)
   }
 
   private async publishError(sessionId: string, message: string): Promise<void> {

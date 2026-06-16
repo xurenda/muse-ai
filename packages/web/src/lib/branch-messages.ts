@@ -12,6 +12,7 @@ export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMess
       ...assistant,
       id: message.id,
       text: message.text,
+      error: message.error,
       streaming: false,
     }
   })
