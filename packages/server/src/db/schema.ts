@@ -27,6 +27,8 @@ export const devices = pgTable('devices', {
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   accessTokenHash: text('access_token_hash').notNull(),
+  /** AES-GCM 加密存储，供 Web credentials API 解密返回 */
+  accessTokenEncrypted: text('access_token_encrypted'),
   endpoint: text('endpoint'),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'string' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),

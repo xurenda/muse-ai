@@ -1,0 +1,14 @@
+{
+  "appName": "MuseAI",
+  "loading": "加载中…",
+  "error": "出错了",
+  "retry": "重试",
+  "cancel": "取消",
+  "save": "保存",
+  "back": "返回",
+  "online": "在线",
+  "offline": "离线",
+  "language": "语言",
+  "languageZh": "简体中文",
+  "languageEn": "English"
+}

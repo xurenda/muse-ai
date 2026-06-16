@@ -1,0 +1,17 @@
+{
+  "title": "选择设备",
+  "subtitle": "聊天需直连 CLI daemon；请确保设备在线且已配对。",
+  "empty": "暂无设备，请先生成配对码并在终端执行 muse pair。",
+  "pairTitle": "配对新设备",
+  "pairGenerate": "生成配对码",
+  "pairCode": "配对码",
+  "pairExpires": "有效期至 {{expiresAt}}",
+  "pairHint": "在运行 CLI 的机器上执行：",
+  "pairCommand": "muse pair {{code}}",
+  "select": "连接此设备",
+  "connecting": "正在连接…",
+  "connectFailed": "无法连接 CLI",
+  "credentialsFailed": "获取设备凭证失败",
+  "endpointMissing": "设备未上报 endpoint，请确认 muse start 已运行",
+  "rePairRequired": "设备凭证不可用，请重新配对"
+}

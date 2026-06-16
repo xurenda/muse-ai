@@ -1,0 +1,85 @@
+import type { MuseSseEvent } from '@muse-ai/shared'
+import { type AssistantChatMessage, type ChatMessage, createAssistantMessage } from '@/lib/chat-types'
+
+function updateLastAssistant(messages: ChatMessage[], updater: (message: AssistantChatMessage) => AssistantChatMessage): ChatMessage[] {
+  const index = findLastAssistantIndex(messages)
+  if (index < 0) {
+    const created = updater(createAssistantMessage())
+    return [...messages, created]
+  }
+  const next = [...messages]
+  const current = messages[index]
+  if (current?.role !== 'assistant') return messages
+  next[index] = updater(current)
+  return next
+}
+
+function findLastAssistantIndex(messages: ChatMessage[]): number {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.role === 'assistant') return i
+  }
+  return -1
+}
+
+/** 将 SSE 事件累积到消息列表 */
+export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent): ChatMessage[] {
+  switch (event.type) {
+    case 'agent_start':
+      return [...messages, createAssistantMessage()]
+
+    case 'text_delta':
+      return updateLastAssistant(messages, m => ({ ...m, text: m.text + event.delta }))
+
+    case 'thinking_delta':
+      return updateLastAssistant(messages, m => ({ ...m, thinking: m.thinking + event.delta }))
+
+    case 'tool_start':
+      return updateLastAssistant(messages, m => ({
+        ...m,
+        toolCalls: [
+          ...m.toolCalls,
+          {
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            args: event.args,
+            status: 'running',
+          },
+        ],
+      }))
+
+    case 'tool_end':
+      return updateLastAssistant(messages, m => ({
+        ...m,
+        toolCalls: m.toolCalls.map(tool =>
+          tool.toolCallId === event.toolCallId
+            ? {
+                ...tool,
+                result: event.result,
+                isError: event.isError,
+                status: 'done' as const,
+              }
+            : tool,
+        ),
+      }))
+
+    case 'agent_end':
+      return updateLastAssistant(messages, m => ({ ...m, streaming: false }))
+
+    case 'error':
+      return updateLastAssistant(messages, m => ({
+        ...m,
+        streaming: false,
+        error: event.message,
+      }))
+
+    case 'turn_start':
+    case 'turn_end':
+    default:
+      return messages
+  }
+}
+
+export function isStreaming(messages: ChatMessage[]): boolean {
+  const last = messages.at(-1)
+  return last?.role === 'assistant' && last.streaming
+}

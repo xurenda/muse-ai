@@ -54,6 +54,21 @@ export function registerDeviceRoutes(
     return c.json({ devices })
   })
 
+  app.get(SERVER_API_PATHS.DEVICE_CREDENTIALS, userAuth, async c => {
+    const user = c.get('user')
+    const deviceId = c.req.param('deviceId')
+    try {
+      const credentials = await deviceService.getCredentialsForUser(user.id, deviceId)
+      return c.json(credentials)
+    } catch (error: unknown) {
+      if (error instanceof DeviceError) {
+        const status = error.code === 'device_not_found' ? 404 : error.code === 'credentials_unavailable' ? 409 : 503
+        return c.json({ error: error.code, message: error.message }, status)
+      }
+      throw error
+    }
+  })
+
   app.post(SERVER_API_PATHS.DEVICES_PAIR_INIT, userAuth, async c => {
     const user = c.get('user')
     const result = await deviceService.createPairCode(user.id)

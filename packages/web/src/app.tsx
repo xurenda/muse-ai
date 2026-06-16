@@ -1,23 +1,34 @@
-import { DEFAULT_PORTS } from '@muse-ai/shared'
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL ?? `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from '@/hooks/use-auth'
+import { AgentsPage } from '@/pages/agents-page'
+import { ChatPage } from '@/pages/chat-page'
+import { DevicesPage } from '@/pages/devices-page'
+import { LoginPage } from '@/pages/login-page'
+import { ProvidersPage } from '@/pages/providers-page'
+import { RegisterPage } from '@/pages/register-page'
+import { DeviceRequiredLayout, GuestLayout, ProtectedLayout } from '@/routes/guards'
 
 export function App() {
   return (
-    <main className="app">
-      <h1>MuseAI</h1>
-      <p className="muted">阶段 0 — Web 骨架已就绪</p>
-      <dl className="env-list">
-        <div>
-          <dt>Backend URL</dt>
-          <dd>{backendUrl}</dd>
-        </div>
-        <div>
-          <dt>CLI 默认端口</dt>
-          <dd>{DEFAULT_PORTS.CLI}</dd>
-        </div>
-      </dl>
-      <p className="hint">聊天 UI 将在阶段 4 接入；当前请用 curl 验证 CLI / Server health。</p>
-    </main>
+    <AuthProvider>
+      <Routes>
+        <Route element={<GuestLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+
+        <Route element={<ProtectedLayout />}>
+          <Route path="/devices" element={<DevicesPage />} />
+          <Route path="/settings/providers" element={<ProvidersPage />} />
+          <Route element={<DeviceRequiredLayout />}>
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/agents" element={<AgentsPage />} />
+          </Route>
+        </Route>
+
+        <Route path="/" element={<Navigate to="/devices" replace />} />
+        <Route path="*" element={<Navigate to="/devices" replace />} />
+      </Routes>
+    </AuthProvider>
   )
 }

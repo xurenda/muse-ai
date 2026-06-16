@@ -2,9 +2,16 @@ import { access, readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { formatSkillsForSystemPrompt, loadSkills, NodeExecutionEnv, type Skill, type ThinkingLevel } from '@earendil-works/pi-agent-core/node'
-import { getModel } from '@earendil-works/pi-ai'
-import type { Model } from '@earendil-works/pi-ai'
-import { agentDefinitionSchema, BUILTIN_GENERAL_AGENT_ID, personaSchema, type AgentDefinition, type Persona } from '@muse-ai/shared'
+import {
+  agentDefinitionSchema,
+  BUILTIN_GENERAL_AGENT_ID,
+  personaSchema,
+  skillMetaSchema,
+  type AgentDefinition,
+  type Persona,
+  type SkillMeta,
+} from '@muse-ai/shared'
+import { DEFAULT_MODEL_REF, parseModelRef } from './model-ref.js'
 import type { MuseHarnessOptions } from './types.js'
 
 /** 用户目录与内置只读资产目录 */
@@ -31,47 +38,8 @@ export interface CreateAgentInput {
   name: string
   personaId: string
   skillIds: string[]
+  activeToolNames?: string[]
   description?: string
-}
-
-const DEFAULT_MODEL_REF = 'openai/deepseek-v4-flash'
-
-function createOpenAiCompatibleModel(modelId: string): Model<'openai-completions'> {
-  return {
-    id: modelId,
-    name: modelId,
-    api: 'openai-completions',
-    provider: 'openai',
-    baseUrl: 'https://api.openai.com/v1',
-    reasoning: false,
-    input: ['text'],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 128_000,
-    maxTokens: 8_192,
-  }
-}
-
-function parseModelRef(ref: string): Model<string> {
-  const slash = ref.indexOf('/')
-  if (slash <= 0) {
-    throw new Error(`无效的 model 引用: ${ref}`)
-  }
-  const provider = ref.slice(0, slash)
-  const modelId = ref.slice(slash + 1)
-
-  if (provider === 'openai') {
-    try {
-      const known = (getModel as (p: string, id: string) => Model<string>)(provider, modelId)
-      if (known?.id && known.baseUrl) {
-        return known
-      }
-    } catch {
-      // 未知 OpenAI 兼容 model id，走通用 completions 配置
-    }
-    return createOpenAiCompatibleModel(modelId)
-  }
-
-  return (getModel as (p: string, id: string) => Model<string>)(provider, modelId)
 }
 
 const AGENT_FILE = 'agent.json'
@@ -146,6 +114,33 @@ export class MuseAgentRegistry {
   async getAgent(id: string): Promise<AgentDefinition | undefined> {
     const agents = await this.listAgents()
     return agents.find(agent => agent.id === id)
+  }
+
+  async listPersonas(): Promise<Persona[]> {
+    const byId = new Map<string, Persona>()
+    for (const source of [this.roots.bundled.personas, this.roots.user.personas]) {
+      for (const dirName of await listSubdirs(source)) {
+        const filePath = join(source, dirName, PERSONA_FILE)
+        if (!(await pathAccessible(filePath))) continue
+        const parsed = personaSchema.parse(await readJsonFile(filePath))
+        byId.set(parsed.id, parsed)
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+  }
+
+  async listSkills(): Promise<SkillMeta[]> {
+    const byId = new Map<string, SkillMeta>()
+    for (const source of [this.roots.bundled.skills, this.roots.user.skills]) {
+      for (const dirName of await listSubdirs(source)) {
+        const dir = join(source, dirName)
+        const { skills: loaded } = await loadSkills(this.env, dir)
+        for (const skill of loaded) {
+          byId.set(skill.name, skillMetaSchema.parse({ id: dirName, name: skill.name, description: skill.description }))
+        }
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
   }
 
   async loadPersona(personaId: string): Promise<LoadedPersona | undefined> {
@@ -232,7 +227,7 @@ export class MuseAgentRegistry {
       personaId: input.personaId,
       skillIds: input.skillIds,
       description: input.description,
-      activeToolNames: [],
+      activeToolNames: input.activeToolNames ?? [],
       createdAt: now,
       updatedAt: now,
     })

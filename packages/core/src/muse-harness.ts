@@ -1,6 +1,6 @@
 import { AgentHarness, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
-import type { AgentHarnessEvent, AgentTool, Session } from '@earendil-works/pi-agent-core'
-import type { AssistantMessage, ImageContent } from '@earendil-works/pi-ai'
+import type { AgentHarnessEvent, AgentTool, Session, ThinkingLevel } from '@earendil-works/pi-agent-core'
+import type { AssistantMessage, ImageContent, Model } from '@earendil-works/pi-ai'
 import { placeholderGetApiKeyAndHeaders } from './get-api-key.js'
 import type { MuseHarnessOptions } from './types.js'
 
@@ -46,5 +46,21 @@ export class MuseHarness {
 
   followUp(text: string, options?: { images?: ImageContent[] }): Promise<void> {
     return this.harness.followUp(text, options)
+  }
+
+  getModel(): Model<string> {
+    return this.harness.getModel()
+  }
+
+  setModel(model: Model<string>): Promise<void> {
+    return this.harness.setModel(model)
+  }
+
+  getThinkingLevel(): ThinkingLevel {
+    return this.harness.getThinkingLevel()
+  }
+
+  setThinkingLevel(level: ThinkingLevel): Promise<void> {
+    return this.harness.setThinkingLevel(level)
   }
 }

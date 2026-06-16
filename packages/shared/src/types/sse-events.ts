@@ -5,6 +5,7 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('agent_start') }),
   z.object({ type: z.literal('turn_start') }),
   z.object({ type: z.literal('text_delta'), delta: z.string() }),
+  z.object({ type: z.literal('thinking_delta'), delta: z.string() }),
   z.object({
     type: z.literal('tool_start'),
     toolCallId: z.string(),

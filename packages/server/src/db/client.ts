@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS devices (
 
 CREATE INDEX IF NOT EXISTS providers_user_id_idx ON providers(user_id);
 CREATE INDEX IF NOT EXISTS devices_user_id_idx ON devices(user_id);
+
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS access_token_encrypted TEXT;
 `
 
 export async function initDatabase(pool: pg.Pool): Promise<void> {

@@ -1,0 +1,17 @@
+{
+  "title": "Agents",
+  "createTitle": "Create agent",
+  "name": "Name",
+  "description": "Description",
+  "persona": "Persona",
+  "skills": "Skills",
+  "tools": "Tools",
+  "create": "Create",
+  "created": "Agent created",
+  "createFailed": "Create failed",
+  "existing": "Existing agents",
+  "noAgents": "No agents yet",
+  "selectPersona": "Select persona",
+  "selectSkillsHint": "Choose skills to inject",
+  "selectToolsHint": "Choose built-in tools to enable"
+}

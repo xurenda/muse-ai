@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, sessionEventsPath } from '@/constants/api-paths.js'
+import { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, deviceCredentialsPath, sessionEventsPath } from '@/constants/api-paths.js'
 import { createHealthResponse } from '@/types/health.js'
 import { formatSseData, museSseEventSchema } from '@/types/sse-events.js'
 import { deviceSchema } from '@/types/device.js'
@@ -16,8 +16,9 @@ describe('api-paths', () => {
     expect(CLI_API_PATHS.SESSION_EVENTS).toBe('/sessions/:sessionId/events')
   })
 
-  it('应包含设备配对初始化路径', () => {
-    expect(SERVER_API_PATHS.DEVICES_PAIR_INIT).toBe('/devices/pair/init')
+  it('deviceCredentialsPath 应生成设备凭证路径', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440000'
+    expect(deviceCredentialsPath(id)).toBe(`/devices/${id}/credentials`)
   })
 
   it('默认端口应符合架构约定', () => {
@@ -41,6 +42,11 @@ describe('sse-events', () => {
 
   it('museSseEventSchema 应校验合法事件', () => {
     const parsed = museSseEventSchema.safeParse({ type: 'agent_end' })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('museSseEventSchema 应支持 thinking_delta', () => {
+    const parsed = museSseEventSchema.safeParse({ type: 'thinking_delta', delta: '…' })
     expect(parsed.success).toBe(true)
   })
 })

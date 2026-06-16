@@ -2,13 +2,29 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serve } from '@hono/node-server'
 import { streamSSE } from 'hono/streaming'
-import { CLI_API_PATHS, chatRequestSchema, createHealthResponse, createSessionRequestSchema, healthResponseSchema, sessionMetaSchema } from '@muse-ai/shared'
+import {
+  BUILTIN_TOOL_DESCRIPTORS,
+  CLI_API_PATHS,
+  chatRequestSchema,
+  createAgentRequestSchema,
+  createHealthResponse,
+  createSessionRequestSchema,
+  healthResponseSchema,
+  sessionMetaSchema,
+  sessionSettingsPatchSchema,
+  sessionForkRequestSchema,
+  sessionNavigateRequestSchema,
+  sessionTreeResponseSchema,
+} from '@muse-ai/shared'
 import type { CliConfig } from '../config.js'
 import { ChatServiceError } from './chat-service.js'
+import { SessionSettingsError } from './session-settings-service.js'
+import { SessionStoreError } from '@muse-ai/core'
 import { createCliAuthMiddleware } from './auth-middleware.js'
 import { createSseSubscriber } from './event-hub.js'
 import { startDeviceHeartbeat } from './heartbeat.js'
 import type { CliDaemonDeps } from './deps.js'
+import { allToolNames } from '@/tools/index.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -24,7 +40,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     '*',
     cors({
       origin: config.corsOrigins,
-      allowMethods: ['GET', 'POST', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
     }),
   )
@@ -38,6 +54,40 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
   app.get(CLI_API_PATHS.AGENTS, requireAuth, async c => {
     const agents = await deps.agentRegistry.listAgents()
     return c.json({ agents })
+  })
+
+  app.post(CLI_API_PATHS.AGENTS, requireAuth, async c => {
+    const body: unknown = await c.req.json()
+    const parsed = createAgentRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    for (const name of parsed.data.activeToolNames) {
+      if (!allToolNames.has(name)) {
+        return c.json({ error: 'invalid_tool', message: `未知内置工具: ${name}` }, 400)
+      }
+    }
+    try {
+      const agent = await deps.agentRegistry.createAgent(parsed.data)
+      return c.json({ agent }, 201)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      return c.json({ error: 'create_failed', message }, 400)
+    }
+  })
+
+  app.get(CLI_API_PATHS.PERSONAS, requireAuth, async c => {
+    const personas = await deps.agentRegistry.listPersonas()
+    return c.json({ personas })
+  })
+
+  app.get(CLI_API_PATHS.SKILLS, requireAuth, async c => {
+    const skills = await deps.agentRegistry.listSkills()
+    return c.json({ skills })
+  })
+
+  app.get(CLI_API_PATHS.TOOLS, requireAuth, async c => {
+    return c.json({ tools: BUILTIN_TOOL_DESCRIPTORS })
   })
 
   app.get(CLI_API_PATHS.SESSIONS, requireAuth, async c => {
@@ -89,6 +139,105 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
 
       unsubscribe()
     })
+  })
+
+  app.get('/sessions/:sessionId/settings', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    try {
+      const settings = await deps.sessionSettingsService.get(sessionId)
+      return c.json(settings)
+    } catch (error: unknown) {
+      if (error instanceof SessionSettingsError && error.code === 'session_not_found') {
+        return c.json({ error: error.code, message: error.message }, 404)
+      }
+      throw error
+    }
+  })
+
+  app.patch('/sessions/:sessionId/settings', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const body: unknown = await c.req.json()
+    const parsed = sessionSettingsPatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const settings = await deps.sessionSettingsService.patch(sessionId, parsed.data)
+      return c.json(settings)
+    } catch (error: unknown) {
+      if (error instanceof SessionSettingsError) {
+        const status = error.code === 'session_not_found' ? 404 : error.code === 'agent_not_found' ? 404 : 400
+        return c.json({ error: error.code, message: error.message }, status)
+      }
+      throw error
+    }
+  })
+
+  app.get('/sessions/:sessionId/tree', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    try {
+      const tree = await deps.sessionStore.getTree(sessionId)
+      return c.json(sessionTreeResponseSchema.parse(tree))
+    } catch (error: unknown) {
+      if (error instanceof SessionStoreError && error.code === 'session_not_found') {
+        return c.json({ error: error.code, message: error.message }, 404)
+      }
+      throw error
+    }
+  })
+
+  app.post('/sessions/:sessionId/navigate', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const body: unknown = await c.req.json()
+    const parsed = sessionNavigateRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const tree = await deps.sessionStore.navigate(sessionId, parsed.data.entryId)
+      return c.json(sessionTreeResponseSchema.parse(tree))
+    } catch (error: unknown) {
+      if (error instanceof SessionStoreError) {
+        const status = error.code === 'session_not_found' || error.code === 'entry_not_found' ? 404 : 400
+        return c.json({ error: error.code, message: error.message }, status)
+      }
+      throw error
+    }
+  })
+
+  app.post('/sessions/:sessionId/fork', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const body: unknown = await c.req.json().catch(() => ({}))
+    const parsed = sessionForkRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const session = await deps.sessionStore.fork(sessionId, parsed.data)
+      sessionMetaSchema.parse(session)
+      return c.json({ session }, 201)
+    } catch (error: unknown) {
+      if (error instanceof SessionStoreError && error.code === 'session_not_found') {
+        return c.json({ error: error.code, message: error.message }, 404)
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      return c.json({ error: 'fork_failed', message }, 400)
+    }
   })
 
   app.post(CLI_API_PATHS.CHAT, requireAuth, async c => {

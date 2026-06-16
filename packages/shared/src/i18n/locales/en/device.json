@@ -1,0 +1,17 @@
+{
+  "title": "Select device",
+  "subtitle": "Chat connects directly to the CLI daemon. Ensure the device is online and paired.",
+  "empty": "No devices yet. Generate a pair code and run muse pair in your terminal.",
+  "pairTitle": "Pair a new device",
+  "pairGenerate": "Generate pair code",
+  "pairCode": "Pair code",
+  "pairExpires": "Expires at {{expiresAt}}",
+  "pairHint": "On the machine running the CLI:",
+  "pairCommand": "muse pair {{code}}",
+  "select": "Connect",
+  "connecting": "Connecting…",
+  "connectFailed": "Could not reach CLI",
+  "credentialsFailed": "Failed to get device credentials",
+  "endpointMissing": "Device has no endpoint. Make sure muse start is running.",
+  "rePairRequired": "Device credentials unavailable. Please pair again."
+}

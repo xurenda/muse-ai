@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { SERVER_API_PATHS, createHealthResponse, healthResponseSchema } from '@muse-ai/shared'
 import type { ServerConfig } from './config.js'
 import { createDb, initDatabase } from './db/client.js'
@@ -32,7 +33,7 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
 
   const authService = new AuthService(db, config.jwtSecret)
   const providerService = new ProviderService(db, config.encryptionKey)
-  const deviceService = new DeviceService(db, redis)
+  const deviceService = new DeviceService(db, redis, config.encryptionKey)
   const llmProxyService = new LlmProxyService()
 
   return {
@@ -52,6 +53,15 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
   const app = new Hono<{ Variables: ServerVariables }>()
   const userAuth = createUserAuthMiddleware(ctx.authService)
   const deviceAuth = createDeviceAuthMiddleware(ctx.deviceService)
+
+  app.use(
+    '*',
+    cors({
+      origin: ctx.config.corsOrigins,
+      allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowHeaders: ['Content-Type', 'Authorization'],
+    }),
+  )
 
   app.get(SERVER_API_PATHS.HEALTH, c => {
     const body = createHealthResponse('server', '0.0.0')

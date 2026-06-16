@@ -3,6 +3,7 @@ import { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 import { ChatService } from './chat-service.js'
+import { SessionSettingsService } from './session-settings-service.js'
 import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
 import { resolveBackendUrl } from '../backend/llm-auth.js'
 import { SessionEventHub } from './event-hub.js'
@@ -11,6 +12,7 @@ export interface CliDaemonDeps {
   sessionStore: MuseSessionStore
   eventHub: SessionEventHub
   chatService: ChatService
+  sessionSettingsService: SessionSettingsService
   agentRegistry: MuseAgentRegistry
   resolveDefaultAgentId: () => Promise<string>
   authState: CliAuthState
@@ -62,6 +64,7 @@ export async function createCliDaemonDeps(options?: {
   }
 
   const chatService = new ChatService(sessionStore, eventHub, agentRegistry, cwd, resolveBackendAuth)
+  const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd)
 
   const resolveDefaultAgentId = async (): Promise<string> => {
     let activeAgentId: string | undefined
@@ -82,5 +85,5 @@ export async function createCliDaemonDeps(options?: {
     authState = {}
   }
 
-  return { sessionStore, eventHub, chatService, agentRegistry, resolveDefaultAgentId, authState }
+  return { sessionStore, eventHub, chatService, sessionSettingsService, agentRegistry, resolveDefaultAgentId, authState }
 }

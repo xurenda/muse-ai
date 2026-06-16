@@ -1,4 +1,17 @@
-export { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, sessionEventsPath, type CliApiPath, type ServerApiPath } from './constants/api-paths.js'
+export {
+  CLI_API_PATHS,
+  DEFAULT_PORTS,
+  SERVER_API_PATHS,
+  deviceCredentialsPath,
+  sessionEventsPath,
+  sessionForkPath,
+  sessionNavigatePath,
+  sessionSettingsPath,
+  sessionTreePath,
+  type CliApiPath,
+  type ServerApiPath,
+} from './constants/api-paths.js'
+export { BUILTIN_TOOL_DESCRIPTORS, BUILTIN_TOOL_NAMES } from './constants/builtin-tools.js'
 export { DEFAULT_AGENT_ID } from './constants/default-agent.js'
 export {
   BUILTIN_CODING_AGENT_ID,
@@ -23,11 +36,25 @@ export {
 } from './types/agent.js'
 export { createSessionRequestSchema, sessionMetaSchema, type CreateSessionRequest, type SessionMeta } from './types/session.js'
 export {
+  sessionBranchMessageSchema,
+  sessionForkRequestSchema,
+  sessionNavigateRequestSchema,
+  sessionTreeNodeSchema,
+  sessionTreeResponseSchema,
+  type SessionBranchMessage,
+  type SessionForkRequest,
+  type SessionNavigateRequest,
+  type SessionTreeNode,
+  type SessionTreeResponse,
+} from './types/session-tree.js'
+export {
+  deviceCredentialsResponseSchema,
   deviceHeartbeatRequestSchema,
   devicePairRequestSchema,
   devicePairResponseSchema,
   deviceSchema,
   type Device,
+  type DeviceCredentialsResponse,
   type DeviceHeartbeatRequest,
   type DevicePairRequest,
   type DevicePairResponse,
@@ -43,3 +70,14 @@ export {
 } from './types/provider.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
+export {
+  createAgentRequestSchema,
+  sessionSettingsPatchSchema,
+  sessionSettingsResponseSchema,
+  toolDescriptorSchema,
+  type CreateAgentRequest,
+  type SessionSettingsPatch,
+  type SessionSettingsResponse,
+  type ToolDescriptor,
+} from './types/agent-api.js'
+export { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type I18nNamespace, type SupportedLocale } from './i18n/resources.js'

@@ -24,9 +24,11 @@ async function createSession(baseUrl: string, headers: Record<string, string>): 
 }
 
 export async function runChatCommand(args: string[]): Promise<number> {
-  const message = args.join(' ').trim()
+  const showThinking = args.includes('--show-thinking')
+  const messageArgs = showThinking ? args.filter(a => a !== '--show-thinking') : args
+  const message = messageArgs.join(' ').trim()
   if (!message) {
-    console.error('用法: muse chat <消息>')
+    console.error('用法: muse chat [--show-thinking] <消息>')
     return 1
   }
 
@@ -70,6 +72,9 @@ export async function runChatCommand(args: string[]): Promise<number> {
             const event = JSON.parse(payload) as MuseSseEvent
             if (event.type === 'text_delta') {
               process.stdout.write(event.delta)
+            }
+            if (event.type === 'thinking_delta' && showThinking) {
+              process.stderr.write(event.delta)
             }
             if (event.type === 'error') {
               process.stderr.write(`\n[error] ${event.message}\n`)

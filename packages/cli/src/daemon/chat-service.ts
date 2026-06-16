@@ -1,4 +1,4 @@
-import { MuseHarness, mapHarnessEventToSse, type MuseAgentRegistry, type MuseSessionStore } from '@muse-ai/core'
+import { MuseHarness, mapHarnessEventToSse, buildHarnessOptionsForSession, type MuseAgentRegistry, type MuseSessionStore } from '@muse-ai/core'
 import type { ChatRequest, MuseSseEvent } from '@muse-ai/shared'
 import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { resolveActiveTools } from '@/tools/index.js'
@@ -61,7 +61,7 @@ export class ChatService {
     }
 
     const context = await this.agentRegistry.resolveRuntimeContext(agentId)
-    const harnessOptions = this.agentRegistry.buildHarnessOptions(context, piSession, this.cwd)
+    const harnessOptions = await buildHarnessOptionsForSession(this.agentRegistry, agentId, piSession, this.cwd)
     const tools = resolveActiveTools(context.agent.activeToolNames, this.cwd)
     const model = withProxyBaseUrl(harnessOptions.model, backendAuth.backendUrl)
 
@@ -82,17 +82,7 @@ export class ChatService {
     })
 
     try {
-      switch (mode) {
-        case 'prompt':
-          await harness.prompt(message)
-          break
-        case 'steer':
-          await harness.steer(message)
-          break
-        case 'follow_up':
-          await harness.followUp(message)
-          break
-      }
+      await this.dispatchMessage(harness, message, mode)
       await this.sessionStore.touch(sessionId)
     } catch (error: unknown) {
       const text = formatDispatchError(error)
@@ -104,6 +94,18 @@ export class ChatService {
     } finally {
       unsubscribe()
     }
+  }
+
+  /**
+   * REST 每轮新建 Harness（idle），steer/follow_up 仅适用于常驻 runtime 内打断。
+   * Web 侧在 Agent 未 streaming 时不应选 steer/follow_up，此处 idle 时回落 prompt。
+   */
+  private async dispatchMessage(harness: MuseHarness, message: string, mode: ChatRequest['mode']): Promise<void> {
+    if (mode === 'prompt') {
+      await harness.prompt(message)
+      return
+    }
+    await harness.prompt(message)
   }
 
   private async publishError(sessionId: string, message: string): Promise<void> {

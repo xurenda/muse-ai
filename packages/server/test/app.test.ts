@@ -50,6 +50,12 @@ describe('loadServerConfig', () => {
   it('缺少 JWT_SECRET 时应抛错', () => {
     expect(() => loadServerConfig({ ENCRYPTION_KEY: TEST_ENV.ENCRYPTION_KEY })).toThrow('JWT_SECRET')
   })
+
+  it('应默认允许 Web dev 来源 CORS', () => {
+    const config = loadServerConfig(TEST_ENV)
+    expect(config.corsOrigins).toContain('http://localhost:5173')
+    expect(config.corsOrigins).toContain('http://127.0.0.1:5173')
+  })
 })
 
 describe('createServerApp', () => {
@@ -81,5 +87,18 @@ describe('createServerApp', () => {
       body: JSON.stringify({ email: 'bad', password: 'short' }),
     })
     expect(res.status).toBe(400)
+  })
+
+  it('OPTIONS 预检应返回 CORS 头', async () => {
+    const app = createServerApp(createMockContext())
+    const res = await app.request('http://localhost/auth/register', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'http://localhost:5173',
+        'Access-Control-Request-Method': 'POST',
+      },
+    })
+    expect(res.status).toBe(204)
+    expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
   })
 })

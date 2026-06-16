@@ -1,0 +1,17 @@
+{
+  "title": "Agent 管理",
+  "createTitle": "创建 Agent",
+  "name": "名称",
+  "description": "描述",
+  "persona": "Persona",
+  "skills": "Skills",
+  "tools": "Tools",
+  "create": "创建",
+  "created": "Agent 已创建",
+  "createFailed": "创建失败",
+  "existing": "已有 Agent",
+  "noAgents": "暂无 Agent",
+  "selectPersona": "选择 Persona",
+  "selectSkillsHint": "勾选要注入的 Skills",
+  "selectToolsHint": "勾选要启用的内置 Tools"
+}

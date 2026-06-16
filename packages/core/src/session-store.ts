@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { JsonlSessionRepo, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
 import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionTreeNode } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
+import { buildBranchFromSession, mapSessionTreeEntry, resolveNavigateLeafId } from './session-tree.js'
 
 export interface MuseSessionStoreOptions {
   /** JSONL 根目录，例如 ~/.muse/sessions */
@@ -96,6 +97,17 @@ export class MuseSessionStore {
     return toSessionMeta(entry)
   }
 
+  /** 更新 Session 绑定的 Agent */
+  async updateAgentId(id: string, agentId: string): Promise<SessionMeta | undefined> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry) return undefined
+    entry.agentId = agentId
+    entry.updatedAt = new Date().toISOString()
+    await this.persistRegistry()
+    return toSessionMeta(entry)
+  }
+
   /** 重启后校验 JSONL 是否仍可打开 */
   async openPiSession(id: string) {
     await this.ensureRegistry()
@@ -108,5 +120,99 @@ export class MuseSessionStore {
       path: entry.jsonlPath,
     }
     return this.repo.open(metadata)
+  }
+
+  private metadataFromRegistry(entry: SessionRegistryEntry): JsonlSessionMetadata {
+    return {
+      id: entry.id,
+      createdAt: entry.createdAt,
+      cwd: entry.cwd,
+      path: entry.jsonlPath,
+    }
+  }
+
+  /** 读取 session 树与当前分支消息 */
+  async getTree(sessionId: string): Promise<{
+    sessionId: string
+    leafId: string | null
+    entries: SessionTreeNode[]
+    branch: SessionBranchMessage[]
+  }> {
+    const piSession = await this.openPiSession(sessionId)
+    if (!piSession) {
+      throw new SessionStoreError('session_not_found', `Session 不存在: ${sessionId}`)
+    }
+
+    const rawEntries = await piSession.getEntries()
+    const leafId = await piSession.getLeafId()
+    const entries = rawEntries.filter(entry => entry.type !== 'leaf').map(entry => mapSessionTreeEntry(entry))
+
+    return {
+      sessionId,
+      leafId,
+      entries,
+      branch: await buildBranchFromSession(piSession),
+    }
+  }
+
+  /** 切换 active leaf（pi Session.moveTo） */
+  async navigate(
+    sessionId: string,
+    entryId: string | null,
+  ): Promise<{
+    sessionId: string
+    leafId: string | null
+    entries: SessionTreeNode[]
+    branch: SessionBranchMessage[]
+  }> {
+    const piSession = await this.openPiSession(sessionId)
+    if (!piSession) {
+      throw new SessionStoreError('session_not_found', `Session 不存在: ${sessionId}`)
+    }
+
+    let targetLeafId: string | null = entryId
+    if (entryId !== null) {
+      const targetEntry = await piSession.getEntry(entryId)
+      if (!targetEntry) {
+        throw new SessionStoreError('entry_not_found', `树节点不存在: ${entryId}`)
+      }
+      targetLeafId = resolveNavigateLeafId(targetEntry)
+    }
+
+    await piSession.moveTo(targetLeafId)
+    await this.touch(sessionId)
+    return this.getTree(sessionId)
+  }
+
+  /** 从指定节点 fork 出新 session（pi JsonlSessionRepo.fork） */
+  async fork(sessionId: string, request: SessionForkRequest): Promise<SessionMeta> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(sessionId)
+    if (!entry) {
+      throw new SessionStoreError('session_not_found', `Session 不存在: ${sessionId}`)
+    }
+
+    const sourceMetadata = this.metadataFromRegistry(entry)
+    const forked = await this.repo.fork(sourceMetadata, {
+      cwd: this.cwd,
+      entryId: request.entryId,
+      position: request.position,
+      parentSessionPath: entry.jsonlPath,
+    })
+    const forkMetadata = await forked.getMetadata()
+    const registryEntry = this.entryFromPiMetadata(forkMetadata, entry.agentId, request.name)
+    this.entries.push(registryEntry)
+    await this.persistRegistry()
+    return toSessionMeta(registryEntry)
+  }
+}
+
+export class SessionStoreError extends Error {
+  constructor(
+    readonly code: 'session_not_found' | 'entry_not_found' | 'invalid_request',
+    message: string,
+  ) {
+    super(message)
+    this.name = 'SessionStoreError'
   }
 }

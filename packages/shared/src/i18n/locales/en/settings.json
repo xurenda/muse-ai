@@ -1,0 +1,17 @@
+{
+  "title": "Providers",
+  "subtitle": "API keys are stored on the backend; the CLI calls models through the proxy.",
+  "name": "Name",
+  "baseUrl": "Base URL",
+  "apiKey": "API Key",
+  "isDefault": "Set as default",
+  "add": "Add provider",
+  "save": "Save",
+  "delete": "Delete",
+  "empty": "No providers configured",
+  "added": "Provider added",
+  "updated": "Provider updated",
+  "deleted": "Provider deleted",
+  "failed": "Operation failed",
+  "defaultBadge": "Default"
+}

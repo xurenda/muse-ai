@@ -1,0 +1,14 @@
+{
+  "appName": "MuseAI",
+  "loading": "Loading…",
+  "error": "Something went wrong",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "save": "Save",
+  "back": "Back",
+  "online": "Online",
+  "offline": "Offline",
+  "language": "Language",
+  "languageZh": "简体中文",
+  "languageEn": "English"
+}

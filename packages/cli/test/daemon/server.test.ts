@@ -145,6 +145,93 @@ describe('createCliApp', () => {
     const body = await chatRes.json()
     expect(body).toEqual({ accepted: true })
   })
+
+  it('GET /personas 与 GET /tools 应返回资产列表', async () => {
+    const { app } = await createTestApp()
+    const personasRes = await app.request('http://localhost/personas')
+    expect(personasRes.status).toBe(200)
+    const personasBody = (await personasRes.json()) as { personas: Array<{ id: string }> }
+    expect(personasBody.personas.some(p => p.id === 'general')).toBe(true)
+
+    const toolsRes = await app.request('http://localhost/tools')
+    expect(toolsRes.status).toBe(200)
+    const toolsBody = (await toolsRes.json()) as { tools: Array<{ name: string }> }
+    expect(toolsBody.tools.some(t => t.name === 'read')).toBe(true)
+  })
+
+  it('POST /agents 应创建带 activeToolNames 的 Agent', async () => {
+    const { app } = await createTestApp()
+    const res = await app.request('http://localhost/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: '测试 Agent',
+        personaId: 'general',
+        skillIds: [],
+        activeToolNames: ['read', 'ls'],
+      }),
+    })
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as { agent: { name: string; activeToolNames: string[] } }
+    expect(body.agent.name).toBe('测试 Agent')
+    expect(body.agent.activeToolNames).toEqual(['read', 'ls'])
+  })
+
+  it('GET/PATCH /sessions/:id/settings 应读写会话设置', async () => {
+    const { app } = await createTestApp()
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+    })
+    const { session } = (await createRes.json()) as { session: { id: string } }
+
+    const getRes = await app.request(`http://localhost/sessions/${session.id}/settings`)
+    expect(getRes.status).toBe(200)
+    const settings = (await getRes.json()) as { modelRef: string; thinkingLevel: string }
+    expect(settings.modelRef).toContain('/')
+
+    const patchRes = await app.request(`http://localhost/sessions/${session.id}/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thinkingLevel: 'low', modelRef: 'openai/deepseek-v4-flash' }),
+    })
+    expect(patchRes.status).toBe(200)
+    const patched = (await patchRes.json()) as { thinkingLevel: string }
+    expect(patched.thinkingLevel).toBe('low')
+  })
+
+  it('GET /sessions/:id/tree 与 POST navigate/fork 应读写 session 树', async () => {
+    const { app } = await createTestApp()
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID, name: 'tree-demo' }),
+    })
+    const { session } = (await createRes.json()) as { session: { id: string } }
+
+    const treeRes = await app.request(`http://localhost/sessions/${session.id}/tree`)
+    expect(treeRes.status).toBe(200)
+    const tree = (await treeRes.json()) as { sessionId: string; entries: unknown[]; branch: unknown[] }
+    expect(tree.sessionId).toBe(session.id)
+
+    const forkRes = await app.request(`http://localhost/sessions/${session.id}/fork`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'forked' }),
+    })
+    expect(forkRes.status).toBe(201)
+    const forked = (await forkRes.json()) as { session: { id: string; name?: string } }
+    expect(forked.session.id).not.toBe(session.id)
+    expect(forked.session.name).toBe('forked')
+
+    const navigateRes = await app.request(`http://localhost/sessions/${session.id}/navigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entryId: null }),
+    })
+    expect(navigateRes.status).toBe(200)
+  })
 })
 
 describe('ChatService', () => {

@@ -1,9 +1,10 @@
 import { randomInt } from 'node:crypto'
 import { desc, eq } from 'drizzle-orm'
 import type { Redis } from 'ioredis'
-import type { Device, DeviceHeartbeatRequest, DevicePairRequest, DevicePairResponse, PairInitResponse } from '@muse-ai/shared'
-import { deviceSchema } from '@muse-ai/shared'
+import type { Device, DeviceCredentialsResponse, DeviceHeartbeatRequest, DevicePairRequest, DevicePairResponse, PairInitResponse } from '@muse-ai/shared'
+import { deviceCredentialsResponseSchema, deviceSchema } from '@muse-ai/shared'
 import { AuthError, generateDeviceToken, hashDeviceToken, safeEqualString, verifyDeviceToken } from './auth-service.js'
+import { encryptSecret, decryptSecret } from '../crypto/aes-gcm.js'
 import type { MuseDb } from '../db/client.js'
 import { devices } from '../db/schema.js'
 import { DEVICE_ONLINE_PREFIX, DEVICE_ONLINE_TTL_SECONDS, PAIR_CODE_PREFIX, PAIR_CODE_TTL_SECONDS } from '../redis/client.js'
@@ -32,6 +33,7 @@ export class DeviceService {
   constructor(
     private readonly db: MuseDb,
     private readonly redis: Redis,
+    private readonly encryptionKey: string,
   ) {}
 
   async createPairCode(userId: string): Promise<PairInitResponse> {
@@ -49,12 +51,14 @@ export class DeviceService {
 
     const accessToken = generateDeviceToken()
     const accessTokenHash = await hashDeviceToken(accessToken)
+    const accessTokenEncrypted = encryptSecret(accessToken, this.encryptionKey)
     const [row] = await this.db
       .insert(devices)
       .values({
         userId,
         name: request.name,
         accessTokenHash,
+        accessTokenEncrypted,
         endpoint: request.endpoint,
         lastSeenAt: new Date().toISOString(),
       })
@@ -81,6 +85,27 @@ export class DeviceService {
       result.push(toDevice(row, online))
     }
     return result
+  }
+
+  /** 返回 Web 直连 CLI 所需 endpoint + accessToken（仅设备所属用户） */
+  async getCredentialsForUser(userId: string, deviceId: string): Promise<DeviceCredentialsResponse> {
+    const [row] = await this.db.select().from(devices).where(eq(devices.id, deviceId)).limit(1)
+    if (!row || row.userId !== userId) {
+      throw new DeviceError('device_not_found', '设备不存在')
+    }
+    if (!row.accessTokenEncrypted) {
+      throw new DeviceError('credentials_unavailable', '设备凭证不可用，请重新配对 CLI')
+    }
+    const endpoint = row.endpoint ?? undefined
+    if (!endpoint) {
+      throw new DeviceError('endpoint_unavailable', '设备尚未上报 endpoint，请确认 CLI 已启动并完成心跳')
+    }
+    const accessToken = decryptSecret(row.accessTokenEncrypted, this.encryptionKey)
+    return deviceCredentialsResponseSchema.parse({
+      deviceId: row.id,
+      endpoint,
+      accessToken,
+    })
   }
 
   async heartbeat(deviceId: string, body: DeviceHeartbeatRequest): Promise<Device> {
@@ -131,7 +156,7 @@ export class DeviceService {
 
 export class DeviceError extends Error {
   constructor(
-    readonly code: 'invalid_pair_code' | 'pair_failed' | 'device_not_found',
+    readonly code: 'invalid_pair_code' | 'pair_failed' | 'device_not_found' | 'credentials_unavailable' | 'endpoint_unavailable',
     message: string,
   ) {
     super(message)

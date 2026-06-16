@@ -14,8 +14,11 @@ export function mapHarnessEventToSse(event: AgentHarnessEvent): MuseSseEvent | n
       return { type: 'turn_end' }
     case 'message_update': {
       const assistantEvent = event.assistantMessageEvent
-      if (assistantEvent.type === 'text_delta' || assistantEvent.type === 'thinking_delta') {
+      if (assistantEvent.type === 'text_delta') {
         return { type: 'text_delta', delta: assistantEvent.delta }
+      }
+      if (assistantEvent.type === 'thinking_delta') {
+        return { type: 'thinking_delta', delta: assistantEvent.delta }
       }
       return null
     }

@@ -32,3 +32,12 @@ export const deviceHeartbeatRequestSchema = z.object({
 })
 
 export type DeviceHeartbeatRequest = z.infer<typeof deviceHeartbeatRequestSchema>
+
+/** Web 直连 CLI 所需凭证（user JWT 鉴权后返回） */
+export const deviceCredentialsResponseSchema = z.object({
+  deviceId: z.string().uuid(),
+  endpoint: z.string().url(),
+  accessToken: z.string().min(1),
+})
+
+export type DeviceCredentialsResponse = z.infer<typeof deviceCredentialsResponseSchema>
