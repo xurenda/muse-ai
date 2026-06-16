@@ -17,6 +17,7 @@ import { branchMessagesToChat } from '@/lib/branch-messages'
 import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
 import { createUserMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
 import type { StoredDeviceSession } from '@/lib/config'
+import { useSessionListStore } from '@/stores/session-list-store'
 
 export type ChatSessionStatus = 'idle' | 'connecting' | 'ready' | 'error'
 
@@ -161,6 +162,14 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
           id,
           abort,
           event => {
+            if (event.type === 'session_meta_updated') {
+              useSessionListStore.getState().patchSession(event.sessionId, {
+                name: event.name,
+                nameSource: event.nameSource,
+                updatedAt: event.updatedAt,
+              })
+              return
+            }
             setMessages(prev => applySseEvent(prev, event))
             if (event.type === 'agent_end') {
               void refreshTreeRef.current(id)

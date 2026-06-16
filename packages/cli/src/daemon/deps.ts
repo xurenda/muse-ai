@@ -4,6 +4,7 @@ import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 import { ChatService } from './chat-service.js'
 import { SessionSettingsService } from './session-settings-service.js'
+import { SessionTitleService } from './session-title-service.js'
 import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
 import { resolveBackendUrl } from '../backend/llm-auth.js'
 import { SessionEventHub } from './event-hub.js'
@@ -63,8 +64,9 @@ export async function createCliDaemonDeps(options?: {
     }
   }
 
-  const chatService = new ChatService(sessionStore, eventHub, agentRegistry, cwd, resolveBackendAuth)
   const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd)
+  const sessionTitleService = new SessionTitleService(sessionStore, sessionSettingsService, eventHub, resolveBackendAuth)
+  const chatService = new ChatService(sessionStore, eventHub, sessionTitleService, agentRegistry, cwd, resolveBackendAuth)
 
   const resolveDefaultAgentId = async (): Promise<string> => {
     let activeAgentId: string | undefined

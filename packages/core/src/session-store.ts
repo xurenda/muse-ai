@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { JsonlSessionRepo, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
 import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
-import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionTreeNode } from '@muse-ai/shared'
+import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionNameSource, SessionTreeNode } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
+import { deriveSessionTitle } from './session-title.js'
 import { buildBranchFromSession, mapSessionTreeEntry, resolveNavigateLeafId } from './session-tree.js'
 
 export interface MuseSessionStoreOptions {
@@ -52,12 +53,17 @@ export class MuseSessionStore {
     return this.entries.find(entry => entry.id === id)
   }
 
-  private entryFromPiMetadata(metadata: JsonlSessionMetadata, agentId: string, name?: string): SessionRegistryEntry {
+  private entryFromPiMetadata(
+    metadata: JsonlSessionMetadata,
+    agentId: string,
+    options?: { name?: string; nameSource?: SessionNameSource },
+  ): SessionRegistryEntry {
     const now = new Date().toISOString()
     return {
       id: metadata.id,
       agentId,
-      name,
+      name: options?.name,
+      nameSource: options?.nameSource ?? (options?.name ? 'manual' : undefined),
       createdAt: metadata.createdAt,
       updatedAt: now,
       cwd: metadata.cwd,
@@ -70,7 +76,7 @@ export class MuseSessionStore {
     const id = randomUUID()
     const session = await this.repo.create({ cwd: this.cwd, id })
     const metadata = await session.getMetadata()
-    const entry = this.entryFromPiMetadata(metadata, request.agentId, request.name)
+    const entry = this.entryFromPiMetadata(metadata, request.agentId, { name: request.name })
     this.entries.push(entry)
     await this.persistRegistry()
     return toSessionMeta(entry)
@@ -106,6 +112,43 @@ export class MuseSessionStore {
     entry.updatedAt = new Date().toISOString()
     await this.persistRegistry()
     return toSessionMeta(entry)
+  }
+
+  /** 重命名 Session；manual 来源不会被自动标题覆盖 */
+  async updateName(id: string, name: string, nameSource: SessionNameSource = 'manual'): Promise<SessionMeta | undefined> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry) return undefined
+    entry.name = name.trim()
+    entry.nameSource = nameSource
+    entry.updatedAt = new Date().toISOString()
+    await this.persistRegistry()
+    return toSessionMeta(entry)
+  }
+
+  /** 首条用户消息时写入临时标题 */
+  async setNameFromFirstMessageIfEmpty(id: string, message: string): Promise<SessionMeta | undefined> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry || entry.name?.trim() || entry.nameSource === 'manual') {
+      return entry ? toSessionMeta(entry) : undefined
+    }
+    entry.name = deriveSessionTitle(message)
+    entry.nameSource = 'first_message'
+    entry.updatedAt = new Date().toISOString()
+    await this.persistRegistry()
+    return toSessionMeta(entry)
+  }
+
+  /** 删除 Session（registry + JSONL） */
+  async delete(id: string): Promise<boolean> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry) return false
+    await this.repo.delete(this.metadataFromRegistry(entry))
+    this.entries = this.entries.filter(item => item.id !== id)
+    await this.persistRegistry()
+    return true
   }
 
   /** 重启后校验 JSONL 是否仍可打开 */
@@ -200,7 +243,7 @@ export class MuseSessionStore {
       parentSessionPath: entry.jsonlPath,
     })
     const forkMetadata = await forked.getMetadata()
-    const registryEntry = this.entryFromPiMetadata(forkMetadata, entry.agentId, request.name)
+    const registryEntry = this.entryFromPiMetadata(forkMetadata, entry.agentId, { name: request.name })
     this.entries.push(registryEntry)
     await this.persistRegistry()
     return toSessionMeta(registryEntry)

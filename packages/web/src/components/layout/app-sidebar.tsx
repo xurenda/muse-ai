@@ -14,7 +14,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
   const { t } = useTranslation('layout')
-  const { sessions, isLoading, error } = useSessionList()
+  const { sessions, isLoading, error, refresh } = useSessionList()
 
   return (
     <aside className="flex h-full min-h-0 flex-col">
@@ -24,7 +24,7 @@ export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
           <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} end={item.end} />
         ))}
       </nav>
-      <SessionList sessions={sessions} isLoading={isLoading} error={error} />
+      <SessionList sessions={sessions} isLoading={isLoading} error={error} onRefresh={refresh} />
       <SidebarUserMenu />
     </aside>
   )

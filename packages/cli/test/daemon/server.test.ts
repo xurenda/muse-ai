@@ -144,6 +144,51 @@ describe('createCliApp', () => {
     expect(chatRes.status).toBe(202)
     const body = await chatRes.json()
     expect(body).toEqual({ accepted: true })
+
+    const listRes = await app.request('http://localhost/sessions')
+    const listed = (await listRes.json()) as { sessions: Array<{ id: string; name?: string; nameSource?: string }> }
+    const current = listed.sessions.find(item => item.id === session.id)
+    expect(current?.name).toBe('你好')
+    expect(current?.nameSource).toBe('first_message')
+  })
+
+  it('PATCH /sessions/:id 应重命名会话', async () => {
+    const { app } = await createTestApp()
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+    })
+    const { session } = (await createRes.json()) as { session: { id: string } }
+
+    const patchRes = await app.request(`http://localhost/sessions/${session.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '我的对话' }),
+    })
+    expect(patchRes.status).toBe(200)
+    const patched = (await patchRes.json()) as { session: { name?: string; nameSource?: string } }
+    expect(patched.session.name).toBe('我的对话')
+    expect(patched.session.nameSource).toBe('manual')
+  })
+
+  it('DELETE /sessions/:id 应删除会话', async () => {
+    const { app } = await createTestApp()
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+    })
+    const { session } = (await createRes.json()) as { session: { id: string } }
+
+    const deleteRes = await app.request(`http://localhost/sessions/${session.id}`, { method: 'DELETE' })
+    expect(deleteRes.status).toBe(200)
+    const deleted = (await deleteRes.json()) as { deleted: boolean; sessionId: string }
+    expect(deleted).toEqual({ deleted: true, sessionId: session.id })
+
+    const listRes = await app.request('http://localhost/sessions')
+    const listed = (await listRes.json()) as { sessions: Array<{ id: string }> }
+    expect(listed.sessions.some(item => item.id === session.id)).toBe(false)
   })
 
   it('GET /personas 与 GET /tools 应返回资产列表', async () => {

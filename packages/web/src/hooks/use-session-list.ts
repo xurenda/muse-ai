@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { SessionMeta } from '@muse-ai/shared'
 import { listCliSessions } from '@/api/cli-client'
 import { useAuth } from '@/hooks/use-auth'
+import { mergeSessionList } from '@/lib/merge-session-list'
+import { useSessionListStore } from '@/stores/session-list-store'
 
 export function useSessionList() {
   const { deviceSession } = useAuth()
@@ -10,17 +12,23 @@ export function useSessionList() {
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const patches = useSessionListStore(state => state.patches)
+  const clearPatches = useSessionListStore(state => state.clearPatches)
+
+  const mergedSessions = useMemo(() => mergeSessionList(sessions, patches), [sessions, patches])
 
   const refresh = useCallback(async () => {
     if (!deviceSession) {
       setSessions([])
       setError(null)
       setIsLoading(false)
+      clearPatches()
       return
     }
 
     setIsLoading(true)
     try {
+      clearPatches()
       setSessions(await listCliSessions(deviceSession.endpoint, deviceSession.accessToken))
       setError(null)
     } catch (refreshError: unknown) {
@@ -28,7 +36,7 @@ export function useSessionList() {
     } finally {
       setIsLoading(false)
     }
-  }, [deviceSession])
+  }, [clearPatches, deviceSession])
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +61,7 @@ export function useSessionList() {
     void listCliSessions(deviceSession.endpoint, deviceSession.accessToken)
       .then(list => {
         if (cancelled) return
+        clearPatches()
         setSessions(list)
         setError(null)
       })
@@ -68,10 +77,10 @@ export function useSessionList() {
     return () => {
       cancelled = true
     }
-  }, [deviceSession, pathname])
+  }, [clearPatches, deviceSession, pathname])
 
   return {
-    sessions,
+    sessions: mergedSessions,
     isLoading,
     error,
     refresh,

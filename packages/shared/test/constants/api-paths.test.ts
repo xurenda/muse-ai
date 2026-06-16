@@ -49,6 +49,17 @@ describe('sse-events', () => {
     const parsed = museSseEventSchema.safeParse({ type: 'thinking_delta', delta: '…' })
     expect(parsed.success).toBe(true)
   })
+
+  it('museSseEventSchema 应支持 session_meta_updated', () => {
+    const parsed = museSseEventSchema.safeParse({
+      type: 'session_meta_updated',
+      sessionId: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'Todo App 规划',
+      nameSource: 'auto_llm',
+      updatedAt: '2026-06-16T00:00:00.000Z',
+    })
+    expect(parsed.success).toBe(true)
+  })
 })
 
 describe('device', () => {

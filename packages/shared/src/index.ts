@@ -4,6 +4,7 @@ export {
   SERVER_API_PATHS,
   deviceCredentialsPath,
   sessionEventsPath,
+  sessionDetailPath,
   sessionForkPath,
   sessionNavigatePath,
   sessionSettingsPath,
@@ -34,7 +35,16 @@ export {
   type SkillMeta,
   type ThinkingLevel,
 } from './types/agent.js'
-export { createSessionRequestSchema, sessionMetaSchema, type CreateSessionRequest, type SessionMeta } from './types/session.js'
+export {
+  createSessionRequestSchema,
+  sessionMetaSchema,
+  sessionNameSourceSchema,
+  sessionPatchRequestSchema,
+  type CreateSessionRequest,
+  type SessionMeta,
+  type SessionNameSource,
+  type SessionPatchRequest,
+} from './types/session.js'
 export {
   sessionBranchMessageSchema,
   sessionForkRequestSchema,

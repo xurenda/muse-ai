@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta, SessionNameSource } from '@muse-ai/shared'
 
 export const SESSION_REGISTRY_VERSION = 1 as const
 
@@ -8,6 +8,7 @@ export interface SessionRegistryEntry {
   id: string
   agentId: string
   name?: string
+  nameSource?: SessionNameSource
   createdAt: string
   updatedAt: string
   cwd: string
@@ -24,6 +25,7 @@ export function toSessionMeta(entry: SessionRegistryEntry): SessionMeta {
     id: entry.id,
     agentId: entry.agentId,
     name: entry.name,
+    nameSource: entry.nameSource,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,
   }

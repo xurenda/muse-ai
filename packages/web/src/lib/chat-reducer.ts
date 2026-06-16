@@ -74,6 +74,7 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent): Cha
 
     case 'turn_start':
     case 'turn_end':
+    case 'session_meta_updated':
     default:
       return messages
   }

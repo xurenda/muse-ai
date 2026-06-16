@@ -11,6 +11,7 @@ import {
   createSessionRequestSchema,
   healthResponseSchema,
   sessionMetaSchema,
+  sessionPatchRequestSchema,
   sessionSettingsPatchSchema,
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
@@ -111,6 +112,39 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     const session = await deps.sessionStore.create({ ...parsed.data, agentId })
     sessionMetaSchema.parse(session)
     return c.json({ session }, 201)
+  })
+
+  app.patch('/sessions/:sessionId', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const body: unknown = await c.req.json()
+    const parsed = sessionPatchRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    const updated = await deps.sessionStore.updateName(sessionId, parsed.data.name, 'manual')
+    if (!updated) {
+      return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
+    }
+    sessionMetaSchema.parse(updated)
+    return c.json({ session: updated })
+  })
+
+  app.delete('/sessions/:sessionId', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    if (deps.chatService.isSessionBusy(sessionId)) {
+      return c.json({ error: 'session_busy', message: 'Agent 正在回复中，请稍后再试' }, 409)
+    }
+    const deleted = await deps.sessionStore.delete(sessionId)
+    if (!deleted) {
+      return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
+    }
+    return c.json({ deleted: true, sessionId })
   })
 
   app.get('/sessions/:sessionId/events', requireAuth, async c => {

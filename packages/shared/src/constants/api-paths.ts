@@ -64,6 +64,11 @@ export function sessionForkPath(sessionId: string): string {
   return `/sessions/${sessionId}/fork`
 }
 
+/** 构建 Session 详情路径：`PATCH|DELETE /sessions/:id` */
+export function sessionDetailPath(sessionId: string): string {
+  return `/sessions/${sessionId}`
+}
+
 export type ServerApiPath = (typeof SERVER_API_PATHS)[keyof typeof SERVER_API_PATHS]
 export type CliApiPath = (typeof CLI_API_PATHS)[keyof typeof CLI_API_PATHS]
 

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sessionNameSourceSchema } from './session.js'
 
 /** CLI → Web SSE 事件（对齐 pi AgentEvent 子集） */
 export const museSseEventSchema = z.discriminatedUnion('type', [
@@ -22,6 +23,13 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turn_end') }),
   z.object({ type: z.literal('agent_end') }),
   z.object({ type: z.literal('error'), message: z.string() }),
+  z.object({
+    type: z.literal('session_meta_updated'),
+    sessionId: z.string().uuid(),
+    name: z.string(),
+    nameSource: sessionNameSourceSchema.optional(),
+    updatedAt: z.string().datetime(),
+  }),
 ])
 
 export type MuseSseEvent = z.infer<typeof museSseEventSchema>

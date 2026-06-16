@@ -61,4 +61,39 @@ describe('MuseSessionStore', () => {
     const touched = await store.touch(created.id)
     expect(touched?.updatedAt).not.toBe(created.updatedAt)
   })
+
+  it('首条消息应写入临时标题', async () => {
+    const store = await createStore()
+    const created = await store.create({ agentId: DEFAULT_AGENT_ID })
+
+    const updated = await store.setNameFromFirstMessageIfEmpty(created.id, '  帮我写个脚本  ')
+    expect(updated?.name).toBe('帮我写个脚本')
+    expect(updated?.nameSource).toBe('first_message')
+  })
+
+  it('manual 标题不应被首条消息覆盖', async () => {
+    const store = await createStore()
+    const created = await store.create({ agentId: DEFAULT_AGENT_ID, name: '固定标题' })
+
+    const updated = await store.setNameFromFirstMessageIfEmpty(created.id, '新的消息')
+    expect(updated?.name).toBe('固定标题')
+    expect(updated?.nameSource).toBe('manual')
+  })
+
+  it('updateName 应写入 manual 来源', async () => {
+    const store = await createStore()
+    const created = await store.create({ agentId: DEFAULT_AGENT_ID })
+
+    const updated = await store.updateName(created.id, '自定义标题')
+    expect(updated?.name).toBe('自定义标题')
+    expect(updated?.nameSource).toBe('manual')
+  })
+
+  it('delete 应移除 registry 与 JSONL', async () => {
+    const store = await createStore()
+    const created = await store.create({ agentId: DEFAULT_AGENT_ID })
+    expect(await store.delete(created.id)).toBe(true)
+    expect(await store.get(created.id)).toBeUndefined()
+    expect(await store.openPiSession(created.id)).toBeUndefined()
+  })
 })

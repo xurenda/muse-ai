@@ -1,6 +1,7 @@
 import {
   CLI_API_PATHS,
   museSseEventSchema,
+  sessionDetailPath,
   sessionEventsPath,
   sessionForkPath,
   sessionNavigatePath,
@@ -97,6 +98,24 @@ export async function listCliSessions(endpoint: string, accessToken: string): Pr
   const res = await fetch(`${endpoint}${CLI_API_PATHS.SESSIONS}`, { headers: cliHeaders(accessToken) })
   const body = await parseCliJson<{ sessions: SessionMeta[] }>(res)
   return body.sessions
+}
+
+export async function patchCliSession(endpoint: string, accessToken: string, sessionId: string, name: string): Promise<SessionMeta> {
+  const res = await fetch(`${endpoint}${sessionDetailPath(sessionId)}`, {
+    method: 'PATCH',
+    headers: cliHeaders(accessToken),
+    body: JSON.stringify({ name }),
+  })
+  const body = await parseCliJson<{ session: SessionMeta }>(res)
+  return body.session
+}
+
+export async function deleteCliSession(endpoint: string, accessToken: string, sessionId: string): Promise<void> {
+  const res = await fetch(`${endpoint}${sessionDetailPath(sessionId)}`, {
+    method: 'DELETE',
+    headers: cliHeaders(accessToken),
+  })
+  await parseCliJson<{ deleted: boolean; sessionId: string }>(res)
 }
 
 export async function getSessionTree(endpoint: string, accessToken: string, sessionId: string): Promise<SessionTreeResponse> {

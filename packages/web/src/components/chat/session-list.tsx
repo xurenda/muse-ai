@@ -1,23 +1,52 @@
 import type { SessionMeta } from '@muse-ai/shared'
-import { NavLink } from 'react-router-dom'
+import { MoreHorizontal } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { deleteCliSession, patchCliSession } from '@/api/cli-client'
+import { SessionDeleteDialog } from '@/components/chat/session-delete-dialog'
+import { SessionRenameDialog } from '@/components/chat/session-rename-dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { IconButton } from '@/components/ui/icon-button'
+import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
 
 interface SessionListProps {
   sessions: SessionMeta[]
   isLoading: boolean
   error: string | null
+  onRefresh: () => Promise<void>
 }
 
-function getSessionLabel(session: SessionMeta, untitledLabel: string): string {
+function getSessionLabel(session: SessionMeta, newChatLabel: string): string {
   if (session.name?.trim()) {
     return session.name.trim()
   }
-  return `${untitledLabel} ${session.id.slice(0, 8)}`
+  return newChatLabel
 }
 
-export function SessionList({ sessions, isLoading, error }: SessionListProps) {
+export function SessionList({ sessions, isLoading, error, onRefresh }: SessionListProps) {
   const { t } = useTranslation('layout')
+  const { deviceSession } = useAuth()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const [renameTarget, setRenameTarget] = useState<SessionMeta | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null)
+
+  const handleRename = async (name: string) => {
+    if (!deviceSession || !renameTarget) return
+    await patchCliSession(deviceSession.endpoint, deviceSession.accessToken, renameTarget.id, name)
+    await onRefresh()
+  }
+
+  const handleDelete = async () => {
+    if (!deviceSession || !deleteTarget) return
+    await deleteCliSession(deviceSession.endpoint, deviceSession.accessToken, deleteTarget.id)
+    if (pathname === `/chat/${deleteTarget.id}`) {
+      navigate('/chat')
+    }
+    await onRefresh()
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-2 pb-3">
@@ -30,21 +59,74 @@ export function SessionList({ sessions, isLoading, error }: SessionListProps) {
 
         {!isLoading && !error && sessions.length === 0 ? <p className="px-2 py-1 text-xs text-muted-foreground">{t('sidebar.sessionsEmpty')}</p> : null}
 
-        {sessions.map(session => (
-          <NavLink
-            key={session.id}
-            to={`/chat/${session.id}`}
-            className={({ isActive }) =>
-              cn(
-                'ui-menu-item rounded-lg',
-                isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
-              )
-            }
-          >
-            <span className="truncate">{getSessionLabel(session, t('sidebar.untitledSession'))}</span>
-          </NavLink>
-        ))}
+        {sessions.map(session => {
+          const label = getSessionLabel(session, t('sidebar.newChat'))
+          return (
+            <div key={session.id} className="group flex items-center gap-0.5">
+              <NavLink
+                to={`/chat/${session.id}`}
+                className={({ isActive }) =>
+                  cn(
+                    'ui-menu-item min-w-0 flex-1 rounded-lg',
+                    isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
+                  )
+                }
+              >
+                <span className="truncate">{label}</span>
+              </NavLink>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton
+                    type="button"
+                    className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    aria-label={t('sidebar.sessionActions')}
+                    onClick={event => event.preventDefault()}
+                  >
+                    <MoreHorizontal className="size-3.5" strokeWidth={2} />
+                  </IconButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="bottom">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setRenameTarget(session)
+                    }}
+                  >
+                    {t('sidebar.renameSession')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => {
+                      setDeleteTarget(session)
+                    }}
+                  >
+                    {t('sidebar.deleteSession')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        })}
       </div>
+
+      <SessionRenameDialog
+        key={renameTarget?.id ?? 'closed'}
+        open={renameTarget !== null}
+        initialName={renameTarget ? getSessionLabel(renameTarget, t('sidebar.newChat')) : ''}
+        onOpenChange={open => {
+          if (!open) setRenameTarget(null)
+        }}
+        onConfirm={handleRename}
+      />
+
+      <SessionDeleteDialog
+        open={deleteTarget !== null}
+        sessionName={deleteTarget ? getSessionLabel(deleteTarget, t('sidebar.newChat')) : ''}
+        onOpenChange={open => {
+          if (!open) setDeleteTarget(null)
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

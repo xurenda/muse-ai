@@ -3,6 +3,7 @@ import type { ChatRequest, MuseSseEvent } from '@muse-ai/shared'
 import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { resolveActiveTools } from '@/tools/index.js'
 import type { SessionEventHub } from './event-hub.js'
+import type { SessionTitleService } from './session-title-service.js'
 
 function formatDispatchError(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -16,6 +17,7 @@ export class ChatService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
     private readonly eventHub: SessionEventHub,
+    private readonly sessionTitleService: SessionTitleService,
     private readonly agentRegistry: MuseAgentRegistry,
     private readonly cwd: string,
     private readonly resolveBackendAuth: () => Promise<BackendLlmAuthConfig | undefined>,
@@ -27,6 +29,10 @@ export class ChatService {
       throw new ChatServiceError('session_not_found', `Session 不存在: ${request.sessionId}`)
     }
 
+    const updatedMeta = await this.sessionStore.setNameFromFirstMessageIfEmpty(request.sessionId, request.message)
+    if (updatedMeta?.name && updatedMeta.nameSource === 'first_message') {
+      await this.sessionTitleService.publishMetaUpdate(updatedMeta)
+    }
     await this.sessionStore.touch(request.sessionId)
     const previous = this.sessionChains.get(request.sessionId) ?? Promise.resolve()
     const next = previous
@@ -44,6 +50,11 @@ export class ChatService {
       }
     })
     return { accepted: true }
+  }
+
+  /** 该 Session 是否仍有排队或进行中的对话任务 */
+  isSessionBusy(sessionId: string): boolean {
+    return this.sessionChains.has(sessionId)
   }
 
   private async dispatchTurn(request: ChatRequest, agentId: string): Promise<void> {
@@ -84,6 +95,7 @@ export class ChatService {
     try {
       await this.dispatchMessage(harness, message, mode)
       await this.sessionStore.touch(sessionId)
+      void this.sessionTitleService.maybeGenerateAfterTurn(sessionId).catch(() => {})
     } catch (error: unknown) {
       const text = formatDispatchError(error)
       const friendly =
