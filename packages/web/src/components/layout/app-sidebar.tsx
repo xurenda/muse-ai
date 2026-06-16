@@ -2,6 +2,7 @@ import type { SidebarItem } from '@/constants/app-sidebar'
 import { SessionList } from '@/components/chat/session-list'
 import { SidebarNavLink } from '@/components/layout/sidebar-nav-link'
 import { SidebarToolbar } from '@/components/layout/sidebar-toolbar'
+import { SidebarUserMenu } from '@/components/layout/sidebar-user-menu'
 import { useSessionList } from '@/hooks/use-session-list'
 import { useTranslation } from 'react-i18next'
 
@@ -24,6 +25,7 @@ export function AppSidebar({ items, open, onToggle }: AppSidebarProps) {
         ))}
       </nav>
       <SessionList sessions={sessions} isLoading={isLoading} error={error} />
+      <SidebarUserMenu />
     </aside>
   )
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SettingsNavLink } from '@/components/layout/settings-nav-link'
 import { SidebarToolbar } from '@/components/layout/sidebar-toolbar'
+import { SidebarUserMenu } from '@/components/layout/sidebar-user-menu'
 import { settingsNavItems } from '@/constants/settings-nav'
 
 interface SettingsSidebarProps {
@@ -27,6 +28,7 @@ export function SettingsSidebar({ open, onToggle }: SettingsSidebarProps) {
           ))}
         </div>
       </nav>
+      <SidebarUserMenu />
     </aside>
   )
 }

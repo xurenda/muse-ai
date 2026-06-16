@@ -7,14 +7,33 @@
     "sessions": "Recent chats",
     "sessionsLoading": "Loading…",
     "sessionsEmpty": "No conversations yet",
-    "untitledSession": "Untitled"
+    "untitledSession": "Untitled",
+    "userMenu": {
+      "settings": "Settings",
+      "language": "Language",
+      "appearance": "Appearance"
+    }
   },
   "header": {
     "sidebarToggle": "Toggle sidebar",
     "sessionTreeToggle": "Toggle session tree",
+    "sessionTreeFullscreen": "Expand session tree",
+    "sessionTreeExitFullscreen": "Exit fullscreen",
+    "rightPanelToggle": "Toggle right panel",
+    "rightPanelFullscreen": "Expand right panel",
+    "rightPanelExitFullscreen": "Exit fullscreen",
     "device": "Devices",
     "deviceConnected": "Connected: {{name}}",
     "deviceDisconnected": "No device connected",
     "logout": "Log out"
+  },
+  "rightPanel": {
+    "empty": "Click + to add a panel",
+    "addTab": "Add panel",
+    "closeTab": "Close panel",
+    "noAddableTabs": "No panels available on this page",
+    "tabs": {
+      "sessionTree": "Session tree"
+    }
   }
 }

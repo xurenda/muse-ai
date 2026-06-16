@@ -7,14 +7,33 @@
     "sessions": "最近对话",
     "sessionsLoading": "加载中…",
     "sessionsEmpty": "暂无历史对话",
-    "untitledSession": "未命名对话"
+    "untitledSession": "未命名对话",
+    "userMenu": {
+      "settings": "系统设置",
+      "language": "语言切换",
+      "appearance": "外观模式"
+    }
   },
   "header": {
     "sidebarToggle": "切换侧边栏",
     "sessionTreeToggle": "切换 Session 树",
+    "sessionTreeFullscreen": "全屏展开 Session 树",
+    "sessionTreeExitFullscreen": "退出全屏",
+    "rightPanelToggle": "切换右侧边栏",
+    "rightPanelFullscreen": "全屏展开右侧边栏",
+    "rightPanelExitFullscreen": "退出全屏",
     "device": "设备",
     "deviceConnected": "已连接：{{name}}",
     "deviceDisconnected": "未连接设备",
     "logout": "退出登录"
+  },
+  "rightPanel": {
+    "empty": "点击 + 添加面板",
+    "addTab": "添加面板",
+    "closeTab": "关闭面板",
+    "noAddableTabs": "当前页面暂无可添加的面板",
+    "tabs": {
+      "sessionTree": "Session 树"
+    }
   }
 }
