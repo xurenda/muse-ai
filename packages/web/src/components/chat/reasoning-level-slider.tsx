@@ -30,16 +30,75 @@ function indexToRatio(index: number, stepCount: number): number {
   return index / (stepCount - 1)
 }
 
+function labelClassName(level: ThinkingLevel, isActive: boolean): string {
+  if (!isActive) return 'text-muted-foreground/45'
+
+  switch (level) {
+    case 'off':
+      return 'reasoning-level-active-off font-medium'
+    case 'minimal':
+      return 'reasoning-level-active-minimal font-medium'
+    case 'low':
+      return 'reasoning-level-active-low font-medium'
+    case 'medium':
+      return 'reasoning-level-active-medium font-medium'
+    case 'high':
+      return 'reasoning-level-shimmer-mild font-medium'
+    case 'xhigh':
+      return 'reasoning-level-shimmer font-medium'
+    default:
+      return 'font-medium text-foreground'
+  }
+}
+
+function trackFillClass(level: ThinkingLevel): string {
+  switch (level) {
+    case 'off':
+      return 'bg-muted-foreground/35'
+    case 'minimal':
+      return 'bg-primary/35'
+    case 'low':
+      return 'bg-primary/55'
+    case 'medium':
+      return 'bg-primary/75'
+    case 'high':
+      return 'reasoning-track-premium-mild'
+    case 'xhigh':
+      return 'reasoning-track-premium'
+    default:
+      return 'bg-foreground/35'
+  }
+}
+
+function thumbFillClass(level: ThinkingLevel): string {
+  switch (level) {
+    case 'off':
+      return 'bg-muted-foreground/55'
+    case 'minimal':
+      return 'bg-primary/50'
+    case 'low':
+      return 'bg-primary/70'
+    case 'medium':
+      return 'bg-primary'
+    case 'high':
+      return 'reasoning-track-premium-mild'
+    case 'xhigh':
+      return 'reasoning-track-premium'
+    default:
+      return 'bg-foreground'
+  }
+}
+
 export function ReasoningLevelSlider({ value, disabled, onChange }: ReasoningLevelSliderProps) {
   const { t } = useTranslation('chat')
   const trackRef = useRef<HTMLDivElement>(null)
   const [dragRatio, setDragRatio] = useState<number | null>(null)
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const committedIndex = levelToIndex(value)
   const stepCount = THINKING_LEVELS.length
   const isDragging = dragRatio !== null
   const visualRatio = dragRatio ?? indexToRatio(committedIndex, stepCount)
-  const previewIndex = isDragging ? ratioToIndex(visualRatio, stepCount) : hoverIndex
+  const activeIndex = isDragging ? ratioToIndex(visualRatio, stepCount) : committedIndex
+  const activeLevel = indexToLevel(activeIndex)
   const visualPercent = visualRatio * 100
 
   const clientXToRatio = useCallback((clientX: number) => {
@@ -61,7 +120,6 @@ export function ReasoningLevelSlider({ value, disabled, onChange }: ReasoningLev
   const startDrag = useCallback(
     (clientX: number) => {
       if (disabled) return
-      setHoverIndex(null)
       setDragRatio(clientXToRatio(clientX))
     },
     [clientXToRatio, disabled],
@@ -99,20 +157,27 @@ export function ReasoningLevelSlider({ value, disabled, onChange }: ReasoningLev
     commitRatio(clientXToRatio(event.clientX))
   }
 
-  function showStepLabel(index: number): boolean {
-    return isDragging ? previewIndex === index : hoverIndex === index
+  function stepLeft(index: number): string {
+    if (stepCount <= 1) return '0%'
+    return `${(index / (stepCount - 1)) * 100}%`
+  }
+
+  function labelPositionClass(index: number): string {
+    if (index === 0) return 'left-0 translate-x-0'
+    if (index === stepCount - 1) return 'left-full -translate-x-full'
+    return '-translate-x-1/2'
   }
 
   return (
-    <div className={cn('select-none px-menu-x', disabled && 'opacity-50')}>
-      <div className="mb-stack-sm flex justify-between px-0.5 text-[10px] text-muted-foreground">
+    <div className={cn('select-none px-menu-x pb-0.5', disabled && 'opacity-50')}>
+      <div className="mb-stack-sm flex justify-between text-[10px] text-muted-foreground">
         <span>{t('modelPicker.reasoningSliderMin')}</span>
         <span>{t('modelPicker.reasoningSliderMax')}</span>
       </div>
 
       <div
         ref={trackRef}
-        className={cn('relative h-9 px-1', disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
+        className={cn('relative h-5', disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
         onClick={handleTrackClick}
         onPointerDown={event => {
           if (disabled || event.button !== 0) return
@@ -138,59 +203,17 @@ export function ReasoningLevelSlider({ value, disabled, onChange }: ReasoningLev
           }
         }}
       >
-        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border/80" />
-        <div className="absolute top-1/2 h-px -translate-y-1/2 bg-primary/45 transition-[width] duration-150 ease-out" style={{ width: `${visualPercent}%` }} />
-
-        {THINKING_LEVELS.map((level, index) => {
-          const left = stepCount > 1 ? (index / (stepCount - 1)) * 100 : 0
-          const isPreview = previewIndex === index
-          return (
-            <div
-              key={level}
-              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${left}%` }}
-              onMouseEnter={() => {
-                if (!disabled && !isDragging) setHoverIndex(index)
-              }}
-              onMouseLeave={() => {
-                if (!isDragging) setHoverIndex(null)
-              }}
-              onPointerDown={event => event.stopPropagation()}
-            >
-              {showStepLabel(index) ? (
-                <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap text-[10px] text-muted-foreground">
-                  {t(`thinkingLevelsShort.${level}`)}
-                </span>
-              ) : null}
-
-              <button
-                type="button"
-                disabled={disabled}
-                aria-label={t(`thinkingLevels.${level}`)}
-                className="flex size-5 items-center justify-center rounded-full"
-                onClick={event => {
-                  event.stopPropagation()
-                  if (disabled) return
-                  commitRatio(indexToRatio(index, stepCount))
-                }}
-              >
-                <span
-                  className={cn(
-                    'rounded-full transition-all duration-150',
-                    isPreview ? 'size-1.5 bg-primary ring-2 ring-primary/20' : 'size-1 bg-muted-foreground/30',
-                  )}
-                />
-              </button>
-            </div>
-          )
-        })}
+        <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-border/80" />
+        <div
+          className={cn('absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full transition-[width] duration-150 ease-out', trackFillClass(activeLevel))}
+          style={{ width: `${visualPercent}%` }}
+        />
 
         <div
           data-slider-thumb
           className={cn(
-            'absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/80 bg-background shadow-sm',
+            'absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2',
             !isDragging && 'transition-[left] duration-150 ease-out',
-            isDragging && 'z-10 border-primary/40 shadow-md ring-2 ring-primary/15',
             disabled ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing',
           )}
           style={{ left: `${visualPercent}%` }}
@@ -200,7 +223,36 @@ export function ReasoningLevelSlider({ value, disabled, onChange }: ReasoningLev
             event.stopPropagation()
             startDrag(event.clientX)
           }}
-        />
+        >
+          <span aria-hidden className={cn('block h-[11px] w-[6px]', thumbFillClass(activeLevel))} style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+        </div>
+      </div>
+
+      <div className="relative mt-2 h-4">
+        {THINKING_LEVELS.map((level, index) => (
+          <button
+            key={level}
+            type="button"
+            disabled={disabled}
+            aria-label={t(`thinkingLevels.${level}`)}
+            aria-current={index === activeIndex ? 'true' : undefined}
+            className={cn(
+              'absolute top-0 whitespace-nowrap text-[10px] leading-none transition-colors duration-150',
+              labelPositionClass(index),
+              labelClassName(level, index === activeIndex),
+              !disabled && 'cursor-pointer hover:text-foreground/80',
+            )}
+            style={index > 0 && index < stepCount - 1 ? { left: stepLeft(index) } : undefined}
+            onClick={event => {
+              event.stopPropagation()
+              if (disabled) return
+              commitRatio(indexToRatio(index, stepCount))
+            }}
+            onPointerDown={event => event.stopPropagation()}
+          >
+            {t(`thinkingLevelsShort.${level}`)}
+          </button>
+        ))}
       </div>
     </div>
   )

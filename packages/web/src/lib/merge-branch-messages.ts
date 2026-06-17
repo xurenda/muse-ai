@@ -1,8 +1,8 @@
 import type { SessionBranchMessage } from '@muse-ai/shared'
 import { branchMessagesToChat } from '@/lib/branch-messages'
-import { isAssistantMessage, type ChatMessage } from '@/lib/chat-types'
+import { isAssistantMessage, type AssistantChatMessage, type ChatMessage } from '@/lib/chat-types'
 
-function shouldPreserveAssistantTail(message: ChatMessage): boolean {
+function shouldPreserveAssistantTail(message: ChatMessage): message is AssistantChatMessage {
   if (!isAssistantMessage(message)) return false
   // error 已持久化在 session 分支，此处仅保留进行中的流式/tool 状态
   if (message.streaming) return true
