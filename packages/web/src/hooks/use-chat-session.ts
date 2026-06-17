@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChatRequest, SessionMeta, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse } from '@muse-ai/shared'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse } from '@muse-ai/shared'
 import { checkCliHealth } from '@/api/backend-client'
 import {
-  CliApiError,
   createCliSession,
   forkSession,
   getSessionSettings,
   getSessionTree,
-  listCliSessions,
   navigateSession,
   patchSessionSettings,
   postChat,
@@ -17,10 +17,13 @@ import { branchMessagesToChat } from '@/lib/branch-messages'
 import { mergeBranchWithEphemeralTail } from '@/lib/merge-branch-messages'
 import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
 import { createUserMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
+import { parseConnectionError, type ParsedConnectionError } from '@/lib/connection-errors'
 import type { StoredDeviceSession } from '@/lib/config'
+import { useDeviceHealth } from '@/hooks/use-device-health'
 import { useSessionListStore } from '@/stores/session-list-store'
 
 export type ChatSessionStatus = 'idle' | 'connecting' | 'ready' | 'error'
+export type SseConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
 interface UseChatSessionOptions {
   onSessionChange?: (sessionId: string) => void
@@ -34,30 +37,16 @@ function writeStoredSessionId(deviceId: string, sessionId: string): void {
   sessionStorage.setItem(sessionStorageKey(deviceId), sessionId)
 }
 
-function startSseSubscription(
-  deviceSession: StoredDeviceSession,
-  sessionId: string,
-  abort: AbortController,
-  onEvent: (event: Parameters<typeof applySseEvent>[1]) => void,
-  onError: (message: string) => void,
-  onConnected?: () => void,
-): Promise<void> {
-  return subscribeSessionEvents(deviceSession.endpoint, deviceSession.accessToken, sessionId, onEvent, abort.signal, onConnected).catch((error: unknown) => {
-    if (abort.signal.aborted) return
-    onError(error instanceof Error ? error.message : String(error))
-    throw error
-  })
-}
-
 function resetChatState(setters: {
   setSessionId: (value: string | null) => void
   setSessionTree: (value: SessionTreeResponse | null) => void
   setSessionSettings: (value: SessionSettingsResponse | null) => void
   setMessages: (value: ChatMessage[]) => void
-  setConnectionError: (value: string | null) => void
+  setConnectionError: (value: ParsedConnectionError | null) => void
   setSendError: (value: string | null) => void
   setSettingsError: (value: string | null) => void
   setTreeError: (value: string | null) => void
+  setSseStatus: (value: SseConnectionStatus) => void
 }) {
   setters.setSessionId(null)
   setters.setSessionTree(null)
@@ -67,16 +56,19 @@ function resetChatState(setters: {
   setters.setSendError(null)
   setters.setSettingsError(null)
   setters.setTreeError(null)
+  setters.setSseStatus('idle')
 }
 
 export function useChatSession(deviceSession: StoredDeviceSession | null, routeSessionId: string | undefined, options?: UseChatSessionOptions) {
+  const { t } = useTranslation('chat')
+  const { reachable } = useDeviceHealth()
   const [status, setStatus] = useState<ChatSessionStatus>('idle')
+  const [sseStatus, setSseStatus] = useState<SseConnectionStatus>('idle')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [sessionTree, setSessionTree] = useState<SessionTreeResponse | null>(null)
   const [sessionSettings, setSessionSettings] = useState<SessionSettingsResponse | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [connectionError, setConnectionError] = useState<ParsedConnectionError | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [treeError, setTreeError] = useState<string | null>(null)
@@ -84,12 +76,17 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
   const onSessionChangeRef = useRef(options?.onSessionChange)
+  const prevDeviceReachableRef = useRef<boolean | null>(null)
+  const sessionAutoRetryRef = useRef(false)
+  const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
 
   useEffect(() => {
     onSessionChangeRef.current = options?.onSessionChange
   }, [options?.onSessionChange])
 
   const streaming = checkStreaming(messages)
+  const deviceUnreachable = reachable === false
+  const canSend = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -104,14 +101,6 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     },
     [deviceSession],
   )
-
-  const refreshSessions = useCallback(async () => {
-    if (!deviceSession) {
-      setSessions([])
-      return
-    }
-    setSessions(await listCliSessions(deviceSession.endpoint, deviceSession.accessToken))
-  }, [deviceSession])
 
   const refreshTree = useCallback(
     async (id: string, replaceMessages = false) => {
@@ -142,6 +131,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       sseAbortRef.current?.abort()
 
       setStatus('connecting')
+      setSseStatus('connecting')
       setConnectionError(null)
       setSendError(null)
       if (connectOptions?.resetMessages) {
@@ -151,42 +141,107 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       writeStoredSessionId(deviceSession.deviceId, id)
       setSessionId(id)
       await loadSettings(id)
-      await refreshSessions()
       await refreshTree(id, true)
 
       const abort = new AbortController()
       sseAbortRef.current = abort
 
       await new Promise<void>((resolve, reject) => {
-        void startSseSubscription(
-          deviceSession,
+        void subscribeSessionEvents(
+          deviceSession.endpoint,
+          deviceSession.accessToken,
           id,
-          abort,
-          event => {
-            if (event.type === 'session_meta_updated') {
-              useSessionListStore.getState().patchSession(event.sessionId, {
-                name: event.name,
-                nameSource: event.nameSource,
-                updatedAt: event.updatedAt,
-              })
-              return
-            }
-            setMessages(prev => applySseEvent(prev, event))
-            if (event.type === 'agent_end') {
-              void refreshTreeRef.current(id)
-            }
+          {
+            onEvent: event => {
+              if (event.type === 'session_meta_updated') {
+                useSessionListStore.getState().patchSession(event.sessionId, {
+                  name: event.name,
+                  nameSource: event.nameSource,
+                  updatedAt: event.updatedAt,
+                })
+                return
+              }
+              setMessages(prev => applySseEvent(prev, event))
+              if (event.type === 'agent_end') {
+                void refreshTreeRef.current(id)
+              }
+            },
+            onConnected: () => {
+              setSseStatus('connected')
+              resolve()
+            },
+            onReconnecting: () => {
+              setSseStatus('reconnecting')
+            },
+            onReconnected: () => {
+              setSseStatus('connected')
+              void refreshTree(id, true)
+              toast.success(t('sseReconnected'))
+            },
           },
-          message => reject(new Error(message)),
-          () => resolve(),
+          abort.signal,
         ).catch((error: unknown) => {
+          if (abort.signal.aborted) return
           reject(error instanceof Error ? error : new Error(String(error)))
         })
       })
 
       setStatus('ready')
     },
-    [deviceSession, loadSettings, refreshSessions, refreshTree],
+    [deviceSession, loadSettings, refreshTree, t],
   )
+
+  const retryConnection = useCallback(async () => {
+    if (!deviceSession || !routeSessionId) return
+
+    setConnectionError(null)
+    setStatus('connecting')
+    setSseStatus('connecting')
+
+    try {
+      const healthy = await checkCliHealth(deviceSession.endpoint, deviceSession.accessToken)
+      if (!healthy) {
+        throw new Error('cli_unreachable')
+      }
+      await connectSession(routeSessionId, { resetMessages: false })
+    } catch (error: unknown) {
+      setConnectionError(parseConnectionError(error))
+      setStatus('error')
+      setSseStatus('disconnected')
+    }
+  }, [connectSession, deviceSession, routeSessionId])
+
+  useEffect(() => {
+    if (reachable === null) return
+
+    const prev = prevDeviceReachableRef.current
+    prevDeviceReachableRef.current = reachable
+
+    if (prev === false && reachable && status === 'error' && routeSessionId) {
+      sessionAutoRetryRef.current = false
+      void retryConnection()
+      return
+    }
+
+    if (prev === false && reachable && status === 'ready' && sessionId) {
+      void refreshTree(sessionId, true)
+      toast.success(t('cliHealthRestored'))
+    }
+  }, [reachable, refreshTree, retryConnection, routeSessionId, sessionId, status, t])
+
+  useEffect(() => {
+    if (status !== 'error') {
+      sessionAutoRetryRef.current = false
+      return
+    }
+    if (reachable !== true || !routeSessionId || sessionAutoRetryRef.current) return
+
+    sessionAutoRetryRef.current = true
+    const timer = window.setTimeout(() => {
+      void retryConnection()
+    }, 800)
+    return () => window.clearTimeout(timer)
+  }, [reachable, retryConnection, routeSessionId, status])
 
   useEffect(() => {
     sseAbortRef.current?.abort()
@@ -205,6 +260,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setSendError,
         setSettingsError,
         setTreeError,
+        setSseStatus,
       })
     }
 
@@ -222,7 +278,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       queueMicrotask(() => {
         if (cancelled) return
         resetToIdle()
-        void refreshSessions()
+        requestSessionListRefresh()
       })
       return () => {
         cancelled = true
@@ -242,14 +298,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         await connectSession(targetSessionId, { resetMessages: true })
       } catch (error: unknown) {
         if (cancelled) return
-        if (error instanceof Error && error.message === 'cli_unreachable') {
-          setConnectionError('cli_unreachable')
-        } else if (error instanceof CliApiError) {
-          setConnectionError(error.message)
-        } else {
-          setConnectionError(error instanceof Error ? error.message : String(error))
-        }
+        setConnectionError(parseConnectionError(error))
         setStatus('error')
+        setSseStatus('disconnected')
       }
     }
 
@@ -260,11 +311,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       sseAbortRef.current?.abort()
       sseAbortRef.current = null
     }
-  }, [deviceSession, routeSessionId, connectSession, refreshSessions])
+  }, [deviceSession, routeSessionId, connectSession, requestSessionListRefresh])
 
   const sendMessage = useCallback(
     async (text: string, mode: ChatInputMode) => {
-      if (!deviceSession || !sessionId || status !== 'ready') return
+      if (!deviceSession || !sessionId || !canSend) return
       const trimmed = text.trim()
       if (!trimmed) return
 
@@ -278,7 +329,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setSendError(error instanceof Error ? error.message : String(error))
       }
     },
-    [deviceSession, sessionId, status],
+    [canSend, deviceSession, sessionId],
   )
 
   const updateSessionSettings = useCallback(
@@ -305,15 +356,16 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
           agentId: agentId ?? settings?.agentId,
         })
-        await refreshSessions()
+        requestSessionListRefresh()
         return session.id
       } catch (error: unknown) {
-        setConnectionError(error instanceof Error ? error.message : String(error))
+        setConnectionError(parseConnectionError(error))
         setStatus('error')
+        setSseStatus('disconnected')
         return null
       }
     },
-    [deviceSession, loadSettings, refreshSessions, routeSessionId, sessionSettings],
+    [deviceSession, loadSettings, requestSessionListRefresh, routeSessionId, sessionSettings],
   )
 
   const startNewSession = useCallback(async () => {
@@ -353,12 +405,14 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
   return {
     status,
+    sseStatus,
     sessionId,
-    sessions,
     sessionTree,
     sessionSettings,
     messages,
     streaming,
+    canSend,
+    deviceUnreachable,
     connectionError,
     sendError,
     settingsError,
@@ -368,7 +422,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     startNewSession,
     navigateToEntry,
     forkFromEntry,
-    refreshSessions,
+    retryConnection,
     messagesEndRef,
   }
 }

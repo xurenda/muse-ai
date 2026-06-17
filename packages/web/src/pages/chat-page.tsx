@@ -1,15 +1,16 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
 import { ChatSessionBar } from '@/components/chat/chat-session-bar'
+import { NoDeviceGuide } from '@/components/chat/no-device-guide'
 import { Button } from '@/components/ui/button'
 import { useChatSessionContext } from '@/context/chat-session-context'
 import { useAuth } from '@/hooks/use-auth'
 import type { StoredDeviceSession } from '@/lib/config'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import type { ChatInputMode } from '@/lib/chat-types'
+import { useState } from 'react'
 
 interface SessionChatFooterProps {
   deviceSession: StoredDeviceSession
@@ -44,14 +45,13 @@ function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled
 export function ChatPage() {
   const { sessionId: routeSessionId } = useParams()
   const { t } = useTranslation('chat')
-  const { t: tl } = useTranslation('layout')
   const { deviceSession } = useAuth()
   const {
     status,
     sessionSettings,
     messages,
     streaming,
-    connectionError,
+    canSend,
     sendError,
     settingsError,
     treeError,
@@ -61,17 +61,8 @@ export function ChatPage() {
     messagesEndRef,
   } = useChatSessionContext()
 
-  const connectionErrorMessage = connectionError === 'cli_unreachable' ? t('errorCliUnreachable') : connectionError
-
   if (!deviceSession) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="max-w-md text-sm text-muted-foreground">{t('noDeviceHint')}</p>
-        <Button type="button" variant="outline" size="sm" asChild>
-          <Link to="/devices">{tl('sidebar.devices')}</Link>
-        </Button>
-      </div>
-    )
+    return <NoDeviceGuide />
   }
 
   if (!routeSessionId) {
@@ -85,19 +76,16 @@ export function ChatPage() {
     )
   }
 
+  const showChatContent = status === 'ready'
+  const composerDisabled = !canSend
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {status === 'connecting' ? <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">{t('connecting')}</div> : null}
 
-      {status === 'error' && connectionErrorMessage ? (
-        <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <span className="mx-auto block max-w-3xl">{connectionErrorMessage}</span>
-        </div>
-      ) : null}
-
       {sendError ? (
         <div className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          <span className="mx-auto block max-w-3xl">{sendError}</span>
+          <span className="mx-auto block max-w-3xl">{t('errorSendFailed', { message: sendError })}</span>
         </div>
       ) : null}
       {settingsError ? (
@@ -111,7 +99,7 @@ export function ChatPage() {
         </div>
       ) : null}
 
-      {status === 'ready' ? (
+      {showChatContent ? (
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
             <div className="mx-auto flex w-full max-w-3xl flex-col">
@@ -125,7 +113,7 @@ export function ChatPage() {
               deviceSession={deviceSession}
               sessionSettings={sessionSettings}
               streaming={streaming}
-              disabled={status !== 'ready'}
+              disabled={composerDisabled}
               onUpdate={async patch => {
                 const result = await updateSessionSettings(patch)
                 return result !== null

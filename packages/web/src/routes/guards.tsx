@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { DeviceHealthProvider } from '@/hooks/use-device-health'
 import { useAuth } from '@/hooks/use-auth'
 
 export function ProtectedLayout() {
@@ -6,7 +7,11 @@ export function ProtectedLayout() {
   if (!auth) {
     return <Navigate to="/login" replace />
   }
-  return <Outlet />
+  return (
+    <DeviceHealthProvider>
+      <Outlet />
+    </DeviceHealthProvider>
+  )
 }
 
 export function GuestLayout() {

@@ -36,6 +36,7 @@
     "device": "设备",
     "deviceConnected": "已连接：{{name}}",
     "deviceDisconnected": "未连接设备",
+    "deviceUnreachable": "CLI 不可达：{{name}}",
     "logout": "退出登录"
   },
   "rightPanel": {
@@ -45,6 +46,43 @@
     "noAddableTabs": "当前页面暂无可添加的面板",
     "tabs": {
       "sessionTree": "Session 树"
+    }
+  },
+  "statusBar": {
+    "device": "设备",
+    "ready": "就绪",
+    "noDevice": "未连接",
+    "checking": "检测中",
+    "connecting": "连接中",
+    "connectFailed": "连接失败",
+    "unreachable": "不可达",
+    "reconnecting": "重连中",
+    "sessionDisconnected": "会话断开",
+    "panel": {
+      "title": "设备状态",
+      "noDeviceTitle": "未选择设备",
+      "endpoint": "Endpoint",
+      "health": "健康检查",
+      "sse": "事件流 (SSE)",
+      "healthOk": "通过",
+      "healthFail": "失败",
+      "healthChecking": "检测中…",
+      "healthUnknown": "—",
+      "sseConnected": "已连接",
+      "sseReconnecting": "重连中",
+      "sseConnecting": "连接中",
+      "sseDisconnected": "已断开",
+      "sseIdle": "—",
+      "recentActivity": "最近活动",
+      "manageDevices": "管理设备"
+    },
+    "activity": {
+      "healthLost": "CLI 健康检查失败",
+      "healthRestored": "CLI 已恢复可达",
+      "sseReconnecting": "SSE 开始重连",
+      "sseReconnected": "SSE 已重新连接",
+      "connectFailed": "会话连接失败",
+      "connectRestored": "会话连接已恢复"
     }
   }
 }

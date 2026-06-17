@@ -36,6 +36,7 @@
     "device": "Devices",
     "deviceConnected": "Connected: {{name}}",
     "deviceDisconnected": "No device connected",
+    "deviceUnreachable": "CLI unreachable: {{name}}",
     "logout": "Log out"
   },
   "rightPanel": {
@@ -45,6 +46,43 @@
     "noAddableTabs": "No panels available on this page",
     "tabs": {
       "sessionTree": "Session tree"
+    }
+  },
+  "statusBar": {
+    "device": "Device",
+    "ready": "Ready",
+    "noDevice": "Not connected",
+    "checking": "Checking",
+    "connecting": "Connecting",
+    "connectFailed": "Connection failed",
+    "unreachable": "Unreachable",
+    "reconnecting": "Reconnecting",
+    "sessionDisconnected": "Session disconnected",
+    "panel": {
+      "title": "Device status",
+      "noDeviceTitle": "No device selected",
+      "endpoint": "Endpoint",
+      "health": "Health check",
+      "sse": "Event stream (SSE)",
+      "healthOk": "OK",
+      "healthFail": "Failed",
+      "healthChecking": "Checking…",
+      "healthUnknown": "—",
+      "sseConnected": "Connected",
+      "sseReconnecting": "Reconnecting",
+      "sseConnecting": "Connecting",
+      "sseDisconnected": "Disconnected",
+      "sseIdle": "—",
+      "recentActivity": "Recent activity",
+      "manageDevices": "Manage devices"
+    },
+    "activity": {
+      "healthLost": "CLI health check failed",
+      "healthRestored": "CLI reachable again",
+      "sseReconnecting": "SSE reconnect started",
+      "sseReconnected": "SSE reconnected",
+      "connectFailed": "Session connection failed",
+      "connectRestored": "Session connection restored"
     }
   }
 }

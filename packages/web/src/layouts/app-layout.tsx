@@ -1,6 +1,9 @@
 import { useCallback } from 'react'
 import { Group, Panel, usePanelRef } from 'react-resizable-panels'
 import { useLocation } from 'react-router-dom'
+import { ChatDeviceStatusBridge } from '@/components/layout/chat-device-status-bridge'
+import { DeviceStatusBar } from '@/components/layout/device-status-bar'
+import { DeviceStatusController } from '@/components/layout/device-status-controller'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { MainContentShell } from '@/components/layout/main-content-shell'
 import { SettingsSidebar } from '@/components/layout/settings-sidebar'
@@ -42,7 +45,7 @@ function MainPanelContent() {
   const mainInner = <MainContentShell sidebarOpen={sidebarOpen} onSidebarToggle={handleSidebarToggle} />
 
   return (
-    <Group orientation="horizontal" className="h-full">
+    <Group orientation="horizontal" className="h-full min-h-0">
       <Panel
         id={SIDEBAR_PANEL_ID}
         panelRef={sidebarPanelRef}
@@ -64,12 +67,27 @@ function MainPanelContent() {
       <SidebarResizeHandle disabled={!sidebarOpen} />
 
       <Panel id={MAIN_PANEL_ID} minSize={MAIN_MIN_WIDTH} className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-        {isChatRoute ? <ChatSessionProvider>{mainInner}</ChatSessionProvider> : mainInner}
+        {isChatRoute ? (
+          <ChatSessionProvider>
+            <ChatDeviceStatusBridge />
+            {mainInner}
+          </ChatSessionProvider>
+        ) : (
+          mainInner
+        )}
       </Panel>
     </Group>
   )
 }
 
 export function AppLayout() {
-  return <MainPanelContent />
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <DeviceStatusController />
+      <div className="min-h-0 flex-1">
+        <MainPanelContent />
+      </div>
+      <DeviceStatusBar />
+    </div>
+  )
 }

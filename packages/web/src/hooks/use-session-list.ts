@@ -14,6 +14,7 @@ export function useSessionList() {
   const [error, setError] = useState<string | null>(null)
   const patches = useSessionListStore(state => state.patches)
   const clearPatches = useSessionListStore(state => state.clearPatches)
+  const refreshNonce = useSessionListStore(state => state.refreshNonce)
 
   const mergedSessions = useMemo(() => mergeSessionList(sessions, patches), [sessions, patches])
 
@@ -77,7 +78,7 @@ export function useSessionList() {
     return () => {
       cancelled = true
     }
-  }, [clearPatches, deviceSession, pathname])
+  }, [clearPatches, deviceSession, pathname, refreshNonce])
 
   return {
     sessions: mergedSessions,

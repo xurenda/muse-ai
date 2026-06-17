@@ -194,6 +194,16 @@ export function parseSseBuffer(buffer: string): { events: MuseSseEvent[]; remain
 
 const SSE_RECONNECT_MS = 1000
 
+export interface SseSubscriptionCallbacks {
+  onEvent: (event: MuseSseEvent) => void
+  /** 首次建立 SSE 连接 */
+  onConnected?: () => void
+  /** 已连接后流断开，即将重试 */
+  onReconnecting?: () => void
+  /** 断线后重连成功 */
+  onReconnected?: () => void
+}
+
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -234,11 +244,10 @@ export async function subscribeSessionEvents(
   endpoint: string,
   accessToken: string,
   sessionId: string,
-  onEvent: (event: MuseSseEvent) => void,
+  callbacks: SseSubscriptionCallbacks,
   signal: AbortSignal,
-  onConnected?: () => void,
 ): Promise<void> {
-  let connected = false
+  let everConnected = false
 
   while (!signal.aborted) {
     try {
@@ -247,18 +256,25 @@ export async function subscribeSessionEvents(
         signal,
       })
       if (!res.ok || !res.body) {
-        throw new CliApiError(res.status, undefined, `订阅 SSE 失败 (${res.status})`)
+        throw new CliApiError(res.status, 'sse_subscribe_failed', `订阅 SSE 失败 (${res.status})`)
       }
 
-      connected = true
-      onConnected?.()
-      await readSseStream(res.body, signal, onEvent)
+      if (everConnected) {
+        callbacks.onReconnected?.()
+      } else {
+        everConnected = true
+        callbacks.onConnected?.()
+      }
+
+      await readSseStream(res.body, signal, callbacks.onEvent)
 
       if (signal.aborted) return
+      callbacks.onReconnecting?.()
       await sleep(SSE_RECONNECT_MS, signal)
     } catch (error: unknown) {
       if (signal.aborted) return
-      if (!connected) throw error
+      if (!everConnected) throw error
+      callbacks.onReconnecting?.()
       await sleep(SSE_RECONNECT_MS, signal)
     }
   }
