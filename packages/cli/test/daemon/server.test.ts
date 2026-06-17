@@ -353,4 +353,35 @@ describe('ChatService', () => {
 
     vi.unstubAllGlobals()
   })
+
+  it('POST /sessions/:id/compact 在 idle 时应接受', async () => {
+    const { app, deps } = await createTestApp()
+    const compactSpy = vi.spyOn(deps.chatService, 'enqueueCompact').mockResolvedValue({ accepted: true })
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const res = await app.request(`http://localhost/sessions/${session.id}/compact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customInstructions: '保留 API 设计细节' }),
+    })
+
+    expect(res.status).toBe(202)
+    expect(compactSpy).toHaveBeenCalledWith(session.id, { customInstructions: '保留 API 设计细节' })
+  })
+
+  it('POST /sessions/:id/compact 在 busy 时应返回 409', async () => {
+    const { app, deps } = await createTestApp()
+    vi.spyOn(deps.chatService, 'isSessionBusy').mockReturnValue(true)
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const res = await app.request(`http://localhost/sessions/${session.id}/compact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('session_busy')
+  })
 })

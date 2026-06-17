@@ -34,6 +34,8 @@ export const CLI_API_PATHS = {
   SESSION_NAVIGATE: '/sessions/:sessionId/navigate',
   /** 路由模式；实际路径用 `sessionForkPath(sessionId)` */
   SESSION_FORK: '/sessions/:sessionId/fork',
+  /** 路由模式；实际路径用 `sessionCompactPath(sessionId)` */
+  SESSION_COMPACT: '/sessions/:sessionId/compact',
 } as const
 
 /** 构建 Session SSE 路径：`GET /sessions/:id/events` */
@@ -64,6 +66,11 @@ export function sessionNavigatePath(sessionId: string): string {
 /** 构建 Session fork 路径：`POST /sessions/:id/fork` */
 export function sessionForkPath(sessionId: string): string {
   return `/sessions/${sessionId}/fork`
+}
+
+/** 构建 Session compact 路径：`POST /sessions/:id/compact` */
+export function sessionCompactPath(sessionId: string): string {
+  return `/sessions/${sessionId}/compact`
 }
 
 /** 构建 Session 详情路径：`PATCH|DELETE /sessions/:id` */

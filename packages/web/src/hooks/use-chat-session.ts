@@ -5,6 +5,7 @@ import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, Sessio
 import { checkCliHealth } from '@/api/backend-client'
 import {
   createCliSession,
+  compactSession,
   forkSession,
   getSessionSettings,
   getSessionTree,
@@ -72,6 +73,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [sendError, setSendError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [treeError, setTreeError] = useState<string | null>(null)
+  const [compacting, setCompacting] = useState(false)
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
@@ -86,7 +88,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
   const streaming = checkStreaming(messages)
   const deviceUnreachable = reachable === false
-  const canSend = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable
+  const canSend = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable && !compacting
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -159,6 +161,20 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                   nameSource: event.nameSource,
                   updatedAt: event.updatedAt,
                 })
+                return
+              }
+              if (event.type === 'compaction_start') {
+                setCompacting(true)
+                return
+              }
+              if (event.type === 'compaction_end') {
+                setCompacting(false)
+                void refreshTreeRef.current(id)
+                if (event.success) {
+                  toast.success(t('compactSuccess', { count: event.compactionCount ?? 1 }))
+                } else if (event.errorMessage) {
+                  toast.error(t('compactFailed', { message: event.errorMessage }))
+                }
                 return
               }
               setMessages(prev => applySseEvent(prev, event))
@@ -375,6 +391,20 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     }
   }, [createSession])
 
+  const compactContext = useCallback(async () => {
+    if (!deviceSession || !sessionId || compacting) return false
+    setSendError(null)
+    try {
+      await compactSession(deviceSession.endpoint, deviceSession.accessToken, sessionId)
+      return true
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      setSendError(message)
+      toast.error(t('compactFailed', { message }))
+      return false
+    }
+  }, [compacting, deviceSession, sessionId, t])
+
   const navigateToEntry = useCallback(
     async (entryId: string | null) => {
       if (!deviceSession || !sessionId || streaming) return
@@ -417,7 +447,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     sendError,
     settingsError,
     treeError,
+    compacting,
     sendMessage,
+    compactContext,
     updateSessionSettings,
     startNewSession,
     navigateToEntry,

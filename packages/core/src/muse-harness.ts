@@ -48,6 +48,15 @@ export class MuseHarness {
     return this.harness.followUp(text, options)
   }
 
+  compact(customInstructions?: string): Promise<{
+    summary: string
+    firstKeptEntryId: string
+    tokensBefore: number
+    details?: unknown
+  }> {
+    return this.harness.compact(customInstructions)
+  }
+
   getModel(): Model<string> {
     return this.harness.getModel()
   }

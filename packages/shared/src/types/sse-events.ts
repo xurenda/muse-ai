@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { compactionReasonSchema } from './session-compact.js'
 import { sessionNameSourceSchema } from './session.js'
 
 /** CLI → Web SSE 事件（对齐 pi AgentEvent 子集） */
@@ -22,6 +23,19 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('turn_end') }),
   z.object({ type: z.literal('agent_end') }),
+  z.object({
+    type: z.literal('compaction_start'),
+    reason: compactionReasonSchema,
+  }),
+  z.object({
+    type: z.literal('compaction_end'),
+    reason: compactionReasonSchema,
+    success: z.boolean(),
+    tokensBefore: z.number().optional(),
+    compactionCount: z.number().int().nonnegative().optional(),
+    willRetry: z.boolean().optional(),
+    errorMessage: z.string().optional(),
+  }),
   z.object({ type: z.literal('error'), message: z.string() }),
   z.object({
     type: z.literal('session_meta_updated'),

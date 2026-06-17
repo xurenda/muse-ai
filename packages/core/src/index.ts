@@ -39,4 +39,5 @@ export {
 export type { MuseHarnessOptions } from './types.js'
 export { mapHarnessEventToSse } from './harness-events.js'
 export { extractAssistantTurnError, extractBranchMessageError, formatLlmErrorMessage } from './assistant-turn-error.js'
+export { isAssistantContextOverflow } from './context-overflow.js'
 export type { AgentTool, AgentToolResult } from '@earendil-works/pi-agent-core'

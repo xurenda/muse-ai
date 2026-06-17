@@ -173,3 +173,71 @@ describe('ChatService steer / follow_up', () => {
     expect(deps.chatService.isSessionBusy(session.id)).toBe(false)
   })
 })
+
+describe('ChatService compact', () => {
+  afterEach(() => {
+    delete process.env.MUSE_HOME
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('手动 compact 应调用 harness.compact', async () => {
+    const { deps } = await createPairedDeps()
+    const compactSpy = vi.spyOn(MuseHarness.prototype, 'compact').mockResolvedValue({
+      summary: 'summary',
+      firstKeptEntryId: 'entry-1',
+      tokensBefore: 50_000,
+    })
+    vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    await deps.chatService.enqueueCompact(session.id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    expect(compactSpy).toHaveBeenCalled()
+  })
+
+  it('Session 忙碌时 compact 应拒绝', async () => {
+    const { deps } = await createPairedDeps()
+    let releasePrompt!: () => void
+    const promptGate = new Promise<void>(resolve => {
+      releasePrompt = resolve
+    })
+
+    vi.spyOn(MuseHarness.prototype, 'prompt').mockImplementation(async () => {
+      await promptGate
+      return mockAssistantMessage()
+    })
+    vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    void deps.chatService.enqueue({ sessionId: session.id, message: '长对话', mode: 'prompt' })
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    await expect(deps.chatService.enqueueCompact(session.id)).rejects.toMatchObject({ code: 'session_busy' })
+
+    releasePrompt()
+    await new Promise(resolve => setTimeout(resolve, 50))
+  })
+
+  it('context overflow 时应自动 compact', async () => {
+    const { deps } = await createPairedDeps()
+    const compactSpy = vi.spyOn(MuseHarness.prototype, 'compact').mockResolvedValue({
+      summary: 'summary',
+      firstKeptEntryId: 'entry-1',
+      tokensBefore: 200_000,
+    })
+    vi.spyOn(MuseHarness.prototype, 'prompt').mockResolvedValue({
+      ...mockAssistantMessage(),
+      stopReason: 'error',
+      errorMessage: 'prompt is too long: 200000 tokens > 128000 maximum',
+    } as AssistantMessage)
+    vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    await deps.chatService.enqueue({ sessionId: session.id, message: '溢出测试', mode: 'prompt' })
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    expect(compactSpy).toHaveBeenCalled()
+  })
+})

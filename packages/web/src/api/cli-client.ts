@@ -2,6 +2,7 @@ import {
   CLI_API_PATHS,
   museSseEventSchema,
   sessionDetailPath,
+  sessionCompactPath,
   sessionEventsPath,
   sessionForkPath,
   sessionNavigatePath,
@@ -18,6 +19,7 @@ import {
   type SessionSettingsPatch,
   type SessionSettingsResponse,
   type SessionForkRequest,
+  type SessionCompactRequest,
   type SessionTreeResponse,
   type SkillMeta,
   type ToolDescriptor,
@@ -140,6 +142,27 @@ export async function forkSession(endpoint: string, accessToken: string, session
   })
   const body = await parseCliJson<{ session: SessionMeta }>(res)
   return body.session
+}
+
+export async function compactSession(endpoint: string, accessToken: string, sessionId: string, request: SessionCompactRequest = {}): Promise<void> {
+  const res = await fetch(`${endpoint}${sessionCompactPath(sessionId)}`, {
+    method: 'POST',
+    headers: cliHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  if (res.status !== 202) {
+    const text = await res.text()
+    let code: string | undefined
+    let message = text || `压缩上下文失败 (${res.status})`
+    try {
+      const body = JSON.parse(text) as { error?: string; message?: string }
+      code = body.error
+      if (body.message) message = body.message
+    } catch {
+      // 非 JSON 响应，保留原始 text
+    }
+    throw new CliApiError(res.status, code, message)
+  }
 }
 
 export async function getSessionSettings(endpoint: string, accessToken: string, sessionId: string): Promise<SessionSettingsResponse> {

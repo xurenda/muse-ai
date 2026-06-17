@@ -13,6 +13,7 @@ import {
   sessionMetaSchema,
   sessionPatchRequestSchema,
   sessionSettingsPatchSchema,
+  sessionCompactRequestSchema,
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
   sessionTreeResponseSchema,
@@ -272,6 +273,32 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
       }
       const message = error instanceof Error ? error.message : String(error)
       return c.json({ error: 'fork_failed', message }, 400)
+    }
+  })
+
+  app.post('/sessions/:sessionId/compact', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const body: unknown = await c.req.json().catch(() => ({}))
+    const parsed = sessionCompactRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const result = await deps.chatService.enqueueCompact(sessionId, parsed.data)
+      return c.json(result, 202)
+    } catch (error: unknown) {
+      if (error instanceof ChatServiceError) {
+        if (error.code === 'session_not_found') {
+          return c.json({ error: error.code, message: error.message }, 404)
+        }
+        if (error.code === 'session_busy') {
+          return c.json({ error: error.code, message: error.message }, 409)
+        }
+      }
+      throw error
     }
   })
 

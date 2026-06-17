@@ -4,19 +4,24 @@ import {
   buildHarnessOptionsForSession,
   extractAssistantTurnError,
   formatLlmErrorMessage,
+  isAssistantContextOverflow,
   type MuseAgentRegistry,
   type MuseSessionStore,
 } from '@muse-ai/core'
-import type { ChatRequest } from '@muse-ai/shared'
+import type { ChatRequest, CompactionReason } from '@muse-ai/shared'
 import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { resolveActiveTools } from '@/tools/index.js'
 import type { SessionEventHub } from './event-hub.js'
 import type { SessionTitleService } from './session-title-service.js'
 
+const OVERFLOW_COMPACTED_HINT = '上下文已满，已自动压缩。请重新发送您的消息。'
+
 function formatDispatchError(error: unknown): string {
   if (error instanceof Error) return error.message
   return String(error)
 }
+
+type PiSession = NonNullable<Awaited<ReturnType<MuseSessionStore['openPiSession']>>>
 
 /** 单次 prompt turn 进行中的 Harness 与事件订阅（turn 结束即释放） */
 interface ActiveTurnRuntime {
@@ -29,6 +34,8 @@ export class ChatService {
   private readonly sessionChains = new Map<string, Promise<void>>()
   /** 仅在有进行中的 turn 时持有；steer/follow_up 依赖此实例 */
   private readonly activeTurns = new Map<string, ActiveTurnRuntime>()
+  /** compact 进行中（与 turn 互斥） */
+  private readonly compactingSessions = new Set<string>()
 
   constructor(
     private readonly sessionStore: MuseSessionStore,
@@ -62,8 +69,60 @@ export class ChatService {
     return { accepted: true }
   }
 
-  /** 该 Session 是否仍有排队或进行中的对话任务 */
+  async enqueueCompact(sessionId: string, options?: { customInstructions?: string }): Promise<{ accepted: true }> {
+    const session = await this.sessionStore.get(sessionId)
+    if (!session) {
+      throw new ChatServiceError('session_not_found', `Session 不存在: ${sessionId}`)
+    }
+    if (this.isSessionBusy(sessionId)) {
+      throw new ChatServiceError('session_busy', 'Session 正在对话或压缩中，请稍后再试')
+    }
+
+    const previous = this.sessionChains.get(sessionId) ?? Promise.resolve()
+    const next = previous
+      .then(async () => {
+        const backendAuth = await this.resolveBackendAuth()
+        if (!backendAuth?.deviceToken) {
+          await this.publishCompactionEnd(sessionId, {
+            reason: 'manual',
+            success: false,
+            errorMessage: '未配对 CLI 设备：请先执行 muse pair <配对码>，或在 Web 设置页生成配对码',
+          })
+          return
+        }
+
+        const piSession = await this.sessionStore.openPiSession(sessionId)
+        if (!piSession) {
+          throw new ChatServiceError('session_not_found', `Session 不存在: ${sessionId}`)
+        }
+
+        await this.runCompact(sessionId, session.agentId, piSession, backendAuth, {
+          reason: 'manual',
+          customInstructions: options?.customInstructions,
+        })
+      })
+      .catch(async (error: unknown) => {
+        if (error instanceof ChatServiceError) throw error
+        await this.publishCompactionEnd(sessionId, {
+          reason: 'manual',
+          success: false,
+          errorMessage: formatLlmErrorMessage(formatDispatchError(error)),
+        })
+      })
+
+    this.sessionChains.set(sessionId, next)
+    void next.finally(() => {
+      if (this.sessionChains.get(sessionId) === next) {
+        this.sessionChains.delete(sessionId)
+      }
+    })
+
+    return { accepted: true }
+  }
+
+  /** 该 Session 是否仍有排队或进行中的对话 / 压缩任务 */
   isSessionBusy(sessionId: string): boolean {
+    if (this.compactingSessions.has(sessionId)) return true
     if (this.sessionChains.has(sessionId)) return true
     return this.activeTurns.has(sessionId)
   }
@@ -110,7 +169,7 @@ export class ChatService {
     }
   }
 
-  private async dispatchTurn(request: ChatRequest, agentId: string): Promise<void> {
+  private async dispatchTurn(request: ChatRequest, agentId: string, overflowCompactAttempted = false): Promise<void> {
     const { sessionId, message, mode } = request
     const backendAuth = await this.resolveBackendAuth()
 
@@ -129,6 +188,18 @@ export class ChatService {
 
     try {
       const assistantMessage = await this.dispatchMessage(runtime.harness, message, mode)
+      if (assistantMessage && mode === 'prompt') {
+        const model = runtime.harness.getModel()
+        if (!overflowCompactAttempted && isAssistantContextOverflow(assistantMessage, model.contextWindow)) {
+          this.evictRuntime(sessionId)
+          const compacted = await this.runCompact(sessionId, agentId, piSession, backendAuth, { reason: 'overflow' })
+          if (compacted) {
+            await this.publishError(sessionId, OVERFLOW_COMPACTED_HINT)
+            return
+          }
+        }
+      }
+
       if (assistantMessage) {
         const turnError = extractAssistantTurnError(assistantMessage)
         if (turnError) {
@@ -140,14 +211,83 @@ export class ChatService {
     } catch (error: unknown) {
       await this.publishError(sessionId, formatLlmErrorMessage(formatDispatchError(error)))
     } finally {
-      this.evictRuntime(sessionId)
+      if (this.activeTurns.has(sessionId)) {
+        this.evictRuntime(sessionId)
+      }
     }
   }
 
-  private async createTurnRuntime(
+  private async runCompact(
     sessionId: string,
     agentId: string,
-    piSession: NonNullable<Awaited<ReturnType<MuseSessionStore['openPiSession']>>>,
+    piSession: PiSession,
+    backendAuth: BackendLlmAuthConfig,
+    options: { reason: CompactionReason; customInstructions?: string },
+  ): Promise<boolean> {
+    this.compactingSessions.add(sessionId)
+    await this.eventHub.publish(sessionId, { type: 'compaction_start', reason: options.reason })
+
+    const { harness, unsubscribeEvents } = await this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth)
+
+    try {
+      const result = await harness.compact(options.customInstructions)
+      const compactionCount = await this.countCompactionEntries(piSession)
+      await this.publishCompactionEnd(sessionId, {
+        reason: options.reason,
+        success: true,
+        tokensBefore: result.tokensBefore,
+        compactionCount,
+      })
+      await this.sessionStore.touch(sessionId)
+      return true
+    } catch (error: unknown) {
+      await this.publishCompactionEnd(sessionId, {
+        reason: options.reason,
+        success: false,
+        errorMessage: formatLlmErrorMessage(formatDispatchError(error)),
+      })
+      return false
+    } finally {
+      unsubscribeEvents()
+      this.compactingSessions.delete(sessionId)
+    }
+  }
+
+  private async countCompactionEntries(piSession: PiSession): Promise<number> {
+    const branch = await piSession.getBranch()
+    return branch.filter(entry => entry.type === 'compaction').length
+  }
+
+  private async publishCompactionEnd(
+    sessionId: string,
+    payload: {
+      reason: CompactionReason
+      success: boolean
+      tokensBefore?: number
+      compactionCount?: number
+      willRetry?: boolean
+      errorMessage?: string
+    },
+  ): Promise<void> {
+    await this.eventHub.publish(sessionId, {
+      type: 'compaction_end',
+      reason: payload.reason,
+      success: payload.success,
+      tokensBefore: payload.tokensBefore,
+      compactionCount: payload.compactionCount,
+      willRetry: payload.willRetry,
+      errorMessage: payload.errorMessage,
+    })
+  }
+
+  private async createTurnRuntime(sessionId: string, agentId: string, piSession: PiSession, backendAuth: BackendLlmAuthConfig): Promise<ActiveTurnRuntime> {
+    return this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth)
+  }
+
+  private async createHarnessWithEvents(
+    sessionId: string,
+    agentId: string,
+    piSession: PiSession,
     backendAuth: BackendLlmAuthConfig,
   ): Promise<ActiveTurnRuntime> {
     const context = await this.agentRegistry.resolveRuntimeContext(agentId)
@@ -198,7 +338,7 @@ export class ChatService {
 
 export class ChatServiceError extends Error {
   constructor(
-    readonly code: 'session_not_found' | 'agent_not_found' | 'invalid_request',
+    readonly code: 'session_not_found' | 'agent_not_found' | 'invalid_request' | 'session_busy',
     message: string,
   ) {
     super(message)

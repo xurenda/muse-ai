@@ -17,17 +17,26 @@ interface SessionChatFooterProps {
   sessionSettings: SessionSettingsResponse | null
   streaming: boolean
   disabled: boolean
+  compacting: boolean
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
+  onCompact: () => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
 }
 
-function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled, onUpdate, onSend }: SessionChatFooterProps) {
+function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled, compacting, onUpdate, onCompact, onSend }: SessionChatFooterProps) {
   const { auth } = useAuth()
   const [composerText, setComposerText] = useState('')
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-stack">
-      <ChatSessionBar deviceSession={deviceSession} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdate} />
+      <ChatSessionBar
+        deviceSession={deviceSession}
+        sessionSettings={sessionSettings}
+        disabled={disabled}
+        compacting={compacting}
+        onUpdate={onUpdate}
+        onCompact={onCompact}
+      />
       <ChatComposer
         value={composerText}
         onChange={setComposerText}
@@ -55,7 +64,9 @@ export function ChatPage() {
     sendError,
     settingsError,
     treeError,
+    compacting,
     sendMessage,
+    compactContext,
     updateSessionSettings,
     startNewSession,
     messagesEndRef,
@@ -114,10 +125,12 @@ export function ChatPage() {
               sessionSettings={sessionSettings}
               streaming={streaming}
               disabled={composerDisabled}
+              compacting={compacting}
               onUpdate={async patch => {
                 const result = await updateSessionSettings(patch)
                 return result !== null
               }}
+              onCompact={compactContext}
               onSend={(text, mode) => void sendMessage(text, mode)}
             />
           </div>

@@ -5,6 +5,7 @@ export {
   deviceCredentialsPath,
   sessionEventsPath,
   sessionDetailPath,
+  sessionCompactPath,
   sessionForkPath,
   sessionNavigatePath,
   sessionSettingsPath,
@@ -103,6 +104,7 @@ export {
 export { maskApiKey } from './utils/mask-api-key.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
+export { compactionReasonSchema, sessionCompactRequestSchema, type CompactionReason, type SessionCompactRequest } from './types/session-compact.js'
 export {
   createAgentRequestSchema,
   sessionSettingsPatchSchema,

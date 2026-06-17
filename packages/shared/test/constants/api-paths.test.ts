@@ -61,6 +61,19 @@ describe('sse-events', () => {
     })
     expect(parsed.success).toBe(true)
   })
+
+  it('museSseEventSchema 应支持 compaction 事件', () => {
+    expect(museSseEventSchema.safeParse({ type: 'compaction_start', reason: 'manual' }).success).toBe(true)
+    expect(
+      museSseEventSchema.safeParse({
+        type: 'compaction_end',
+        reason: 'overflow',
+        success: true,
+        tokensBefore: 120_000,
+        compactionCount: 2,
+      }).success,
+    ).toBe(true)
+  })
 })
 
 describe('device', () => {
