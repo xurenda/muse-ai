@@ -4,7 +4,7 @@ import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
 import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionNameSource, SessionTreeNode } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
 import { deriveSessionTitle } from './session-title.js'
-import { buildBranchFromSession, mapSessionTreeEntry, resolveNavigateLeafId } from './session-tree.js'
+import { buildBranchFromSession, filterEntriesToBranchPath, mapSessionTreeEntryForWeb, resolveBranchLeafId, resolveNavigateLeafId } from './session-tree.js'
 
 export interface MuseSessionStoreOptions {
   /** JSONL 根目录，例如 ~/.muse/sessions */
@@ -188,13 +188,15 @@ export class MuseSessionStore {
 
     const rawEntries = await piSession.getEntries()
     const leafId = await piSession.getLeafId()
-    const entries = rawEntries.filter(entry => entry.type !== 'leaf').map(entry => mapSessionTreeEntry(entry))
+    const branchLeafId = await resolveBranchLeafId(piSession)
+    const branchPathEntries = filterEntriesToBranchPath(rawEntries, branchLeafId)
+    const entries = branchPathEntries.map(entry => mapSessionTreeEntryForWeb(entry)).filter((node): node is SessionTreeNode => node !== null)
 
     return {
       sessionId,
       leafId,
       entries,
-      branch: await buildBranchFromSession(piSession),
+      branch: await buildBranchFromSession(piSession, branchLeafId),
     }
   }
 

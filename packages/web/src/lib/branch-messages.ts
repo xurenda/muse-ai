@@ -12,6 +12,15 @@ export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMess
       ...assistant,
       id: message.id,
       text: message.text,
+      thinking: message.thinking ?? '',
+      toolCalls: (message.toolCalls ?? []).map(tool => ({
+        toolCallId: tool.toolCallId,
+        toolName: tool.toolName,
+        args: tool.args,
+        result: tool.result,
+        isError: tool.isError,
+        status: 'done' as const,
+      })),
       error: message.error,
       streaming: false,
     }

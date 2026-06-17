@@ -31,7 +31,7 @@ function TreeNodeRow({
   const { t } = useTranslation('chat')
   const { node } = item
   const active = isNodeOnActivePath(entries, leafId, node.id)
-  const canNavigate = node.type !== 'leaf'
+  const canNavigate = true
   const canFork = node.type === 'message' || node.type === 'branch_summary'
 
   return (

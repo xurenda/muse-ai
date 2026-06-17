@@ -9,7 +9,7 @@ const sessionTreeNodeBaseSchema = z.object({
 
 export const sessionTreeMessageNodeSchema = sessionTreeNodeBaseSchema.extend({
   type: z.literal('message'),
-  role: z.enum(['user', 'assistant', 'toolResult']),
+  role: z.enum(['user', 'assistant']),
   preview: z.string(),
 })
 
@@ -19,43 +19,27 @@ export const sessionTreeBranchSummaryNodeSchema = sessionTreeNodeBaseSchema.exte
   fromId: z.string(),
 })
 
-export const sessionTreeLabelNodeSchema = sessionTreeNodeBaseSchema.extend({
-  type: z.literal('label'),
-  targetId: z.string(),
-  label: z.string().optional(),
-})
-
-export const sessionTreeModelChangeNodeSchema = sessionTreeNodeBaseSchema.extend({
-  type: z.literal('model_change'),
-  provider: z.string(),
-  modelId: z.string(),
-})
-
-export const sessionTreeThinkingChangeNodeSchema = sessionTreeNodeBaseSchema.extend({
-  type: z.literal('thinking_level_change'),
-  thinkingLevel: z.string(),
-})
-
-export const sessionTreeGenericNodeSchema = sessionTreeNodeBaseSchema.extend({
-  type: z.enum(['active_tools_change', 'compaction', 'custom', 'custom_message', 'session_info', 'leaf']),
-  summary: z.string().optional(),
-})
-
-export const sessionTreeNodeSchema = z.discriminatedUnion('type', [
-  sessionTreeMessageNodeSchema,
-  sessionTreeBranchSummaryNodeSchema,
-  sessionTreeLabelNodeSchema,
-  sessionTreeModelChangeNodeSchema,
-  sessionTreeThinkingChangeNodeSchema,
-  sessionTreeGenericNodeSchema,
-])
+export const sessionTreeNodeSchema = z.discriminatedUnion('type', [sessionTreeMessageNodeSchema, sessionTreeBranchSummaryNodeSchema])
 
 export type SessionTreeNode = z.infer<typeof sessionTreeNodeSchema>
+
+export const sessionBranchToolCallSchema = z.object({
+  toolCallId: z.string(),
+  toolName: z.string(),
+  args: z.unknown(),
+  result: z.unknown().optional(),
+  isError: z.boolean().optional(),
+})
+
+export type SessionBranchToolCall = z.infer<typeof sessionBranchToolCallSchema>
 
 export const sessionBranchMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   text: z.string(),
+  /** 模型推理过程（assistant content 中的 thinking 块） */
+  thinking: z.string().optional(),
+  toolCalls: z.array(sessionBranchToolCallSchema).optional(),
   /** LLM / 工具层失败时的可读错误（持久化自 session 树） */
   error: z.string().optional(),
   timestamp: z.string().optional(),

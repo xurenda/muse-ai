@@ -58,11 +58,13 @@ export {
 } from './types/session.js'
 export {
   sessionBranchMessageSchema,
+  sessionBranchToolCallSchema,
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
   sessionTreeNodeSchema,
   sessionTreeResponseSchema,
   type SessionBranchMessage,
+  type SessionBranchToolCall,
   type SessionForkRequest,
   type SessionNavigateRequest,
   type SessionTreeNode,

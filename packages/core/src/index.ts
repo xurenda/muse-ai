@@ -15,7 +15,15 @@ export { DEFAULT_MODEL_REF, formatModelRef, parseModelRef } from './model-ref.js
 export { readSessionRuntimeOverrides, resolveEffectiveHarnessConfig, type SessionRuntimeOverrides } from './session-runtime.js'
 export { deriveSessionTitle } from './session-title.js'
 export { MuseSessionStore, SessionStoreError, type CreateSessionParams, type MuseSessionStoreOptions } from './session-store.js'
-export { buildBranchFromSession, mapBranchMessages, mapSessionTreeEntry, resolveNavigateLeafId } from './session-tree.js'
+export {
+  buildBranchFromSession,
+  filterEntriesToBranchPath,
+  findConversationTipEntryId,
+  mapBranchMessages,
+  mapSessionTreeEntry,
+  resolveBranchLeafId,
+  resolveNavigateLeafId,
+} from './session-tree.js'
 export {
   loadSessionRegistry,
   saveSessionRegistry,

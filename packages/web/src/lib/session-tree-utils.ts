@@ -55,15 +55,5 @@ export function nodeLabel(node: SessionTreeNode): string {
       return node.preview || node.role
     case 'branch_summary':
       return node.summary || 'branch'
-    case 'label':
-      return node.label || 'label'
-    case 'model_change':
-      return `${node.provider}/${node.modelId}`
-    case 'thinking_level_change':
-      return `thinking: ${node.thinkingLevel}`
-    case 'session_info':
-      return node.summary || 'session'
-    default:
-      return node.summary || node.type
   }
 }
