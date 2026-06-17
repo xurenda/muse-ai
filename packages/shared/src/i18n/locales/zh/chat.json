@@ -50,8 +50,12 @@
   "sessionListTitle": "会话",
   "sessionListEmpty": "暂无会话",
   "sessionTreeTitle": "Session 树",
-  "sessionTreeHint": "点击节点切换分支；悬停可 Fork",
+  "sessionTreeHint": "点击轮次节点切换分支；悬停节点可 Fork",
   "sessionTreeEmpty": "暂无树节点",
+  "sessionTreeZoomIn": "放大",
+  "sessionTreeZoomOut": "缩小",
+  "sessionTreeFitView": "适配视图",
+  "sessionTreeMinimap": "小地图",
   "fork": "Fork",
   "thinkingLevels": {
     "off": "关闭",

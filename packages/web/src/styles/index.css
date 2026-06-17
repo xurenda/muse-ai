@@ -460,3 +460,39 @@
   background-size: 200% 100%;
   animation: process-shimmer 3s linear infinite;
 }
+
+/* Session 树：自定义节点需接管 pointer-events，否则只有 Handle 可 hover */
+.session-tree-flow .react-flow__node.session-tree-turn-node {
+  pointer-events: all;
+}
+
+.session-tree-flow .react-flow__node.session-tree-turn-node .react-flow__handle {
+  pointer-events: none;
+}
+
+/* Session 树小地图：半透明底（无 blur） */
+.session-tree-flow .react-flow__minimap.session-tree-minimap {
+  --xy-minimap-background-color-props: transparent;
+  margin: 12px !important;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+  border-radius: 0.625rem;
+  background: color-mix(in oklch, var(--card) 68%, transparent) !important;
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent),
+    0 4px 12px color-mix(in oklch, var(--foreground) 4%, transparent);
+}
+
+.session-tree-flow .session-tree-minimap .react-flow__minimap-svg {
+  display: block;
+  background: transparent;
+}
+
+.session-tree-flow .session-tree-minimap .react-flow__minimap-node {
+  opacity: 0.92;
+}
+
+.session-tree-flow .session-tree-minimap .react-flow__minimap-mask {
+  fill: color-mix(in oklch, var(--foreground) 6%, transparent);
+  stroke: color-mix(in oklch, var(--primary) 50%, transparent);
+}

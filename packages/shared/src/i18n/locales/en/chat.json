@@ -51,8 +51,12 @@
   "sessionListTitle": "Sessions",
   "sessionListEmpty": "No sessions yet",
   "sessionTreeTitle": "Session tree",
-  "sessionTreeHint": "Click a node to switch branch; hover to fork",
+  "sessionTreeHint": "Click a turn to switch branch; hover a node to fork",
   "sessionTreeEmpty": "No tree entries yet",
+  "sessionTreeZoomIn": "Zoom in",
+  "sessionTreeZoomOut": "Zoom out",
+  "sessionTreeFitView": "Fit view",
+  "sessionTreeMinimap": "Mini map",
   "fork": "Fork",
   "thinkingLevels": {
     "off": "Off",

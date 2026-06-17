@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SessionTreeNode, SessionTreeResponse } from '@muse-ai/shared'
-import { IconButton } from '@/components/ui/icon-button'
-import { buildSessionTreeItems, isNodeOnActivePath, nodeLabel, type SessionTreeItem } from '@/lib/session-tree-utils'
-import { cn } from '@/lib/utils'
-import { GitBranchPlus } from 'lucide-react'
+import type { SessionTreeResponse } from '@muse-ai/shared'
+import { ReactFlow, Background, useEdgesState, useNodesState, type Edge, type Node } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { SessionTreeFlowAutoFit } from '@/components/chat/session-tree-flow-auto-fit'
+import { SessionTreeFlowControls } from '@/components/chat/session-tree-flow-controls'
+import { SessionTreeMiniMap } from '@/components/chat/session-tree-minimap'
+import { SessionTreeTurnNode } from '@/components/chat/session-tree-turn-node'
+import { buildSessionTurnFlowGraph, SESSION_TURN_NODE_TYPE, type SessionTurnFlowNodeData } from '@/lib/session-tree-utils'
 
 interface SessionTreePanelProps {
   tree: SessionTreeResponse | null
@@ -13,92 +16,76 @@ interface SessionTreePanelProps {
   onFork: (entryId: string) => void
 }
 
-function TreeNodeRow({
-  item,
-  leafId,
-  entries,
-  disabled,
-  onNavigate,
-  onFork,
-}: {
-  item: SessionTreeItem
-  leafId: string | null
-  entries: SessionTreeNode[]
-  disabled: boolean
-  onNavigate: (entryId: string) => void
-  onFork: (entryId: string) => void
-}) {
-  const { t } = useTranslation('chat')
-  const { node } = item
-  const active = isNodeOnActivePath(entries, leafId, node.id)
-  const canNavigate = true
-  const canFork = node.type === 'message' || node.type === 'branch_summary'
-
-  return (
-    <li>
-      <div className={cn('group flex items-start gap-0.5 rounded-lg py-0.5', active && 'bg-accent/80')} style={{ paddingLeft: `${item.depth * 10 + 4}px` }}>
-        <button
-          type="button"
-          disabled={disabled || !canNavigate}
-          className={cn(
-            'ui-menu-item min-w-0 flex-1 rounded-lg px-2 py-1.5 text-xs',
-            canNavigate ? 'text-foreground hover:bg-accent/60' : 'cursor-default text-muted-foreground',
-            active && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => onNavigate(node.id)}
-        >
-          <span className="mr-1.5 rounded bg-muted px-1 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">{node.type}</span>
-          <span className="break-words">{nodeLabel(node)}</span>
-        </button>
-        {canFork ? (
-          <IconButton
-            type="button"
-            className="mt-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-            disabled={disabled}
-            aria-label={t('fork')}
-            onClick={() => onFork(node.id)}
-          >
-            <GitBranchPlus className="size-3.5" strokeWidth={2} />
-          </IconButton>
-        ) : null}
-      </div>
-      {item.children.length > 0 ? (
-        <ul>
-          {item.children.map(child => (
-            <TreeNodeRow key={child.node.id} item={child} leafId={leafId} entries={entries} disabled={disabled} onNavigate={onNavigate} onFork={onFork} />
-          ))}
-        </ul>
-      ) : null}
-    </li>
-  )
+const nodeTypes = {
+  [SESSION_TURN_NODE_TYPE]: SessionTreeTurnNode,
 }
 
 export function SessionTreePanel({ tree, disabled, onNavigate, onFork }: SessionTreePanelProps) {
   const { t } = useTranslation('chat')
-  const items = useMemo(() => (tree ? buildSessionTreeItems(tree.entries) : []), [tree])
+  const flowContainerRef = useRef<HTMLDivElement>(null)
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<SessionTurnFlowNodeData>>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+
+  const handleNavigate = useCallback(
+    (entryId: string) => {
+      void onNavigate(entryId)
+    },
+    [onNavigate],
+  )
+
+  const handleFork = useCallback(
+    (entryId: string) => {
+      void onFork(entryId)
+    },
+    [onFork],
+  )
+
+  const graph = useMemo(() => {
+    if (!tree) return { nodes: [], edges: [] }
+    return buildSessionTurnFlowGraph({
+      entries: tree.entries,
+      leafId: tree.leafId,
+      disabled,
+      onNavigate: handleNavigate,
+      onFork: handleFork,
+    })
+  }, [tree, disabled, handleNavigate, handleFork])
+
+  useEffect(() => {
+    setNodes(graph.nodes)
+    setEdges(graph.edges)
+  }, [graph, setNodes, setEdges])
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col bg-background">
       <div className="px-3 pb-2 pt-1">
         <p className="text-[11px] text-muted-foreground">{t('sessionTreeHint')}</p>
       </div>
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
-        {!tree || items.length === 0 ? (
+      <div ref={flowContainerRef} className="min-h-0 flex-1">
+        {!tree || graph.nodes.length === 0 ? (
           <p className="px-2 py-4 text-xs text-muted-foreground">{t('sessionTreeEmpty')}</p>
         ) : (
-          <ul className="flex flex-col gap-0.5">
-            {items.map(item => (
-              <TreeNodeRow
-                key={item.node.id}
-                item={item}
-                leafId={tree.leafId}
-                entries={tree.entries}
-                disabled={disabled}
-                onNavigate={entryId => void onNavigate(entryId)}
-                onFork={entryId => void onFork(entryId)}
-              />
-            ))}
-          </ul>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+            panOnScroll
+            zoomOnScroll
+            minZoom={0.4}
+            maxZoom={1.5}
+            proOptions={{ hideAttribution: true }}
+            className="session-tree-flow bg-background"
+          >
+            <SessionTreeFlowAutoFit containerRef={flowContainerRef} nodeCount={graph.nodes.length} />
+            <Background gap={16} size={1} color="var(--border)" />
+            <SessionTreeMiniMap pannable zoomable nodeCount={graph.nodes.length} />
+            <SessionTreeFlowControls containerRef={flowContainerRef} />
+          </ReactFlow>
         )}
       </div>
     </aside>
