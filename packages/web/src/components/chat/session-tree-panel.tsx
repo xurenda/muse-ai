@@ -44,7 +44,7 @@ export function SessionTreePanel({ tree, disabled, onNavigate, onFork }: Session
     if (!tree) return { nodes: [], edges: [] }
     return buildSessionTurnFlowGraph({
       entries: tree.entries,
-      leafId: tree.leafId,
+      activeMessagePathIds: tree.activeMessagePathIds,
       disabled,
       onNavigate: handleNavigate,
       onFork: handleFork,

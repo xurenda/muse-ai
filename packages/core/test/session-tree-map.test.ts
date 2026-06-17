@@ -1,6 +1,45 @@
 import { describe, expect, it } from 'vitest'
+import type { SessionTreeEntry } from '@earendil-works/pi-agent-core'
 import { extractBranchMessageError, formatLlmErrorMessage } from '@/assistant-turn-error.js'
-import { mapBranchMessages } from '@/session-tree.js'
+import { findTurnTipEntryId, getMessagePathToLeaf, mapBranchMessages, resolveNavigateTargetLeafId } from '@/session-tree.js'
+
+function messageEntry(
+  id: string,
+  parentId: string | null,
+  role: 'user' | 'assistant',
+  timestamp: string,
+  extra?: Partial<Extract<SessionTreeEntry, { type: 'message' }>['message']>,
+): SessionTreeEntry {
+  return {
+    type: 'message',
+    id,
+    parentId,
+    timestamp,
+    message: {
+      role,
+      content: [{ type: 'text', text: role === 'user' ? '用户' : '回复' }],
+      timestamp: Date.parse(timestamp),
+      ...extra,
+    },
+  } as SessionTreeEntry
+}
+
+function toolResultEntry(id: string, parentId: string, toolCallId: string, timestamp: string): SessionTreeEntry {
+  return {
+    type: 'message',
+    id,
+    parentId,
+    timestamp,
+    message: {
+      role: 'toolResult',
+      toolCallId,
+      toolName: 'ls',
+      content: [{ type: 'text', text: 'ok' }],
+      isError: false,
+      timestamp: Date.parse(timestamp),
+    },
+  } as SessionTreeEntry
+}
 
 describe('extractBranchMessageError', () => {
   it('应格式化 assistant 的 errorMessage', () => {
@@ -113,5 +152,58 @@ describe('mapBranchMessages', () => {
     expect(branch).toHaveLength(2)
     expect(branch[1]?.toolCalls).toHaveLength(1)
     expect(branch[1]?.text).toBe('当前目录 /tmp')
+  })
+})
+
+describe('findTurnTipEntryId', () => {
+  it('应定位 tool loop 完成后的最终 assistant', () => {
+    const entries: SessionTreeEntry[] = [
+      messageEntry('u1', null, 'user', '2026-01-01T00:00:00.000Z'),
+      messageEntry('a1', 'u1', 'assistant', '2026-01-01T00:00:01.000Z', { stopReason: 'toolUse', content: [] }),
+      toolResultEntry('t1', 'a1', 'tc1', '2026-01-01T00:00:02.000Z'),
+      messageEntry('a2', 't1', 'assistant', '2026-01-01T00:00:03.000Z', { stopReason: 'stop', content: [{ type: 'text', text: '完成' }] }),
+    ]
+
+    expect(findTurnTipEntryId(entries, 'u1')).toBe('a2')
+  })
+
+  it('存在中途 user 分叉时应优先完整 tool loop 路径', () => {
+    const entries: SessionTreeEntry[] = [
+      messageEntry('u1', null, 'user', '2026-01-01T00:00:00.000Z'),
+      messageEntry('a1', 'u1', 'assistant', '2026-01-01T00:00:01.000Z', { stopReason: 'toolUse', content: [] }),
+      toolResultEntry('t1', 'a1', 'tc1', '2026-01-01T00:00:02.000Z'),
+      messageEntry('a2', 't1', 'assistant', '2026-01-01T00:00:03.000Z', { stopReason: 'stop', content: [{ type: 'text', text: '完整回答' }] }),
+      messageEntry('u-fork', 'a1', 'user', '2026-01-01T00:00:04.000Z'),
+      messageEntry('a-fork', 'u-fork', 'assistant', '2026-01-01T00:00:05.000Z', { stopReason: 'toolUse', content: [] }),
+    ]
+
+    expect(findTurnTipEntryId(entries, 'u1')).toBe('a2')
+  })
+})
+
+describe('resolveNavigateTargetLeafId', () => {
+  it('navigate 到首轮 assistant 时应落到 turn tip', () => {
+    const entries: SessionTreeEntry[] = [
+      messageEntry('u1', null, 'user', '2026-01-01T00:00:00.000Z'),
+      messageEntry('a1', 'u1', 'assistant', '2026-01-01T00:00:01.000Z', { stopReason: 'toolUse', content: [] }),
+      toolResultEntry('t1', 'a1', 'tc1', '2026-01-01T00:00:02.000Z'),
+      messageEntry('a2', 't1', 'assistant', '2026-01-01T00:00:03.000Z', { stopReason: 'stop', content: [{ type: 'text', text: '完成' }] }),
+    ]
+    const a1 = entries[1] as Extract<SessionTreeEntry, { type: 'message' }>
+
+    expect(resolveNavigateTargetLeafId(a1, entries, a1.id)).toBe('a2')
+  })
+})
+
+describe('getMessagePathToLeaf', () => {
+  it('应跨越 toolResult 收集 message 路径', () => {
+    const entries: SessionTreeEntry[] = [
+      messageEntry('u1', null, 'user', '2026-01-01T00:00:00.000Z'),
+      messageEntry('a1', 'u1', 'assistant', '2026-01-01T00:00:01.000Z', { stopReason: 'toolUse', content: [] }),
+      toolResultEntry('t1', 'a1', 'tc1', '2026-01-01T00:00:02.000Z'),
+      messageEntry('a2', 't1', 'assistant', '2026-01-01T00:00:03.000Z', { stopReason: 'stop', content: [{ type: 'text', text: '完成' }] }),
+    ]
+
+    expect(getMessagePathToLeaf(entries, 'a2')).toEqual(['u1', 'a1', 'a2'])
   })
 })

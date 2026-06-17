@@ -47,7 +47,7 @@ describe('session-tree-utils', () => {
 
     const graph = buildSessionTurnFlowGraph({
       entries,
-      leafId: 'a1',
+      activeMessagePathIds: ['u1'],
       disabled: false,
       onNavigate: vi.fn(),
       onFork: vi.fn(),
@@ -68,7 +68,7 @@ describe('session-tree-utils', () => {
     const turns = buildSessionTurns(entries)
     const childTurn = turns[0]?.children[0]
     expect(childTurn).toBeDefined()
-    expect(isTurnOnActivePath(entries, 'a2', childTurn!)).toBe(true)
-    expect(isTurnOnActivePath(entries, 'a1', childTurn!)).toBe(false)
+    expect(isTurnOnActivePath(['u1', 'a1', 'u2', 'a2'], childTurn!)).toBe(true)
+    expect(isTurnOnActivePath(['u1', 'a1'], childTurn!)).toBe(false)
   })
 })

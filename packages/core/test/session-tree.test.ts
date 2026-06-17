@@ -41,6 +41,7 @@ describe('session-tree', () => {
 
     const tree = await store.getTree(created.id)
     expect(tree.leafId).toBeTruthy()
+    expect(tree.activeMessagePathIds.length).toBeGreaterThan(0)
     expect(tree.entries.some(entry => entry.type === 'message')).toBe(true)
     expect(tree.branch).toHaveLength(2)
     expect(tree.branch[0]?.role).toBe('user')
@@ -63,7 +64,7 @@ describe('session-tree', () => {
     const user2Id = await piSession?.appendMessage({ role: 'user', content: '第二条', timestamp: Date.now() })
 
     const navigated = await store.navigate(created.id, user2Id ?? null)
-    expect(navigated.branch.some(message => message.text.includes('第二条'))).toBe(false)
+    expect(navigated.activeMessagePathIds.includes(user2Id ?? '')).toBe(false)
     expect(navigated.branch.some(message => message.text.includes('第一条'))).toBe(true)
   })
 
@@ -138,6 +139,52 @@ describe('session-tree', () => {
     expect(assistant?.text).toBe('有 a.txt')
     expect(assistant?.toolCalls?.[0]?.toolName).toBe('ls')
     expect(assistant?.toolCalls?.[0]?.result).toBe('a.txt')
+  })
+
+  it('navigate 到 tool loop 首轮 assistant 应展示合并后的正文', async () => {
+    const store = await createStore()
+    const created = await store.create({ agentId: DEFAULT_AGENT_ID })
+    const piSession = await store.openPiSession(created.id)
+    await piSession?.appendMessage({ role: 'user', content: '列出文件', timestamp: Date.now() })
+    const firstAssistantId = await piSession?.appendMessage({
+      role: 'assistant',
+      content: [
+        { type: 'thinking', thinking: '需要 ls' },
+        { type: 'toolCall', id: 'tc1', name: 'ls', arguments: { path: '.' } },
+      ],
+      api: 'openai',
+      provider: 'openai',
+      model: 'gpt-4',
+      usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      stopReason: 'toolUse',
+      timestamp: Date.now(),
+    })
+    await piSession?.appendMessage({
+      role: 'toolResult',
+      toolCallId: 'tc1',
+      toolName: 'ls',
+      content: [{ type: 'text', text: 'a.txt' }],
+      isError: false,
+      timestamp: Date.now(),
+    })
+    await piSession?.appendMessage({
+      role: 'assistant',
+      content: [{ type: 'text', text: '有 a.txt' }],
+      api: 'openai',
+      provider: 'openai',
+      model: 'gpt-4',
+      usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      stopReason: 'stop',
+      timestamp: Date.now(),
+    })
+    await piSession?.appendMessage({ role: 'user', content: '下一轮', timestamp: Date.now() + 1 })
+
+    expect(firstAssistantId).toBeTruthy()
+    const navigated = await store.navigate(created.id, firstAssistantId ?? null)
+    const assistant = navigated.branch.find(message => message.role === 'assistant')
+    expect(assistant?.text).toBe('有 a.txt')
+    expect(assistant?.thinking).toBe('需要 ls')
+    expect(navigated.branch.some(message => message.text.includes('下一轮'))).toBe(false)
   })
 
   it('leaf 落在 thinking_level_change 时应回退到对话 tip 并展示完整 branch', async () => {

@@ -28,14 +28,14 @@ export const SIDEBAR_MAX_WIDTH = 420
 /** 主内容区最小宽度（px） */
 export const MAIN_MIN_WIDTH = 360
 
-/** 右侧边栏默认宽度（px） */
-export const RIGHT_PANEL_DEFAULT_WIDTH = 280
+/** 右侧边栏默认宽度（px），与左侧边栏一致 */
+export const RIGHT_PANEL_DEFAULT_WIDTH = SIDEBAR_DEFAULT_WIDTH
 
-/** 右侧边栏最小宽度（px） */
-export const RIGHT_PANEL_MIN_WIDTH = 220
+/** 右侧边栏最小宽度（px），与左侧边栏一致 */
+export const RIGHT_PANEL_MIN_WIDTH = SIDEBAR_MIN_WIDTH
 
-/** 右侧边栏最大宽度（px） */
-export const RIGHT_PANEL_MAX_WIDTH = 480
+/** 右侧边栏最大宽度（px），与左侧边栏一致 */
+export const RIGHT_PANEL_MAX_WIDTH = SIDEBAR_MAX_WIDTH
 
 /** @deprecated 使用 RIGHT_PANEL_DEFAULT_WIDTH */
 export const SESSION_TREE_DEFAULT_WIDTH = RIGHT_PANEL_DEFAULT_WIDTH

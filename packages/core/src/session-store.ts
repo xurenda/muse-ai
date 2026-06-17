@@ -4,7 +4,7 @@ import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
 import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionNameSource, SessionTreeNode } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
 import { deriveSessionTitle } from './session-title.js'
-import { buildBranchFromSession, mapSessionTreeEntryForWeb, resolveBranchLeafId, resolveNavigateLeafId } from './session-tree.js'
+import { buildBranchFromSession, getMessagePathToLeaf, mapSessionTreeEntryForWeb, resolveBranchLeafId, resolveNavigateTargetLeafId } from './session-tree.js'
 
 export interface MuseSessionStoreOptions {
   /** JSONL 根目录，例如 ~/.muse/sessions */
@@ -178,6 +178,7 @@ export class MuseSessionStore {
   async getTree(sessionId: string): Promise<{
     sessionId: string
     leafId: string | null
+    activeMessagePathIds: string[]
     entries: SessionTreeNode[]
     branch: SessionBranchMessage[]
   }> {
@@ -194,6 +195,7 @@ export class MuseSessionStore {
     return {
       sessionId,
       leafId,
+      activeMessagePathIds: getMessagePathToLeaf(rawEntries, branchLeafId),
       entries,
       branch: await buildBranchFromSession(piSession, branchLeafId),
     }
@@ -206,6 +208,7 @@ export class MuseSessionStore {
   ): Promise<{
     sessionId: string
     leafId: string | null
+    activeMessagePathIds: string[]
     entries: SessionTreeNode[]
     branch: SessionBranchMessage[]
   }> {
@@ -220,7 +223,9 @@ export class MuseSessionStore {
       if (!targetEntry) {
         throw new SessionStoreError('entry_not_found', `树节点不存在: ${entryId}`)
       }
-      targetLeafId = resolveNavigateLeafId(targetEntry)
+      const rawEntries = await piSession.getEntries()
+      // 以点击的 entry 为锚点解析 turn tip，避免被当前 leaf 带到错误分叉
+      targetLeafId = resolveNavigateTargetLeafId(targetEntry, rawEntries, entryId)
     }
 
     await piSession.moveTo(targetLeafId)

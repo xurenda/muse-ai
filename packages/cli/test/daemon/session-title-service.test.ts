@@ -28,6 +28,7 @@ describe('SessionTitleService', () => {
       getTree: vi.fn(async () => ({
         sessionId,
         leafId: null,
+        activeMessagePathIds: [],
         entries: [],
         branch: [
           { id: 'u1', role: 'user' as const, text: '帮我写一个 todo app' },
@@ -141,6 +142,7 @@ describe('SessionTitleService', () => {
       getTree: vi.fn(async () => ({
         sessionId,
         leafId: null,
+        activeMessagePathIds: [],
         entries: [],
         branch: [
           { id: 'u1', role: 'user' as const, text: '介绍下你自己' },

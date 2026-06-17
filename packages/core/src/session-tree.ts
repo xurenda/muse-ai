@@ -244,6 +244,148 @@ export function resolveNavigateLeafId(entry: SessionTreeEntry): string | null {
   return entry.id
 }
 
+function buildChildrenByParent(entries: SessionTreeEntry[]): Map<string | null, SessionTreeEntry[]> {
+  const childrenByParent = new Map<string | null, SessionTreeEntry[]>()
+  for (const entry of entries) {
+    const siblings = childrenByParent.get(entry.parentId) ?? []
+    siblings.push(entry)
+    childrenByParent.set(entry.parentId, siblings)
+  }
+  return childrenByParent
+}
+
+function sortEntriesByTimestamp(entries: SessionTreeEntry[]): SessionTreeEntry[] {
+  return [...entries].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+}
+
+function isEntryOnPathToTarget(entries: SessionTreeEntry[], entryId: string, targetId: string | null): boolean {
+  if (!targetId) return false
+  const byId = new Map(entries.map(entry => [entry.id, entry]))
+  let current: SessionTreeEntry | undefined = byId.get(targetId)
+  while (current) {
+    if (current.id === entryId) return true
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+  return false
+}
+
+/** 向上查找 assistant / toolResult 等节点所属的 user 轮次起点 */
+export function findTurnUserEntryId(entries: SessionTreeEntry[], entryId: string): string | null {
+  const byId = new Map(entries.map(entry => [entry.id, entry]))
+  let current: SessionTreeEntry | undefined = byId.get(entryId)
+  while (current) {
+    if (current.type === 'message' && current.message.role === 'user') {
+      return current.id
+    }
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+  return null
+}
+
+function findLatestAssistantTimestampInTurnSubtree(childrenByParent: Map<string | null, SessionTreeEntry[]>, startId: string): number {
+  let latest = Number.NEGATIVE_INFINITY
+
+  function walk(nodeId: string): void {
+    const children = childrenByParent.get(nodeId) ?? []
+    for (const child of children) {
+      if (child.type === 'message' && child.message.role === 'user') continue
+      if (child.type === 'message' && child.message.role === 'assistant') {
+        latest = Math.max(latest, Date.parse(child.timestamp))
+      }
+      walk(child.id)
+    }
+  }
+
+  walk(startId)
+  return latest
+}
+
+function isTurnWalkContinuationEntry(entry: SessionTreeEntry): boolean {
+  if (entry.type === 'leaf' || entry.type === 'label' || entry.type === 'branch_summary') return false
+  if (entry.type === 'message' && entry.message.role === 'user') return false
+  return true
+}
+
+function pickTurnContinuationChild(children: SessionTreeEntry[], entries: SessionTreeEntry[], preferLeafId?: string | null): SessionTreeEntry | undefined {
+  const continuations = children.filter(isTurnWalkContinuationEntry)
+  if (continuations.length === 0) return undefined
+  if (continuations.length === 1) return continuations[0]
+
+  const childrenByParent = buildChildrenByParent(entries)
+  if (preferLeafId) {
+    const onPreferredPath = continuations.filter(child => isEntryOnPathToTarget(entries, child.id, preferLeafId))
+    if (onPreferredPath.length === 1) return onPreferredPath[0]
+    if (onPreferredPath.length > 1) {
+      return onPreferredPath.reduce((best, candidate) => {
+        const bestTs = findLatestAssistantTimestampInTurnSubtree(childrenByParent, best.id)
+        const candidateTs = findLatestAssistantTimestampInTurnSubtree(childrenByParent, candidate.id)
+        return candidateTs > bestTs ? candidate : best
+      })
+    }
+  }
+
+  return continuations.reduce((best, candidate) => {
+    const bestTs = findLatestAssistantTimestampInTurnSubtree(childrenByParent, best.id)
+    const candidateTs = findLatestAssistantTimestampInTurnSubtree(childrenByParent, candidate.id)
+    return candidateTs > bestTs ? candidate : best
+  })
+}
+
+/** 从 user 轮次起点向下 walk，定位 tool loop 完成后的最终 assistant 节点 */
+export function findTurnTipEntryId(entries: SessionTreeEntry[], userEntryId: string, preferLeafId?: string | null): string {
+  const childrenByParent = buildChildrenByParent(entries)
+  let nodeId: string | null = userEntryId
+  let lastAssistantId: string | null = null
+
+  while (nodeId) {
+    const children = sortEntriesByTimestamp(childrenByParent.get(nodeId) ?? [])
+    if (children.length === 0) break
+
+    const next = pickTurnContinuationChild(children, entries, preferLeafId)
+    if (!next) break
+
+    if (next.type === 'message' && next.message.role === 'assistant') {
+      lastAssistantId = next.id
+    }
+    nodeId = next.id
+  }
+
+  return lastAssistantId ?? userEntryId
+}
+
+/**
+ * 解析 Web navigate 的最终 leaf：
+ * - user / custom_message 保持 pi 语义
+ * - assistant 落到所属 user 轮次的最终 assistant，避免 chat 只显示 tool loop 中间态
+ * @param preferLeafId 锚点 entry（通常为点击的 assistant），用于多分叉时选择正确延续路径
+ */
+export function resolveNavigateTargetLeafId(entry: SessionTreeEntry, entries: SessionTreeEntry[], preferLeafId?: string | null): string | null {
+  const initial = resolveNavigateLeafId(entry)
+  if (initial === null) return null
+  if (entry.type !== 'message' || entry.message.role !== 'assistant') {
+    return initial
+  }
+
+  const userEntryId = findTurnUserEntryId(entries, entry.id)
+  if (!userEntryId) return initial
+  return findTurnTipEntryId(entries, userEntryId, preferLeafId)
+}
+
+/** 从 leaf 向上收集路径上的 message 节点 id（含 toolResult 等非 Web 节点之间的 assistant/user） */
+export function getMessagePathToLeaf(entries: SessionTreeEntry[], leafId: string | null): string[] {
+  if (!leafId) return []
+  const byId = new Map(entries.map(entry => [entry.id, entry]))
+  const path: string[] = []
+  let current: SessionTreeEntry | undefined = byId.get(leafId)
+  while (current) {
+    if (current.type === 'message' && (current.message.role === 'user' || current.message.role === 'assistant')) {
+      path.unshift(current.id)
+    }
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+  return path
+}
+
 function messageText(message: AgentMessage): string {
   if (!('content' in message)) return ''
   return extractTextContent(message.content)

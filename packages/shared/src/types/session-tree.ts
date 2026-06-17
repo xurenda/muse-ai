@@ -50,6 +50,8 @@ export type SessionBranchMessage = z.infer<typeof sessionBranchMessageSchema>
 export const sessionTreeResponseSchema = z.object({
   sessionId: z.string().uuid(),
   leafId: z.string().nullable(),
+  /** 当前 branch leaf 路径上的 message 节点 id（含 tool loop 中间 assistant） */
+  activeMessagePathIds: z.array(z.string()),
   entries: z.array(sessionTreeNodeSchema),
   branch: z.array(sessionBranchMessageSchema),
 })

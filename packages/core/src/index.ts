@@ -23,6 +23,10 @@ export {
   mapSessionTreeEntry,
   resolveBranchLeafId,
   resolveNavigateLeafId,
+  resolveNavigateTargetLeafId,
+  findTurnUserEntryId,
+  findTurnTipEntryId,
+  getMessagePathToLeaf,
 } from './session-tree.js'
 export {
   loadSessionRegistry,

@@ -170,10 +170,8 @@ export function buildSessionTurns(entries: SessionTreeNode[]): SessionTurn[] {
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
 }
 
-export function isTurnOnActivePath(entries: SessionTreeNode[], leafId: string | null, turn: SessionTurn): boolean {
-  if (!leafId) return false
-  const activePath = pathToNode(entries, leafId)
-  return turn.entryIds.some(entryId => activePath.includes(entryId))
+export function isTurnOnActivePath(activeMessagePathIds: string[], turn: SessionTurn): boolean {
+  return activeMessagePathIds.includes(turn.id)
 }
 
 function layoutTurnGraph(turns: SessionTurn[]): Map<string, { x: number; y: number }> {
@@ -205,7 +203,7 @@ function layoutTurnGraph(turns: SessionTurn[]): Map<string, { x: number; y: numb
 
 export function buildSessionTurnFlowGraph(options: {
   entries: SessionTreeNode[]
-  leafId: string | null
+  activeMessagePathIds: string[]
   disabled: boolean
   onNavigate: (entryId: string) => void
   onFork: (entryId: string) => void
@@ -227,7 +225,7 @@ export function buildSessionTurnFlowGraph(options: {
       className: 'nodrag nopan session-tree-turn-node',
       data: {
         turn,
-        active: isTurnOnActivePath(options.entries, options.leafId, turn),
+        active: isTurnOnActivePath(options.activeMessagePathIds, turn),
         disabled: options.disabled,
         onNavigate: options.onNavigate,
         onFork: options.onFork,
@@ -240,7 +238,7 @@ export function buildSessionTurnFlowGraph(options: {
         source: turn.id,
         target: child.id,
         type: 'smoothstep',
-        animated: isTurnOnActivePath(options.entries, options.leafId, turn) && isTurnOnActivePath(options.entries, options.leafId, child),
+        animated: isTurnOnActivePath(options.activeMessagePathIds, turn) && isTurnOnActivePath(options.activeMessagePathIds, child),
       })
       visit(child)
     }
