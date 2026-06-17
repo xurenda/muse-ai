@@ -74,6 +74,14 @@ describe('sse-events', () => {
       }).success,
     ).toBe(true)
   })
+
+  it('museSseEventSchema 应支持带 usage 的 turn_end', () => {
+    const parsed = museSseEventSchema.safeParse({
+      type: 'turn_end',
+      usage: { input: 100, output: 50, total: 150, costTotal: 0.01 },
+    })
+    expect(parsed.success).toBe(true)
+  })
 })
 
 describe('device', () => {

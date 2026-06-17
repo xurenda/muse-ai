@@ -74,6 +74,8 @@
   "compactSuccess": "已压缩上下文（共 {{count}} 次）",
   "compactFailed": "压缩失败：{{message}}",
   "compactOverflowHint": "上下文已满，已自动压缩。请重新发送您的消息。",
+  "sessionTokenUsage": "↑{{input}} ↓{{output}} · {{total}} tokens",
+  "sessionTokenUsageWithCost": "↑{{input}} ↓{{output}} · {{total}} tokens · ${{cost}}",
   "sessionListTitle": "会话",
   "sessionListEmpty": "暂无会话",
   "sessionTreeTitle": "Session 树",

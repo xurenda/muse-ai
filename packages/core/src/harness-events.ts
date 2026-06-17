@@ -1,5 +1,6 @@
 import type { AgentHarnessEvent } from '@earendil-works/pi-agent-core'
 import type { MuseSseEvent } from '@muse-ai/shared'
+import { extractTurnUsageFromMessage } from './session-token-usage.js'
 
 /** 将 pi AgentHarnessEvent 映射为 Muse SSE 事件 */
 export function mapHarnessEventToSse(event: AgentHarnessEvent): MuseSseEvent | null {
@@ -10,8 +11,10 @@ export function mapHarnessEventToSse(event: AgentHarnessEvent): MuseSseEvent | n
       return { type: 'agent_end' }
     case 'turn_start':
       return { type: 'turn_start' }
-    case 'turn_end':
-      return { type: 'turn_end' }
+    case 'turn_end': {
+      const usage = event.message.role === 'assistant' ? extractTurnUsageFromMessage(event.message) : undefined
+      return usage ? { type: 'turn_end', usage } : { type: 'turn_end' }
+    }
     case 'message_update': {
       const assistantEvent = event.assistantMessageEvent
       if (assistantEvent.type === 'text_delta') {

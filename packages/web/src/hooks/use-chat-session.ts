@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse } from '@muse-ai/shared'
+import { addTurnToSessionUsage } from '@muse-ai/shared'
 import { checkCliHealth } from '@/api/backend-client'
 import {
   createCliSession,
@@ -170,6 +171,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
               if (event.type === 'compaction_end') {
                 setCompacting(false)
                 void refreshTreeRef.current(id)
+                void loadSettings(id)
                 if (event.success) {
                   toast.success(t('compactSuccess', { count: event.compactionCount ?? 1 }))
                 } else if (event.errorMessage) {
@@ -177,9 +179,21 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                 }
                 return
               }
+              if (event.type === 'turn_end' && event.usage) {
+                const turnUsage = event.usage
+                setSessionSettings(prev =>
+                  prev
+                    ? {
+                        ...prev,
+                        tokenUsage: addTurnToSessionUsage(prev.tokenUsage, turnUsage),
+                      }
+                    : prev,
+                )
+              }
               setMessages(prev => applySseEvent(prev, event))
               if (event.type === 'agent_end') {
                 void refreshTreeRef.current(id)
+                void loadSettings(id)
               }
             },
             onConnected: () => {

@@ -115,4 +115,12 @@ export {
   type SessionSettingsResponse,
   type ToolDescriptor,
 } from './types/agent-api.js'
+export {
+  EMPTY_SESSION_TOKEN_USAGE,
+  addTurnToSessionUsage,
+  sessionTokenUsageSchema,
+  turnTokenUsageSchema,
+  type SessionTokenUsage,
+  type TurnTokenUsage,
+} from './types/session-token-usage.js'
 export { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type I18nNamespace, type SupportedLocale } from './i18n/resources.js'

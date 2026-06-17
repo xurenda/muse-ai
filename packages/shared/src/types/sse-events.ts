@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { compactionReasonSchema } from './session-compact.js'
 import { sessionNameSourceSchema } from './session.js'
+import { turnTokenUsageSchema } from './session-token-usage.js'
 
 /** CLI → Web SSE 事件（对齐 pi AgentEvent 子集） */
 export const museSseEventSchema = z.discriminatedUnion('type', [
@@ -21,7 +22,10 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
     result: z.unknown(),
     isError: z.boolean().optional(),
   }),
-  z.object({ type: z.literal('turn_end') }),
+  z.object({
+    type: z.literal('turn_end'),
+    usage: turnTokenUsageSchema.optional(),
+  }),
   z.object({ type: z.literal('agent_end') }),
   z.object({
     type: z.literal('compaction_start'),

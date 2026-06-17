@@ -2,7 +2,14 @@ import type { ThinkingLevel } from '@muse-ai/shared'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import { sessionSettingsResponseSchema } from '@muse-ai/shared'
 import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
-import { MuseHarness, parseModelRef, placeholderGetApiKeyAndHeaders, readSessionRuntimeOverrides, resolveEffectiveHarnessConfig } from '@muse-ai/core'
+import {
+  MuseHarness,
+  parseModelRef,
+  placeholderGetApiKeyAndHeaders,
+  readSessionRuntimeOverrides,
+  readSessionTokenUsage,
+  resolveEffectiveHarnessConfig,
+} from '@muse-ai/core'
 import { resolveActiveTools } from '@/tools/index.js'
 
 export class SessionSettingsService {
@@ -30,12 +37,14 @@ export class SessionSettingsService {
       context.persona.definition.thinkingLevel as ThinkingLevel | undefined,
       overrides,
     )
+    const tokenUsage = await readSessionTokenUsage(piSession)
 
     return sessionSettingsResponseSchema.parse({
       sessionId,
       agentId: meta.agentId,
       modelRef: effective.modelRef,
       thinkingLevel: effective.thinkingLevel,
+      tokenUsage,
     })
   }
 

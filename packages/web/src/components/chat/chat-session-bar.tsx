@@ -6,6 +6,7 @@ import { listCliAgents } from '@/api/cli-client'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { SessionTokenUsageDisplay } from '@/components/chat/session-token-usage'
 import type { StoredDeviceSession } from '@/lib/config'
 
 interface ChatSessionBarProps {
@@ -37,28 +38,31 @@ function ChatSessionBarFields({ deviceSession, sessionSettings, disabled, compac
   const compactDisabled = disabled || compacting || saving
 
   return (
-    <div className="ui-surface-inset flex flex-wrap items-end gap-stack">
-      <div className="min-w-[8rem] flex-1">
-        <Label className="mb-1 block text-[11px] text-muted-foreground">{t('sessionAgent')}</Label>
-        <Select
-          value={sessionSettings?.agentId ?? ''}
-          options={agentOptions}
-          placeholder="—"
-          disabled={disabled || saving || compacting}
-          onValueChange={value => void applyAgent(value)}
-        />
+    <div className="flex flex-col gap-1">
+      <div className="ui-surface-inset flex flex-wrap items-end gap-stack">
+        <div className="min-w-[8rem] flex-1">
+          <Label className="mb-1 block text-[11px] text-muted-foreground">{t('sessionAgent')}</Label>
+          <Select
+            value={sessionSettings?.agentId ?? ''}
+            options={agentOptions}
+            placeholder="—"
+            disabled={disabled || saving || compacting}
+            onValueChange={value => void applyAgent(value)}
+          />
+        </div>
+        <div className="flex gap-inline-sm pb-0.5">
+          <Button type="button" size="sm" variant="outline" disabled={compactDisabled} onClick={() => void onCompact()}>
+            {compacting ? t('compactingContext') : t('compactContext')}
+          </Button>
+          <Button type="button" size="sm" variant="outline" asChild>
+            <Link to="/agents">{t('manageAgents')}</Link>
+          </Button>
+          <Button type="button" size="sm" variant="outline" asChild>
+            <Link to="/settings/providers">{t('manageProviders')}</Link>
+          </Button>
+        </div>
       </div>
-      <div className="flex gap-inline-sm pb-0.5">
-        <Button type="button" size="sm" variant="outline" disabled={compactDisabled} onClick={() => void onCompact()}>
-          {compacting ? t('compactingContext') : t('compactContext')}
-        </Button>
-        <Button type="button" size="sm" variant="outline" asChild>
-          <Link to="/agents">{t('manageAgents')}</Link>
-        </Button>
-        <Button type="button" size="sm" variant="outline" asChild>
-          <Link to="/settings/providers">{t('manageProviders')}</Link>
-        </Button>
-      </div>
+      <SessionTokenUsageDisplay usage={sessionSettings?.tokenUsage} />
     </div>
   )
 }
