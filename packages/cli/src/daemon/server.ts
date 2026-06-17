@@ -144,6 +144,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     if (!deleted) {
       return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
     }
+    deps.chatService.evictRuntime(sessionId)
     return c.json({ deleted: true, sessionId })
   })
 

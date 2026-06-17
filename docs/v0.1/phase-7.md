@@ -20,14 +20,14 @@
 
 ## 现状与差距（阶段 6 交付后）
 
-| 维度              | 阶段 6 基线                                                    | 7.1 完成后（当前）                                                                | 7.2+ 仍待办                      |
-| ----------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------- |
-| SSE 断线          | 底层 1s 重连；`ready` 后无 UI、无 resync                       | 连接态枚举 + 重连 resync + toast；底栏「重连中」；SSE 重连 **3s 后** 自动展开面板 | —                                |
-| 错误提示          | 聊天顶栏 destructive 条；无重试；Header 设备按钮               | **AppLayout 底栏**设备状态条 + 展开面板；i18n 错误码；重试；health 与会话态分离   | —                                |
-| Steer / Follow-up | Composer UI 已有；`ChatService` 每轮新建 Harness 且恒 `prompt` | 未改                                                                              | **7.2** 常驻 Harness + mode 分发 |
-| Session compact   | 未实现                                                         | 未改                                                                              | **7.3**                          |
-| Token 统计        | 无展示                                                         | 未改                                                                              | **7.4**                          |
-| 远程 CLI / 文档   | 索引偏旧                                                       | 未改                                                                              | **7.5**                          |
+| 维度              | 阶段 6 基线                                                    | 7.1 完成后（当前）                                                                  | 7.2+ 仍待办 |
+| ----------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- |
+| SSE 断线          | 底层 1s 重连；`ready` 后无 UI、无 resync                       | 连接态枚举 + 重连 resync + toast；底栏「重连中」；SSE 重连 **3s 后** 自动展开面板   | —           |
+| 错误提示          | 聊天顶栏 destructive 条；无重试；Header 设备按钮               | **AppLayout 底栏**设备状态条 + 展开面板；i18n 错误码；重试；health 与会话态分离     | —           |
+| Steer / Follow-up | Composer UI 已有；`ChatService` 每轮新建 Harness 且恒 `prompt` | **7.2** turn-scoped Harness + mode 分发；steer/follow_up 即时注入；idle 回落 prompt | —           |
+| Session compact   | 未实现                                                         | 未改                                                                                | **7.3**     |
+| Token 统计        | 无展示                                                         | 未改                                                                                | **7.4**     |
+| 远程 CLI / 文档   | 索引偏旧                                                       | 未改                                                                                | **7.5**     |
 
 ---
 
@@ -35,7 +35,7 @@
 
 | 项                    | 决策                                                                | 说明                                                                                   |
 | --------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Steer / Follow-up** | **阶段 7 实现**                                                     | 不做「禁用 UI」；需 CLI 侧常驻 Harness runtime（见 7.2）                               |
+| **Steer / Follow-up** | **阶段 7 实现**                                                     | 不做「禁用 UI」；CLI 侧 turn 进行中持有 Harness（见 7.2）                              |
 | **Session compact**   | **手动 + 自动都要**                                                 | 手动：聊天页/Session 栏入口；自动：context 溢出时触发（对齐 pi compaction 语义）       |
 | **Token 统计**        | CLI 侧会话累计；Web 展示；Backend 持久化 **v0.1 可选**              | 优先打通 SSE → CLI 内存/Session meta → Web UI                                          |
 | **SSE 重连**          | 保留 fetch 流 + 客户端重连；重连成功后 **拉 tree 覆盖 messages**    | 不引入 Backend SSE 中继；丢失 delta 以 branch 为准                                     |
@@ -49,7 +49,7 @@
 | 子阶段  | 名称                     | 交付物                                                                                          | 依赖         | 状态      |
 | ------- | ------------------------ | ----------------------------------------------------------------------------------------------- | ------------ | --------- |
 | **7.1** | 断线重连与错误体验       | SSE 连接态、resync、错误 i18n、重试、health 探测、**AppLayout 底栏设备状态**                    | 无           | ✅ 已完成 |
-| **7.2** | Steer / Follow-up 真接入 | CLI 常驻 Harness；`POST /chat` 按 `mode` 分发 prompt/steer/follow_up                            | 7.1（建议）  | ⬜ 待开始 |
+| **7.2** | Steer / Follow-up 真接入 | CLI turn-scoped Harness；`POST /chat` 按 `mode` 分发 prompt/steer/follow_up                     | 7.1（建议）  | ✅ 已完成 |
 | **7.3** | Session compact          | `MuseHarness.compact()`、`POST /sessions/:id/compact`、溢出自动 compact、Web 手动按钮与状态提示 | 7.2          | ⬜ 待开始 |
 | **7.4** | Token 用量统计           | SSE `turn_end` 携带 usage；CLI 累计；Web Session 栏或消息区展示                                 | 无（可并行） | ⬜ 待开始 |
 | **7.5** | 远程 CLI 与开发文档      | 远程 endpoint/HTTPS 指南、CLI env 示例、README/`docs` 索引更新、开发指南                        | 无（可并行） | ⬜ 待开始 |
@@ -71,14 +71,14 @@
 - [x] **未连设备引导**：`/chat` 无设备时 `no-device-guide` 步骤化 CTA
 - [x] **侧栏 Session 列表**：`session-list-store` 的 `refreshNonce` / `requestRefresh`；去除 chat hook 内重复 `listCliSessions`
 
-### 7.2 Steer / Follow-up 真接入
+### 7.2 Steer / Follow-up 真接入 ✅
 
-- [ ] **常驻 Harness runtime**（CLI `ChatService`）：按 `sessionId` 持有 Harness 实例（或等价 session-scoped runner），非每轮 `POST /chat` 新建即销毁
-- [ ] **mode 分发**：`prompt` → `harness.prompt`；`steer` → `harness.steer`；`follow_up` → `harness.followUp`；非法组合（如 idle 时 steer）返回 4xx 或回落 prompt 并记录
-- [ ] **并发与排队**：与现有 `sessionChains` 串行策略对齐；steer 仅在 Agent streaming 时接受；follow_up 语义与 pi 一致
-- [ ] **SSE 生命周期**：Harness subscribe 与 Session SSE 订阅解耦；Session 切换/销毁时 unsubscribe 并释放 runtime
-- [ ] **Web**：Composer 现有 Enter / Shift+Enter 行为不变；必要时补充 steer 失败时的用户可见错误
-- [ ] **测试**：CLI `server.test` / `ChatService` 覆盖三 mode；至少 steer 在 mock streaming 下被调用
+- [x] **turn-scoped Harness runtime**（CLI `ChatService`）：仅在 prompt turn 进行中持有 Harness；turn 结束即 evict；下一轮 prompt 重建（上下文在 pi Session 文件）
+- [x] **mode 分发**：`prompt` → `harness.prompt`；`steer` → `harness.steer`；`follow_up` → `harness.followUp`；非法组合（如 idle 时 steer）返回 4xx 或回落 prompt 并记录
+- [x] **并发与排队**：与现有 `sessionChains` 串行策略对齐；steer 仅在 Agent streaming 时接受；follow_up 语义与 pi 一致
+- [x] **SSE 生命周期**：Harness subscribe 与 Session SSE 订阅解耦；Session 切换/销毁时 unsubscribe 并释放 runtime
+- [x] **Web**：Composer 现有 Enter / Shift+Enter 行为不变；必要时补充 steer 失败时的用户可见错误
+- [x] **测试**：CLI `server.test` / `ChatService` 覆盖三 mode；至少 steer 在 mock streaming 下被调用
 
 ### 7.3 Session compact（手动 + 自动）
 
@@ -110,17 +110,17 @@
 
 ## 设计决策（实现）
 
-| 项                | 决策                                  | 说明                                                                                                                       |
-| ----------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| SSE 传输          | Web 直连 CLI，fetch 流 + 客户端重连   | 与 architecture 一致；重连后以 **tree branch** 为真相源 resync                                                             |
-| 设备状态展示      | **AppLayout 全宽底栏**（含侧栏列）    | 替代 Header 设备按钮与聊天顶栏连接条；点击展开详情面板                                                                     |
-| 聚合状态          | health 优先，再区分会话/SSE           | `unreachable`（CLI 不可达）与 `session_disconnected`（health 通过但 SSE/会话失败）分开，避免「健康检查通过仍显示连接失败」 |
-| 面板自动展开      | 失败立即展开；SSE 重连 3s 后展开      | 恢复 `ready` 后 2s 自动收起（仅自动展开时；用户手动展开不强制收）                                                          |
-| Harness 生命周期  | 按 Session 常驻至空闲超时或显式 evict | 支撑 steer/follow_up；需定义 Session 无订阅/无排队时的回收策略（实现定）                                                   |
-| Compact 触发      | 手动 API + 自动 overflow              | 自动失败时须 SSE `error` + 可选 UI 提示；手动可带 customInstructions                                                       |
-| Token             | turn_end 携带当轮 usage，Session 累加 | 不做账号级账单；仅自用观测                                                                                                 |
-| 远程 endpoint     | 用户/运维配置公网或 tunnel URL        | `buildCliEndpoint` 行为在文档中明确；必要时支持 pair 时覆盖 endpoint                                                       |
-| follow_up 跨 HTTP | 与 steer 同批交付                     | 依赖 7.2 常驻 runtime                                                                                                      |
+| 项                | 决策                                      | 说明                                                                                                                       |
+| ----------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| SSE 传输          | Web 直连 CLI，fetch 流 + 客户端重连       | 与 architecture 一致；重连后以 **tree branch** 为真相源 resync                                                             |
+| 设备状态展示      | **AppLayout 全宽底栏**（含侧栏列）        | 替代 Header 设备按钮与聊天顶栏连接条；点击展开详情面板                                                                     |
+| 聚合状态          | health 优先，再区分会话/SSE               | `unreachable`（CLI 不可达）与 `session_disconnected`（health 通过但 SSE/会话失败）分开，避免「健康检查通过仍显示连接失败」 |
+| 面板自动展开      | 失败立即展开；SSE 重连 3s 后展开          | 恢复 `ready` 后 2s 自动收起（仅自动展开时；用户手动展开不强制收）                                                          |
+| Harness 生命周期  | **turn 结束即释放**；Session 删除时 evict | steer 仅需 turn 进行中同一实例；对齐 pi 语义，HTTP daemon 不跨 idle 常驻（pi REPL 因单进程复用 Agent）                     |
+| Compact 触发      | 手动 API + 自动 overflow                  | 自动失败时须 SSE `error` + 可选 UI 提示；手动可带 customInstructions                                                       |
+| Token             | turn_end 携带当轮 usage，Session 累加     | 不做账号级账单；仅自用观测                                                                                                 |
+| 远程 endpoint     | 用户/运维配置公网或 tunnel URL            | `buildCliEndpoint` 行为在文档中明确；必要时支持 pair 时覆盖 endpoint                                                       |
+| follow_up 跨 HTTP | 与 steer 同批交付                         | 依赖 7.2 turn 进行中 runtime                                                                                               |
 
 ---
 
@@ -196,6 +196,43 @@
 - `pnpm --filter @muse-ai/web test:run` — **27 passed**（含 `cli-client-sse`、`connection-errors`、`device-aggregate-status`）
 
 _（7.2+ 实施中按包补充。）_
+
+### 7.2 Steer / Follow-up 真接入（2026-06-17）✅
+
+#### 1. `packages/cli` — ChatService turn-scoped runtime
+
+| 文件                         | 说明                                                                                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/daemon/chat-service.ts` | `activeTurns` 仅在 prompt turn 进行中持有 Harness；`steer`/`follow_up` 即时注入当前 turn；**`dispatchTurn` finally 即 evict**；下一轮 prompt 调用 `createTurnRuntime` 重建 |
+| `src/daemon/server.ts`       | `DELETE /sessions/:id` 后调用 `chatService.evictRuntime` 释放进行中的 turn                                                                                                 |
+
+**行为摘要：**
+
+- `prompt`：每轮 `createTurnRuntime` → `harness.prompt()` → finally `evictRuntime`；Harness 事件经 turn 内 subscribe 广播至 `SessionEventHub`（与 Web SSE 订阅解耦）
+- `steer` / `follow_up`：仅当 `activeTurns` 存在时调用；**idle 时回落为 prompt** 并 `console.warn`
+- `isSessionBusy`：`sessionChains` 或 `activeTurns` 非空
+- 与 pi coding-agent 差异：pi 单进程 REPL 跨 turn 复用 `Agent`；MuseAI HTTP daemon 仅在 turn 进行中借还 Harness，重建成本可接受（上下文在 pi Session）
+
+#### 2. `packages/web` — 发送错误解析
+
+| 文件                | 说明                                                                   |
+| ------------------- | ---------------------------------------------------------------------- |
+| `api/cli-client.ts` | `postChat` 非 202 时解析 JSON `error`/`message`，便于展示 CLI 拒绝原因 |
+
+Composer Enter / Shift+Enter 逻辑未改；steer 失败仍经 SSE `error` 事件 + 顶栏 `sendError`（HTTP 层）双通道可见。
+
+#### 3. 测试
+
+| 文件                               | 覆盖                                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `test/daemon/chat-service.test.ts` | `prompt` / streaming 下 `steer` / streaming 下 `follow_up` / idle steer 回落 prompt / turn 结束释放 / 强制 evict |
+
+**2026-06-17 自动化验收（7.2 相关）：**
+
+- `pnpm --filter @muse-ai/cli build` — 通过
+- `npx vitest run packages/cli/test/daemon/` — **28 passed**（含新增 `chat-service.test.ts` 6 项）
+
+_（7.3+ 实施中按包补充。）_
 
 ---
 

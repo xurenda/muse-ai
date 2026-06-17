@@ -169,7 +169,16 @@ export async function postChat(endpoint: string, accessToken: string, request: C
   })
   if (res.status !== 202) {
     const text = await res.text()
-    throw new CliApiError(res.status, undefined, text || `发起对话失败 (${res.status})`)
+    let code: string | undefined
+    let message = text || `发起对话失败 (${res.status})`
+    try {
+      const body = JSON.parse(text) as { error?: string; message?: string }
+      code = body.error
+      if (body.message) message = body.message
+    } catch {
+      // 非 JSON 响应，保留原始 text
+    }
+    throw new CliApiError(res.status, code, message)
   }
 }
 
