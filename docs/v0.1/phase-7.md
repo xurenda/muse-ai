@@ -615,7 +615,7 @@ Registry（与底栏无关）：
 - [ ] 完成 [收尾 Checklist](#收尾-checklist) **B**（7.1 含设备 SSE 场景）与 **C** 连续自用
 - [ ] **E** 归档：文首 Commit、勾选「阶段完成记录」、同步 `current-phase.md` / `v0.1/README.md`
 
-**2026-06-18 联调 follow-up（7.1 第 3 项）**：streaming 中杀 CLI 再启时，原 `mergeBranchWithEphemeralTail` 会保留 `running` tool 尾部导致 UI 卡死。已改为 Session SSE / 设备恢复 resync 时 `finalizeStaleTail`：收尾未完成 tool、清除 `streaming`，允许继续发消息（待重验第 3 项）。
+**2026-06-18 联调 follow-up（7.1 第 3 项）**：streaming 中杀 CLI 再启时，原 `mergeBranchWithEphemeralTail` 会保留 `running` tool 尾部导致 UI 卡死。已改为 Session SSE / 设备恢复 resync 时 `finalizeStaleTail`：收尾未完成 tool、清除 `streaming`，允许继续发消息。**手动联调 B 节第 3 项已通过**（`b14074f`）。
 
 ---
 
