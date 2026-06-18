@@ -413,9 +413,9 @@ _（阶段 7 全部子阶段完成后，在文首填完成日期与 Commit。）
 | 7.1 | 停 CLI                                                      | 底栏「重连中」或「不可达」、倒计时 +「立即重连」、面板展开、**禁发**         | ✅   |
 | 7.1 | 启 CLI                                                      | 设备 SSE 恢复 →「就绪」；侧栏 Session 自动刷新；会话 error 时可自动/手动重试 | ✅   |
 | 7.1 | streaming 中杀 CLI 再启                                     | 消息经 resync 与 branch 一致，**进行中 tool/streaming 应收尾**，不卡死       | ✅   |
-| 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                          | ⬜   |
-| 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                           | ⬜   |
-| 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                                      | ⬜   |
+| 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                          | ✅   |
+| 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                           | ✅   |
+| 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                                      | ✅   |
 | 7.3 | Session 栏「压缩上下文」                                    | compact 中 disabled；完成后消息变短 + toast                                  | ⬜   |
 | 7.3 | 长对话 / 真实 overflow                                      | 自动 compact + 提示（或 SSE error）                                          | ⬜   |
 | 7.4 | 多轮对话                                                    | ChatSessionBar footer token 累计随轮次增加                                   | ⬜   |
