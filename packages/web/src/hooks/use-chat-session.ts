@@ -16,6 +16,7 @@ import {
   subscribeSessionEvents,
 } from '@/api/cli-client'
 import { branchMessagesToChat } from '@/lib/branch-messages'
+import { hasRunningTool } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
 import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
 import { createUserMessage, isAssistantMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
@@ -114,7 +115,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     if (deviceWasUnreachableRef.current) return true
     const last = messagesRef.current.at(-1)
     if (!last || !isAssistantMessage(last)) return false
-    return last.streaming || last.toolCalls.some(tool => tool.status === 'running')
+    return last.streaming || hasRunningTool(last)
   }, [])
 
   const clearDeviceUnreachableFlag = useCallback(() => {

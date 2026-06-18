@@ -1,26 +1,27 @@
 import { describe, expect, it } from 'vitest'
+import { getAssistantText, getAssistantToolCalls } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail } from '@/lib/merge-branch-messages'
 import { createAssistantMessage, createUserMessage } from '@/lib/chat-types'
 
 describe('mergeBranchWithEphemeralTail', () => {
   it('流式进行中应保留 SSE 尾部 assistant', () => {
-    const current = [createUserMessage('你好', 'prompt'), { ...createAssistantMessage(), text: '正在', streaming: true }]
+    const current = [createUserMessage('你好', 'prompt'), { ...createAssistantMessage(), blocks: [{ type: 'text', text: '正在' }], streaming: true }]
     const merged = mergeBranchWithEphemeralTail(current, [{ id: 'u1', role: 'user', text: '你好' }])
     expect(merged).toHaveLength(2)
     if (merged.at(-1)?.role === 'assistant') {
-      expect(merged.at(-1)?.text).toBe('正在')
+      expect(getAssistantText(merged.at(-1))).toBe('正在')
     }
   })
 
   it('分支已有 assistant 时应以分支为准', () => {
-    const current = [createUserMessage('你好', 'prompt'), { ...createAssistantMessage(), text: 'SSE', streaming: false }]
+    const current = [createUserMessage('你好', 'prompt'), { ...createAssistantMessage(), blocks: [{ type: 'text', text: 'SSE' }], streaming: false }]
     const merged = mergeBranchWithEphemeralTail(current, [
       { id: 'u1', role: 'user', text: '你好' },
       { id: 'a1', role: 'assistant', text: '持久化回复' },
     ])
     expect(merged).toHaveLength(2)
     if (merged.at(-1)?.role === 'assistant') {
-      expect(merged.at(-1)?.text).toBe('持久化回复')
+      expect(getAssistantText(merged.at(-1))).toBe('持久化回复')
     }
   })
 
@@ -42,7 +43,12 @@ describe('mergeBranchWithEphemeralTail', () => {
       {
         ...createAssistantMessage(),
         streaming: true,
-        toolCalls: [{ toolCallId: 't1', toolName: 'sleep', args: { seconds: 30 }, status: 'running' as const }],
+        blocks: [
+          {
+            type: 'tools',
+            tools: [{ toolCallId: 't1', toolName: 'sleep', args: { seconds: 30 }, status: 'running' as const }],
+          },
+        ],
       },
     ]
     const merged = mergeBranchWithEphemeralTail(current, [{ id: 'u1', role: 'user', text: 'sleep' }], {
@@ -56,8 +62,9 @@ describe('mergeBranchWithEphemeralTail', () => {
     if (assistant?.role === 'assistant') {
       expect(assistant.streaming).toBe(false)
       expect(assistant.error).toBe('连接中断')
-      expect(assistant.toolCalls[0]?.status).toBe('done')
-      expect(assistant.toolCalls[0]?.isError).toBe(true)
+      const tools = getAssistantToolCalls(assistant)
+      expect(tools[0]?.status).toBe('done')
+      expect(tools[0]?.isError).toBe(true)
     }
   })
 })

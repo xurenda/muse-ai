@@ -1,4 +1,5 @@
 import type { SessionBranchMessage } from '@muse-ai/shared'
+import { finalizeRunningTools, hasRunningTool } from '@/lib/assistant-message-helpers'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { isAssistantMessage, type AssistantChatMessage, type ChatMessage } from '@/lib/chat-types'
 
@@ -10,7 +11,7 @@ export interface MergeBranchOptions {
 }
 
 function shouldPreserveAssistantTail(message: AssistantChatMessage): boolean {
-  if (message.toolCalls.some(tool => tool.status === 'running')) return false
+  if (hasRunningTool(message)) return false
   if (message.streaming) return true
   return false
 }
@@ -23,16 +24,13 @@ export function finalizeInterruptedAssistant(
   const interruptedToolMessage = options?.interruptedToolMessage ?? 'Tool interrupted'
   const interruptedTurnMessage = options?.interruptedTurnMessage ?? 'Connection interrupted'
 
-  const hasRunningTool = message.toolCalls.some(tool => tool.status === 'running')
-  const toolCalls = message.toolCalls.map(tool =>
-    tool.status === 'running' ? { ...tool, status: 'done' as const, isError: true, result: interruptedToolMessage } : tool,
-  )
+  const { blocks, hasRunningTool: hadRunningTool } = finalizeRunningTools(message.blocks, interruptedToolMessage)
 
   return {
     ...message,
     streaming: false,
-    toolCalls,
-    error: message.error ?? (hasRunningTool || message.streaming ? interruptedTurnMessage : undefined),
+    blocks,
+    error: message.error ?? (hadRunningTool || message.streaming ? interruptedTurnMessage : undefined),
   }
 }
 
@@ -50,7 +48,7 @@ export function mergeBranchWithEphemeralTail(current: ChatMessage[], branch: Ses
   const lastCurrent = current.at(-1)
 
   if (options?.finalizeStaleTail) {
-    if (lastCurrent && isAssistantMessage(lastCurrent) && (lastCurrent.streaming || lastCurrent.toolCalls.some(t => t.status === 'running'))) {
+    if (lastCurrent && isAssistantMessage(lastCurrent) && (lastCurrent.streaming || hasRunningTool(lastCurrent))) {
       return appendFinalizedTail(fromBranch, lastCurrent, options)
     }
     return fromBranch

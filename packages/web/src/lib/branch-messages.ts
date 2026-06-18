@@ -1,4 +1,5 @@
 import type { SessionBranchMessage } from '@muse-ai/shared'
+import { branchBlocksToChatBlocks } from '@/lib/assistant-message-helpers'
 import { createAssistantMessage, createUserMessage, type ChatMessage } from '@/lib/chat-types'
 
 /** 将 CLI 分支历史映射为聊天消息列表 */
@@ -11,16 +12,7 @@ export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMess
     return {
       ...assistant,
       id: message.id,
-      text: message.text,
-      thinking: message.thinking ?? '',
-      toolCalls: (message.toolCalls ?? []).map(tool => ({
-        toolCallId: tool.toolCallId,
-        toolName: tool.toolName,
-        args: tool.args,
-        result: tool.result,
-        isError: tool.isError,
-        status: 'done' as const,
-      })),
+      blocks: branchBlocksToChatBlocks(message.blocks, message.thinking ?? '', message.text, message.toolCalls),
       error: message.error,
       streaming: false,
     }

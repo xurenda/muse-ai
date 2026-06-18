@@ -113,6 +113,7 @@ describe('mapBranchMessages', () => {
     expect(branch[1]?.role).toBe('assistant')
     expect(branch[1]?.thinking).toBe('先看目录')
     expect(branch[1]?.text).toBe('找到 README.md')
+    expect(branch[1]?.blocks?.[0]).toEqual({ type: 'thinking', thinking: '先看目录', durationMs: 0 })
     expect(branch[1]?.toolCalls).toEqual([
       {
         toolCallId: 'tc1',
@@ -152,6 +153,154 @@ describe('mapBranchMessages', () => {
     expect(branch).toHaveLength(2)
     expect(branch[1]?.toolCalls).toHaveLength(1)
     expect(branch[1]?.text).toBe('当前目录 /tmp')
+  })
+
+  it('应保留 text 与 tool 的交错 blocks', () => {
+    const branch = mapBranchMessages([
+      { role: 'user', content: '查文件', timestamp: 1 },
+      {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: '先看目录' },
+          { type: 'toolCall', id: 'tc1', name: 'ls', arguments: { path: '.' } },
+        ],
+        stopReason: 'toolUse',
+        timestamp: 2,
+      },
+      {
+        role: 'toolResult',
+        toolCallId: 'tc1',
+        toolName: 'ls',
+        content: [{ type: 'text', text: 'README.md' }],
+        isError: false,
+        timestamp: 3,
+      },
+      {
+        role: 'assistant',
+        content: [{ type: 'text', text: '找到 README.md' }],
+        stopReason: 'stop',
+        timestamp: 4,
+      },
+    ] as Parameters<typeof mapBranchMessages>[0])
+
+    expect(branch[1]?.blocks).toEqual([
+      { type: 'text', text: '先看目录' },
+      {
+        type: 'tools',
+        tools: [
+          {
+            toolCallId: 'tc1',
+            toolName: 'ls',
+            args: { path: '.' },
+            result: 'README.md',
+            isError: false,
+          },
+        ],
+      },
+      { type: 'text', text: '找到 README.md' },
+    ])
+  })
+
+  it('thinking 应写入 blocks 并切开 tool 组', () => {
+    const branch = mapBranchMessages([
+      { role: 'user', content: '查', timestamp: 1 },
+      {
+        role: 'assistant',
+        content: [
+          { type: 'thinking', thinking: '第一轮' },
+          { type: 'toolCall', id: 'tc1', name: 'ls', arguments: {} },
+        ],
+        stopReason: 'toolUse',
+        timestamp: 2,
+      },
+      {
+        role: 'toolResult',
+        toolCallId: 'tc1',
+        toolName: 'ls',
+        content: [{ type: 'text', text: 'ok' }],
+        isError: false,
+        timestamp: 3,
+      },
+      {
+        role: 'assistant',
+        content: [
+          { type: 'thinking', thinking: '第二轮' },
+          { type: 'toolCall', id: 'tc2', name: 'read', arguments: {} },
+        ],
+        stopReason: 'toolUse',
+        timestamp: 4,
+      },
+      {
+        role: 'toolResult',
+        toolCallId: 'tc2',
+        toolName: 'read',
+        content: [{ type: 'text', text: 'data' }],
+        isError: false,
+        timestamp: 5,
+      },
+    ] as Parameters<typeof mapBranchMessages>[0])
+
+    expect(branch[1]?.blocks).toEqual([
+      { type: 'thinking', thinking: '第一轮', durationMs: 0 },
+      {
+        type: 'tools',
+        tools: [
+          {
+            toolCallId: 'tc1',
+            toolName: 'ls',
+            args: {},
+            result: 'ok',
+            isError: false,
+          },
+        ],
+      },
+      { type: 'thinking', thinking: '第二轮', durationMs: 0 },
+      {
+        type: 'tools',
+        tools: [
+          {
+            toolCallId: 'tc2',
+            toolName: 'read',
+            args: {},
+            result: 'data',
+            isError: false,
+          },
+        ],
+      },
+    ])
+    expect(branch[1]?.thinking).toBe('第一轮第二轮')
+  })
+
+  it('应根据 assistant 消息 timestamp 写入 thinking durationMs', () => {
+    const branch = mapBranchMessages([
+      { role: 'user', content: '查', timestamp: 1_000 },
+      {
+        role: 'assistant',
+        content: [{ type: 'thinking', thinking: '想一会' }],
+        stopReason: 'toolUse',
+        timestamp: 1_000,
+      },
+      {
+        role: 'assistant',
+        content: [{ type: 'toolCall', id: 'tc1', name: 'ls', arguments: {} }],
+        stopReason: 'toolUse',
+        timestamp: 4_000,
+      },
+      {
+        role: 'toolResult',
+        toolCallId: 'tc1',
+        toolName: 'ls',
+        content: [{ type: 'text', text: 'ok' }],
+        isError: false,
+        timestamp: 5_000,
+      },
+    ] as Parameters<typeof mapBranchMessages>[0])
+
+    expect(branch[1]?.blocks?.[0]).toEqual({
+      type: 'thinking',
+      thinking: '想一会',
+      durationMs: 3_000,
+    })
   })
 })
 

@@ -8,9 +8,10 @@ interface ToolRowProps {
   tool: ToolCallItem
   expanded: boolean
   onToggle: () => void
+  plain?: boolean
 }
 
-export function ToolRow({ tool, expanded, onToggle }: ToolRowProps) {
+export function ToolRow({ tool, expanded, onToggle, plain = false }: ToolRowProps) {
   const input = formatToolJson(tool.args)
   const output = formatToolJson(tool.result)
   const isRunning = tool.status === 'running'
@@ -25,7 +26,7 @@ export function ToolRow({ tool, expanded, onToggle }: ToolRowProps) {
         disabled={!hasDetail}
         onClick={hasDetail ? onToggle : undefined}
       >
-        <Wrench className="size-3.5 shrink-0" strokeWidth={2} />
+        {plain ? null : <Wrench className="size-3.5 shrink-0" strokeWidth={2} />}
         <span className={cn('truncate', tool.isError && 'text-destructive', isRunning && 'process-shimmer')}>{tool.toolName}</span>
         {hasDetail ? <ChevronDown className={cn('size-3.5 shrink-0 transition-transform', !expanded && '-rotate-90')} strokeWidth={2} /> : null}
       </button>

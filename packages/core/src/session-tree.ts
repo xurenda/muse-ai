@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { buildSessionContext } from '@earendil-works/pi-agent-core'
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
-import type { SessionBranchMessage, SessionBranchToolCall, SessionTreeNode } from '@muse-ai/shared'
+import type { SessionBranchBlock, SessionBranchMessage, SessionBranchToolCall, SessionTreeNode } from '@muse-ai/shared'
 import { extractBranchMessageError } from './assistant-turn-error.js'
 
 function extractTextContent(content: unknown): string {
@@ -51,52 +51,203 @@ function previewText(text: string, max = 120): string {
   return `${normalized.slice(0, max)}…`
 }
 
+interface ToolCallLocation {
+  blockIndex: number
+  toolIndex: number
+}
+
 interface AssistantTurnAccum {
   id: string
   text: string
-  thinking: string
+  blocks: SessionBranchBlock[]
   toolCalls: Map<string, SessionBranchToolCall>
+  toolCallLocations: Map<string, ToolCallLocation>
+  openThinkingBlockIndex: number | null
+  openThinkingStartedAtMs: number | null
+  lastMessageAtMs: number | null
   error?: string
   timestamp?: string
 }
 
-function createAssistantTurn(message: Extract<AgentMessage, { role: 'assistant' }>): AssistantTurnAccum {
-  return {
-    id: 'id' in message && typeof message.id === 'string' ? message.id : randomUUID(),
-    text: messageText(message),
-    thinking: extractThinkingContent(message.content),
-    toolCalls: new Map(extractAssistantToolCalls(message.content).map(tool => [tool.toolCallId, tool])),
-    error: extractBranchMessageError(message) ?? undefined,
-    timestamp: messageTimestamp(message),
+function messageTimestampMs(message: AgentMessage): number | undefined {
+  return 'timestamp' in message && typeof message.timestamp === 'number' ? message.timestamp : undefined
+}
+
+function assistantMessageStartsWithThinking(message: Extract<AgentMessage, { role: 'assistant' }>): boolean {
+  const { content } = message
+  if (!Array.isArray(content)) return false
+  for (const part of content) {
+    if (typeof part !== 'object' || part === null || !('type' in part)) continue
+    if (part.type === 'thinking') return true
+    if (part.type === 'text' || part.type === 'toolCall') return false
+  }
+  return false
+}
+
+function finalizeOpenThinkingInTurn(turn: AssistantTurnAccum, endedAtMs: number | undefined): void {
+  if (turn.openThinkingBlockIndex === null || turn.openThinkingStartedAtMs === null || endedAtMs === undefined) {
+    turn.openThinkingBlockIndex = null
+    turn.openThinkingStartedAtMs = null
+    return
+  }
+  const block = turn.blocks[turn.openThinkingBlockIndex]
+  if (block?.type !== 'thinking' || block.durationMs !== undefined) {
+    turn.openThinkingBlockIndex = null
+    turn.openThinkingStartedAtMs = null
+    return
+  }
+  block.durationMs = Math.max(0, endedAtMs - turn.openThinkingStartedAtMs)
+  turn.openThinkingBlockIndex = null
+  turn.openThinkingStartedAtMs = null
+}
+
+function appendThinkingBlock(turn: AssistantTurnAccum, thinking: string, messageMs: number | undefined): void {
+  if (!thinking) return
+  const last = turn.blocks.at(-1)
+  if (last?.type === 'thinking') {
+    last.thinking += thinking
+    return
+  }
+  turn.blocks.push({ type: 'thinking', thinking })
+  turn.openThinkingBlockIndex = turn.blocks.length - 1
+  turn.openThinkingStartedAtMs = messageMs ?? turn.lastMessageAtMs ?? null
+}
+
+function appendTextBlock(turn: AssistantTurnAccum, text: string, messageMs: number | undefined): void {
+  if (!text) return
+  finalizeOpenThinkingInTurn(turn, messageMs)
+  turn.text += text
+  const last = turn.blocks.at(-1)
+  if (last?.type === 'text') {
+    last.text += text
+    return
+  }
+  turn.blocks.push({ type: 'text', text })
+}
+
+function appendToolCallBlock(turn: AssistantTurnAccum, tool: SessionBranchToolCall, messageMs: number | undefined): void {
+  finalizeOpenThinkingInTurn(turn, messageMs)
+  turn.toolCalls.set(tool.toolCallId, tool)
+  const last = turn.blocks.at(-1)
+  if (last?.type === 'tools') {
+    const toolIndex = last.tools.length
+    last.tools.push(tool)
+    turn.toolCallLocations.set(tool.toolCallId, { blockIndex: turn.blocks.length - 1, toolIndex })
+    return
+  }
+  turn.blocks.push({ type: 'tools', tools: [tool] })
+  turn.toolCallLocations.set(tool.toolCallId, { blockIndex: turn.blocks.length - 1, toolIndex: 0 })
+}
+
+function appendAssistantContent(turn: AssistantTurnAccum, content: unknown, messageMs: number | undefined): void {
+  if (!Array.isArray(content)) {
+    if (typeof content === 'string' && content.trim()) {
+      appendTextBlock(turn, content, messageMs)
+    }
+    return
+  }
+
+  for (const part of content) {
+    if (typeof part !== 'object' || part === null || !('type' in part)) continue
+    if (part.type === 'thinking' && 'thinking' in part && typeof part.thinking === 'string') {
+      appendThinkingBlock(turn, part.thinking, messageMs)
+      continue
+    }
+    if (part.type === 'text' && 'text' in part && typeof part.text === 'string') {
+      appendTextBlock(turn, part.text, messageMs)
+      continue
+    }
+    if (part.type === 'toolCall' && 'id' in part && 'name' in part && typeof part.id === 'string' && typeof part.name === 'string') {
+      appendToolCallBlock(
+        turn,
+        {
+          toolCallId: part.id,
+          toolName: part.name,
+          args: 'arguments' in part ? part.arguments : undefined,
+        },
+        messageMs,
+      )
+    }
   }
 }
 
-function mergeAssistantTurn(turn: AssistantTurnAccum, message: Extract<AgentMessage, { role: 'assistant' }>): void {
-  turn.id = 'id' in message && typeof message.id === 'string' ? message.id : turn.id
-  turn.text += messageText(message)
-  turn.thinking += extractThinkingContent(message.content)
-  for (const tool of extractAssistantToolCalls(message.content)) {
-    turn.toolCalls.set(tool.toolCallId, tool)
+function touchTurnMessageTime(turn: AssistantTurnAccum, message: AgentMessage): void {
+  const messageMs = messageTimestampMs(message)
+  if (messageMs !== undefined) {
+    turn.lastMessageAtMs = messageMs
   }
+}
+
+function createAssistantTurn(message: Extract<AgentMessage, { role: 'assistant' }>): AssistantTurnAccum {
+  const turn: AssistantTurnAccum = {
+    id: 'id' in message && typeof message.id === 'string' ? message.id : randomUUID(),
+    text: '',
+    blocks: [],
+    toolCalls: new Map(),
+    toolCallLocations: new Map(),
+    openThinkingBlockIndex: null,
+    openThinkingStartedAtMs: null,
+    lastMessageAtMs: null,
+    error: extractBranchMessageError(message) ?? undefined,
+    timestamp: messageTimestamp(message),
+  }
+  touchTurnMessageTime(turn, message)
+  appendAssistantContent(turn, message.content, messageTimestampMs(message))
+  return turn
+}
+
+function mergeAssistantTurn(turn: AssistantTurnAccum, message: Extract<AgentMessage, { role: 'assistant' }>): void {
+  const messageMs = messageTimestampMs(message)
+  if (!assistantMessageStartsWithThinking(message)) {
+    finalizeOpenThinkingInTurn(turn, messageMs)
+  }
+  turn.id = 'id' in message && typeof message.id === 'string' ? message.id : turn.id
+  touchTurnMessageTime(turn, message)
+  appendAssistantContent(turn, message.content, messageMs)
   const error = extractBranchMessageError(message)
   if (error) turn.error = error
   turn.timestamp = messageTimestamp(message) ?? turn.timestamp
+}
+
+function applyToolResultToTurn(turn: AssistantTurnAccum, toolCallId: string, result: unknown, isError?: boolean): void {
+  const existing = turn.toolCalls.get(toolCallId)
+  if (!existing) return
+  const updated = { ...existing, result, isError }
+  turn.toolCalls.set(toolCallId, updated)
+
+  const location = turn.toolCallLocations.get(toolCallId)
+  if (!location) return
+  const block = turn.blocks[location.blockIndex]
+  if (block?.type !== 'tools') return
+  const tool = block.tools[location.toolIndex]
+  if (!tool || tool.toolCallId !== toolCallId) return
+  block.tools[location.toolIndex] = updated
 }
 
 function messageTimestamp(message: AgentMessage): string | undefined {
   return 'timestamp' in message && typeof message.timestamp === 'number' ? new Date(message.timestamp).toISOString() : undefined
 }
 
+function extractThinkingFromBlocks(blocks: SessionBranchBlock[]): string {
+  return blocks
+    .filter((block): block is Extract<SessionBranchBlock, { type: 'thinking' }> => block.type === 'thinking')
+    .map(block => block.thinking)
+    .join('')
+}
+
 function flushAssistantTurn(turn: AssistantTurnAccum | null, result: SessionBranchMessage[]): void {
   if (!turn) return
+  finalizeOpenThinkingInTurn(turn, turn.lastMessageAtMs ?? undefined)
   const toolCalls = [...turn.toolCalls.values()]
-  const hasContent = turn.text.trim().length > 0 || turn.thinking.trim().length > 0 || toolCalls.length > 0 || turn.error !== undefined
+  const thinking = extractThinkingFromBlocks(turn.blocks)
+  const hasContent = turn.text.trim().length > 0 || thinking.trim().length > 0 || toolCalls.length > 0 || turn.error !== undefined
   if (!hasContent) return
   result.push({
     id: turn.id,
     role: 'assistant',
     text: turn.text,
-    thinking: turn.thinking.trim() ? turn.thinking : undefined,
+    thinking: thinking.trim() ? thinking : undefined,
+    blocks: turn.blocks.length > 0 ? turn.blocks : undefined,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     error: turn.error,
     timestamp: turn.timestamp,
@@ -413,13 +564,7 @@ export function mapBranchMessages(messages: AgentMessage[]): SessionBranchMessag
 
     if (message.role === 'toolResult') {
       if (!turn) continue
-      const existing = turn.toolCalls.get(message.toolCallId)
-      if (!existing) continue
-      turn.toolCalls.set(message.toolCallId, {
-        ...existing,
-        result: extractToolResultValue(message),
-        isError: message.isError,
-      })
+      applyToolResultToTurn(turn, message.toolCallId, extractToolResultValue(message), message.isError)
       continue
     }
 

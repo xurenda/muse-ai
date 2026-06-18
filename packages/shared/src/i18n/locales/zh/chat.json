@@ -8,7 +8,13 @@
   "startNewSession": "开始新对话",
   "thinking": {
     "active": "思考中",
-    "doneBrief": "思考片刻"
+    "doneBrief": "思考片刻",
+    "doneSeconds": "思考 {{seconds}} 秒"
+  },
+  "processRun": {
+    "collapsedBoth": "{{thinkingCount}} 次思考 · {{toolCount}} 个工具",
+    "collapsedToolsOnly": "{{toolCount}} 个工具",
+    "collapsedThinkingOnly": "{{thinkingCount}} 次思考"
   },
   "explore": {
     "active": "探索中",

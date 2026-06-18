@@ -18,12 +18,15 @@ export interface ToolCallItem {
   status: 'running' | 'done'
 }
 
+export type AssistantContentBlock =
+  | { type: 'thinking'; thinking: string; /** 流式进行中起始时间 */ startedAt?: number; /** 完成后耗时 */ durationMs?: number }
+  | { type: 'text'; text: string }
+  | { type: 'tools'; tools: ToolCallItem[] }
+
 export interface AssistantChatMessage {
   id: string
   role: 'assistant'
-  text: string
-  thinking: string
-  toolCalls: ToolCallItem[]
+  blocks: AssistantContentBlock[]
   streaming: boolean
   error?: string
 }
@@ -47,9 +50,7 @@ export function createAssistantMessage(): AssistantChatMessage {
   return {
     id: crypto.randomUUID(),
     role: 'assistant',
-    text: '',
-    thinking: '',
-    toolCalls: [],
+    blocks: [],
     streaming: true,
   }
 }

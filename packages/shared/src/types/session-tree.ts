@@ -33,12 +33,38 @@ export const sessionBranchToolCallSchema = z.object({
 
 export type SessionBranchToolCall = z.infer<typeof sessionBranchToolCallSchema>
 
+export const sessionBranchTextBlockSchema = z.object({
+  type: z.literal('text'),
+  text: z.string(),
+})
+
+export const sessionBranchToolsBlockSchema = z.object({
+  type: z.literal('tools'),
+  tools: z.array(sessionBranchToolCallSchema),
+})
+
+export const sessionBranchThinkingBlockSchema = z.object({
+  type: z.literal('thinking'),
+  thinking: z.string(),
+  durationMs: z.number().int().nonnegative().optional(),
+})
+
+export const sessionBranchBlockSchema = z.discriminatedUnion('type', [
+  sessionBranchThinkingBlockSchema,
+  sessionBranchTextBlockSchema,
+  sessionBranchToolsBlockSchema,
+])
+
+export type SessionBranchBlock = z.infer<typeof sessionBranchBlockSchema>
+
 export const sessionBranchMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant']),
   text: z.string(),
   /** 模型推理过程（assistant content 中的 thinking 块） */
   thinking: z.string().optional(),
+  /** 按出现顺序交错的正文与工具块（用于 Web 还原 think → text → tool → text 展示） */
+  blocks: z.array(sessionBranchBlockSchema).optional(),
   toolCalls: z.array(sessionBranchToolCallSchema).optional(),
   /** LLM / 工具层失败时的可读错误（持久化自 session 树） */
   error: z.string().optional(),

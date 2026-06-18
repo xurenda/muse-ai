@@ -8,7 +8,13 @@
   "startNewSession": "Start new chat",
   "thinking": {
     "active": "Thinking",
-    "doneBrief": "Thought for a moment"
+    "doneBrief": "Thought for a moment",
+    "doneSeconds": "Thought for {{seconds}}s"
+  },
+  "processRun": {
+    "collapsedBoth": "{{thinkingCount}} thoughts · {{toolCount}} tools",
+    "collapsedToolsOnly": "{{toolCount}} tools",
+    "collapsedThinkingOnly": "{{thinkingCount}} thoughts"
   },
   "explore": {
     "active": "Exploring",

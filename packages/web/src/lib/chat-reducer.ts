@@ -1,4 +1,5 @@
 import type { MuseSseEvent } from '@muse-ai/shared'
+import { appendTextDelta, appendThinkingDelta, appendToolStart, finalizeOpenThinkingBlocks, updateToolEnd } from '@/lib/assistant-message-helpers'
 import { type AssistantChatMessage, type ChatMessage, createAssistantMessage } from '@/lib/chat-types'
 
 function updateLastAssistant(messages: ChatMessage[], updater: (message: AssistantChatMessage) => AssistantChatMessage): ChatMessage[] {
@@ -28,42 +29,38 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent): Cha
       return [...messages, createAssistantMessage()]
 
     case 'text_delta':
-      return updateLastAssistant(messages, m => ({ ...m, text: m.text + event.delta }))
+      return updateLastAssistant(messages, m => ({ ...m, blocks: appendTextDelta(m.blocks, event.delta) }))
 
     case 'thinking_delta':
-      return updateLastAssistant(messages, m => ({ ...m, thinking: m.thinking + event.delta }))
+      return updateLastAssistant(messages, m => ({ ...m, blocks: appendThinkingDelta(m.blocks, event.delta) }))
 
     case 'tool_start':
       return updateLastAssistant(messages, m => ({
         ...m,
-        toolCalls: [
-          ...m.toolCalls,
-          {
-            toolCallId: event.toolCallId,
-            toolName: event.toolName,
-            args: event.args,
-            status: 'running',
-          },
-        ],
+        blocks: appendToolStart(m.blocks, {
+          toolCallId: event.toolCallId,
+          toolName: event.toolName,
+          args: event.args,
+          status: 'running',
+        }),
       }))
 
     case 'tool_end':
       return updateLastAssistant(messages, m => ({
         ...m,
-        toolCalls: m.toolCalls.map(tool =>
-          tool.toolCallId === event.toolCallId
-            ? {
-                ...tool,
-                result: event.result,
-                isError: event.isError,
-                status: 'done' as const,
-              }
-            : tool,
-        ),
+        blocks: updateToolEnd(m.blocks, event.toolCallId, {
+          result: event.result,
+          isError: event.isError,
+          status: 'done',
+        }),
       }))
 
     case 'agent_end':
-      return updateLastAssistant(messages, m => ({ ...m, streaming: false }))
+      return updateLastAssistant(messages, m => ({
+        ...m,
+        streaming: false,
+        blocks: finalizeOpenThinkingBlocks(m.blocks),
+      }))
 
     case 'error':
       return updateLastAssistant(messages, m => ({

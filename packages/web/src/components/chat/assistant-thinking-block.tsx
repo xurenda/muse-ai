@@ -3,27 +3,34 @@ import { ProcessBlockHeader, useProcessBlockExpanded } from '@/components/chat/p
 
 interface AssistantThinkingBlockProps {
   content: string
-  streaming: boolean
-  hasToolCalls: boolean
-  hasAnswer: boolean
+  active: boolean
+  durationMs?: number
 }
 
-export function AssistantThinkingBlock({ content, streaming, hasToolCalls, hasAnswer }: AssistantThinkingBlockProps) {
+function resolveThinkingDoneLabel(durationMs: number | undefined, t: (key: string, options?: Record<string, number>) => string): string {
+  if (durationMs === undefined || durationMs < 1000) {
+    return t('thinking.doneBrief')
+  }
+  return t('thinking.doneSeconds', { seconds: Math.round(durationMs / 1000) })
+}
+
+export function AssistantThinkingBlock({ content, active, durationMs }: AssistantThinkingBlockProps) {
   const { t } = useTranslation('chat')
   const hasContent = content.trim().length > 0
-  const visible = hasContent || (streaming && !hasAnswer && !hasToolCalls)
-  const active = streaming && !hasAnswer && !hasToolCalls
+  const visible = hasContent || active
   const status = active ? 'active' : 'done'
   const [expanded, toggle] = useProcessBlockExpanded(status, hasContent)
 
   if (!visible) return null
+
+  const doneLabel = resolveThinkingDoneLabel(durationMs, t)
 
   return (
     <div className="w-full min-w-0">
       <ProcessBlockHeader
         active={active}
         activeLabel={t('thinking.active')}
-        doneLabel={t('thinking.doneBrief')}
+        doneLabel={doneLabel}
         expanded={expanded}
         hasContent={hasContent}
         onToggle={toggle}

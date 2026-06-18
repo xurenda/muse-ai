@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import type { AssistantChatMessage, ChatMessage } from '@/lib/chat-types'
 import { isAssistantMessage } from '@/lib/chat-types'
-import { AssistantThinkingBlock } from '@/components/chat/assistant-thinking-block'
-import { AssistantToolGroup } from '@/components/chat/assistant-tool-group'
+import { hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
+import { groupAssistantBlocks } from '@/lib/group-assistant-blocks'
+import { AssistantProcessRun } from '@/components/chat/assistant-process-run'
 import { MarkdownContent } from '@/components/chat/markdown-content'
 import { PlanningIndicator } from '@/components/chat/planning-indicator'
 import { UserMessage } from '@/components/chat/user-message'
@@ -12,15 +13,27 @@ interface ChatMessageItemProps {
   showPlanning?: boolean
 }
 
-function AssistantMessageItem({ message, showPlanning }: { message: AssistantChatMessage; showPlanning?: boolean }) {
-  const hasAnswer = message.text.trim().length > 0
-  const hasToolCalls = message.toolCalls.length > 0
+function AssistantContentBlocks({ blocks, streaming }: { blocks: AssistantChatMessage['blocks']; streaming: boolean }) {
+  const segments = groupAssistantBlocks(blocks)
 
   return (
+    <>
+      {segments.map((segment, index) => {
+        if (segment.type === 'text') {
+          return <MarkdownContent key={`text-${index}`} content={segment.text} />
+        }
+        const isLastSegment = index === segments.length - 1
+        const active = streaming && isLastSegment
+        return <AssistantProcessRun key={`process-${index}`} blocks={segment.blocks} active={active} />
+      })}
+    </>
+  )
+}
+
+function AssistantMessageItem({ message, showPlanning }: { message: AssistantChatMessage; showPlanning?: boolean }) {
+  return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <AssistantThinkingBlock content={message.thinking} streaming={message.streaming} hasToolCalls={hasToolCalls} hasAnswer={hasAnswer} />
-      <AssistantToolGroup tools={message.toolCalls} />
-      <MarkdownContent content={message.text} />
+      <AssistantContentBlocks blocks={message.blocks} streaming={message.streaming} />
       {showPlanning ? <PlanningIndicator /> : null}
       {message.error ? <p className="text-sm text-destructive">{message.error}</p> : null}
     </div>
@@ -40,5 +53,5 @@ export function ChatMessageItem({ message, showPlanning }: ChatMessageItemProps)
 
 export function shouldShowPlanning(message: ChatMessage): boolean {
   if (!isAssistantMessage(message) || !message.streaming) return false
-  return !message.text.trim() && !message.thinking.trim() && message.toolCalls.length === 0
+  return !hasAssistantAnswer(message) && !hasAssistantThinking(message) && !hasAssistantToolCalls(message)
 }

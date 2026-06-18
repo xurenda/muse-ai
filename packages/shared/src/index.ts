@@ -59,12 +59,17 @@ export {
   type SessionPatchRequest,
 } from './types/session.js'
 export {
+  sessionBranchBlockSchema,
   sessionBranchMessageSchema,
+  sessionBranchTextBlockSchema,
+  sessionBranchThinkingBlockSchema,
   sessionBranchToolCallSchema,
+  sessionBranchToolsBlockSchema,
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
   sessionTreeNodeSchema,
   sessionTreeResponseSchema,
+  type SessionBranchBlock,
   type SessionBranchMessage,
   type SessionBranchToolCall,
   type SessionForkRequest,
