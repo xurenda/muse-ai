@@ -99,11 +99,11 @@
 
 ### 7.5 远程 CLI 与开发文档 ✅
 
-- [x] **`docs/development-guide.md`**（或等价）： monorepo 结构、三进程联调、常见排错、改 shared 后 rebuild
+- [x] `**docs/development-guide.md`\*\*（或等价）： monorepo 结构、三进程联调、常见排错、改 shared 后 rebuild
 - [x] **远程 CLI 专节**：`MUSE_CLI_HOST` / `MUSE_CLI_PORT` / `MUSE_CORS_ORIGINS`；配对时 **endpoint 必须是浏览器可达地址**（非 `127.0.0.1` 代填）；HTTPS Web + HTTPS CLI；Tailscale / 反向代理 / CF Tunnel 示例（择一写清即可）
-- [x] **`packages/cli/.env.example`**（或 README 表格）列出 CLI 环境变量
+- [x] `**packages/cli/.env.example`\*\*（或 README 表格）列出 CLI 环境变量
 - [x] **根 `README.md`**：链到开发指南；远程场景摘要
-- [x] **`docs/README.md`**：索引更新为 phase-0 ~ **phase-7**；当前阶段指向 `current-phase.md`
+- [x] `**docs/README.md**`：索引更新为 phase-0 ~ **phase-7**；当前阶段指向 `current-phase.md`
 - [x] **阶段完成记录（增补）**：Runtime/Registry 两通道 + 设备 SSE 已写入本文 [完成记录](#完成记录)（2026-06-18）；**v0.1 整体关闭**时补 Commit 与 B/C 勾选
 
 ---
@@ -148,7 +148,7 @@
 | 文件                            | 说明                                                                                                                                                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `hooks/use-chat-session.ts`     | 导出 `sseStatus`、`canSend`、`retryConnection`；SSE 回调更新连接态；重连/恢复后 `refreshTree` resync + toast；**health 不可达禁发**；CLI 恢复或 health 已通过时会话 error **自动重试** |
-| `hooks/use-device-health.tsx`   | `DeviceHealthProvider`：订阅 CLI **`/device/events`**（见 [完成记录](#完成记录) 增补）；`visibilitychange` 时 `retryNow`                                                               |
+| `hooks/use-device-health.tsx`   | `DeviceHealthProvider`：订阅 CLI `**/device/events`\*\*（见 [完成记录](#完成记录) 增补）；`visibilitychange` 时 `retryNow`                                                             |
 | `routes/guards.tsx`             | Protected 路由包裹 `DeviceHealthProvider`                                                                                                                                              |
 | `stores/session-list-store.ts`  | `refreshNonce` / `requestRefresh`；SSE `session_meta_updated` 仍走 `patchSession`                                                                                                      |
 | `stores/device-status-store.ts` | 设备信息、health、chat/SSE 态、面板开闭、最近活动、重试 handler 注册                                                                                                                   |
@@ -199,10 +199,10 @@
 
 #### 1. `packages/cli` — ChatService turn-scoped runtime
 
-| 文件                         | 说明                                                                                                                                                                       |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/daemon/chat-service.ts` | `activeTurns` 仅在 prompt turn 进行中持有 Harness；`steer`/`follow_up` 即时注入当前 turn；**`dispatchTurn` finally 即 evict**；下一轮 prompt 调用 `createTurnRuntime` 重建 |
-| `src/daemon/server.ts`       | `DELETE /sessions/:id` 后调用 `chatService.evictRuntime` 释放进行中的 turn                                                                                                 |
+| 文件                         | 说明                                                                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/daemon/chat-service.ts` | `activeTurns` 仅在 prompt turn 进行中持有 Harness；`steer`/`follow_up` 即时注入当前 turn；`**dispatchTurn` finally 即 evict\*\*；下一轮 prompt 调用 `createTurnRuntime` 重建 |
+| `src/daemon/server.ts`       | `DELETE /sessions/:id` 后调用 `chatService.evictRuntime` 释放进行中的 turn                                                                                                   |
 
 **行为摘要：**
 
@@ -406,13 +406,13 @@ _（阶段 7 全部子阶段完成后，在文首填完成日期与 Commit。）
 
 ### B. 手动联调（三进程）
 
-启动：`pnpm dev:server` + `pnpm dev:cli` + `pnpm dev:web`，浏览器 **http://127.0.0.1:65434**，已配对设备 + Provider Key。
+启动：`pnpm dev:server` + `pnpm dev:cli` + `pnpm dev:web`，浏览器 **[http://127.0.0.1:65434](http://127.0.0.1:65434)**，已配对设备 + Provider Key。
 
 | 项  | 场景                                                        | 预期                                                                         | 状态 |
 | --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- | ---- |
-| 7.1 | 停 CLI                                                      | 底栏「重连中」或「不可达」、倒计时 +「立即重连」、面板展开、**禁发**         | ⬜   |
-| 7.1 | 启 CLI                                                      | 设备 SSE 恢复 →「就绪」；侧栏 Session 自动刷新；会话 error 时可自动/手动重试 | ⬜   |
-| 7.1 | streaming 中杀 CLI 再启                                     | 消息经 resync 与 branch 一致，不卡 streaming                                 | ⬜   |
+| 7.1 | 停 CLI                                                      | 底栏「重连中」或「不可达」、倒计时 +「立即重连」、面板展开、**禁发**         | ✅   |
+| 7.1 | 启 CLI                                                      | 设备 SSE 恢复 →「就绪」；侧栏 Session 自动刷新；会话 error 时可自动/手动重试 | ✅   |
+| 7.1 | streaming 中杀 CLI 再启                                     | 消息经 resync 与 branch 一致，**进行中 tool/streaming 应收尾**，不卡死       | ✅   |
 | 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                          | ⬜   |
 | 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                           | ⬜   |
 | 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                                      | ⬜   |
@@ -531,14 +531,14 @@ pnpm --filter @muse-ai/web build
 | **Runtime**  | Web ↔ CLI    | 聊天 SSE/REST、Session、底栏可达、侧栏列表刷新        | Web 全局（除 `/devices` 弱提示） |
 | **Registry** | CLI → Server | 配对、endpoint、`/devices` 的 `online` / `lastSeenAt` | 主要设备页目录                   |
 
-| 项              | 原 7.1 计划                             | 实际                                                                           |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------------------ |
-| CLI 可达探测    | 30s `/health` 轮询 + `visibilitychange` | **`GET /device/events` 长连接**（30s `ping`）；断线指数退避（1s 起，上限 30s） |
-| 侧栏 Session    | SSE `session_meta_updated` 补丁         | 增加 **`session_registry_changed`** 广播 + runtime 恢复时 `requestRefresh`     |
-| `/devices` 在线 | —                                       | 保留 Server `online` 为**目录弱提示**；连接设备不再因 `online: false` 禁用     |
-| CLI 目录心跳    | —                                       | 启动立即 `online: true`；**SIGINT/SIGTERM** 上报 `online: false`；30s 周期心跳 |
+| 项              | 原 7.1 计划                             | 实际                                                                             |
+| --------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| CLI 可达探测    | 30s `/health` 轮询 + `visibilitychange` | `**GET /device/events` 长连接\*\*（30s `ping`）；断线指数退避（1s 起，上限 30s） |
+| 侧栏 Session    | SSE `session_meta_updated` 补丁         | 增加 `**session_registry_changed`\*\* 广播 + runtime 恢复时 `requestRefresh`     |
+| `/devices` 在线 | —                                       | 保留 Server `online` 为**目录弱提示**；连接设备不再因 `online: false` 禁用       |
+| CLI 目录心跳    | —                                       | 启动立即 `online: true`；**SIGINT/SIGTERM** 上报 `online: false`；30s 周期心跳   |
 
-详见 [`architecture.md`](../architecture.md)「两条连接通道」与「设备级 SSE」、`development-guide.md` Runtime vs Registry 专节。
+详见 `[architecture.md](../architecture.md)`「两条连接通道」与「设备级 SSE」、`development-guide.md` Runtime vs Registry 专节。
 
 ### 实际产出（按包）
 
@@ -614,6 +614,8 @@ Registry（与底栏无关）：
 - [ ] 提交本增补代码 + 文档的 **delivery commit**
 - [ ] 完成 [收尾 Checklist](#收尾-checklist) **B**（7.1 含设备 SSE 场景）与 **C** 连续自用
 - [ ] **E** 归档：文首 Commit、勾选「阶段完成记录」、同步 `current-phase.md` / `v0.1/README.md`
+
+**2026-06-18 联调 follow-up（7.1 第 3 项）**：streaming 中杀 CLI 再启时，原 `mergeBranchWithEphemeralTail` 会保留 `running` tool 尾部导致 UI 卡死。已改为 Session SSE / 设备恢复 resync 时 `finalizeStaleTail`：收尾未完成 tool、清除 `streaming`，允许继续发消息（待重验第 3 项）。
 
 ---
 

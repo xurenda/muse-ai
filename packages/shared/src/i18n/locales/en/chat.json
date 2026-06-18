@@ -47,6 +47,8 @@
   "errorSendFailed": "Send failed: {{message}}",
   "sseReconnecting": "Connection lost. Reconnecting…",
   "sseReconnected": "Reconnected to CLI",
+  "turnInterrupted": "Connection interrupted before the turn finished",
+  "turnInterruptedTool": "Tool did not finish (CLI restarted or disconnected)",
   "cliHealthLost": "CLI unreachable. Sending paused until it recovers…",
   "cliHealthRestored": "CLI connection restored",
   "retryConnection": "Retry",

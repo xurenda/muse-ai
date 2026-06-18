@@ -46,6 +46,8 @@
   "errorSendFailed": "发送失败：{{message}}",
   "sseReconnecting": "连接已断开，正在重新连接…",
   "sseReconnected": "已重新连接 CLI",
+  "turnInterrupted": "连接中断，上一轮未正常结束",
+  "turnInterruptedTool": "CLI 重启或断线导致工具未完成",
   "cliHealthLost": "CLI 不可达，已暂停发送，等待恢复…",
   "cliHealthRestored": "CLI 已恢复连接",
   "retryConnection": "重试",

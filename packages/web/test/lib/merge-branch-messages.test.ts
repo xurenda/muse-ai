@@ -35,4 +35,29 @@ describe('mergeBranchWithEphemeralTail', () => {
       expect(merged.at(-1)?.error).toContain('未配置 LLM Provider')
     }
   })
+
+  it('CLI 重启后 running tool 应收尾并解除 streaming 卡死', () => {
+    const current = [
+      createUserMessage('sleep', 'prompt'),
+      {
+        ...createAssistantMessage(),
+        streaming: true,
+        toolCalls: [{ toolCallId: 't1', toolName: 'sleep', args: { seconds: 30 }, status: 'running' as const }],
+      },
+    ]
+    const merged = mergeBranchWithEphemeralTail(current, [{ id: 'u1', role: 'user', text: 'sleep' }], {
+      finalizeStaleTail: true,
+      interruptedToolMessage: '工具中断',
+      interruptedTurnMessage: '连接中断',
+    })
+    expect(merged).toHaveLength(2)
+    const assistant = merged.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant') {
+      expect(assistant.streaming).toBe(false)
+      expect(assistant.error).toBe('连接中断')
+      expect(assistant.toolCalls[0]?.status).toBe('done')
+      expect(assistant.toolCalls[0]?.isError).toBe(true)
+    }
+  })
 })

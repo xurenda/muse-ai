@@ -16,9 +16,9 @@ import {
   subscribeSessionEvents,
 } from '@/api/cli-client'
 import { branchMessagesToChat } from '@/lib/branch-messages'
-import { mergeBranchWithEphemeralTail } from '@/lib/merge-branch-messages'
+import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
 import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
-import { createUserMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
+import { createUserMessage, isAssistantMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
 import { parseConnectionError, type ParsedConnectionError } from '@/lib/connection-errors'
 import type { StoredDeviceSession } from '@/lib/config'
 import { useDeviceHealth } from '@/hooks/use-device-health'
@@ -77,9 +77,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [compacting, setCompacting] = useState(false)
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const messagesRef = useRef<ChatMessage[]>([])
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
   const onSessionChangeRef = useRef(options?.onSessionChange)
   const prevDeviceReachableRef = useRef<boolean | null>(null)
+  const deviceWasUnreachableRef = useRef(false)
   const sessionAutoRetryRef = useRef(false)
   const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
 
@@ -90,6 +92,34 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const streaming = checkStreaming(messages)
   const deviceUnreachable = reachable === false
   const canSend = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable && !compacting
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  useEffect(() => {
+    if (reachable === false) {
+      deviceWasUnreachableRef.current = true
+    }
+  }, [reachable])
+
+  const mergeOptionsForResync = useCallback((): MergeBranchOptions => {
+    return {
+      interruptedToolMessage: t('turnInterruptedTool'),
+      interruptedTurnMessage: t('turnInterrupted'),
+    }
+  }, [t])
+
+  const shouldFinalizeStaleTail = useCallback((): boolean => {
+    if (deviceWasUnreachableRef.current) return true
+    const last = messagesRef.current.at(-1)
+    if (!last || !isAssistantMessage(last)) return false
+    return last.streaming || last.toolCalls.some(tool => tool.status === 'running')
+  }, [])
+
+  const clearDeviceUnreachableFlag = useCallback(() => {
+    deviceWasUnreachableRef.current = false
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -106,20 +136,25 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   )
 
   const refreshTree = useCallback(
-    async (id: string, replaceMessages = false) => {
+    async (id: string, replaceMessages = false, resyncAfterDisconnect = false) => {
       if (!deviceSession) return
       try {
         setTreeError(null)
         const tree = await getSessionTree(deviceSession.endpoint, deviceSession.accessToken, id)
         setSessionTree(tree)
         if (replaceMessages) {
-          setMessages(prev => mergeBranchWithEphemeralTail(prev, tree.branch))
+          setMessages(prev =>
+            mergeBranchWithEphemeralTail(prev, tree.branch, {
+              ...mergeOptionsForResync(),
+              finalizeStaleTail: resyncAfterDisconnect,
+            }),
+          )
         }
       } catch (error: unknown) {
         setTreeError(error instanceof Error ? error.message : String(error))
       }
     },
-    [deviceSession],
+    [deviceSession, mergeOptionsForResync],
   )
 
   useEffect(() => {
@@ -205,7 +240,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
             },
             onReconnected: () => {
               setSseStatus('connected')
-              void refreshTree(id, true)
+              const finalize = shouldFinalizeStaleTail()
+              void refreshTree(id, true, finalize)
+              clearDeviceUnreachableFlag()
               toast.success(t('sseReconnected'))
             },
           },
@@ -218,7 +255,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
       setStatus('ready')
     },
-    [deviceSession, loadSettings, refreshTree, t],
+    [deviceSession, loadSettings, refreshTree, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
   )
 
   const retryConnection = useCallback(async () => {
@@ -254,10 +291,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     }
 
     if (prev === false && reachable && status === 'ready' && sessionId) {
-      void refreshTree(sessionId, true)
+      void refreshTree(sessionId, true, true)
+      clearDeviceUnreachableFlag()
       toast.success(t('cliHealthRestored'))
     }
-  }, [reachable, refreshTree, retryConnection, routeSessionId, sessionId, status, t])
+  }, [reachable, refreshTree, retryConnection, routeSessionId, sessionId, status, t, clearDeviceUnreachableFlag])
 
   useEffect(() => {
     if (status !== 'error') {
