@@ -3,6 +3,7 @@ export {
   DEFAULT_PORTS,
   SERVER_API_PATHS,
   deviceCredentialsPath,
+  deviceEventsPath,
   sessionEventsPath,
   sessionDetailPath,
   sessionCompactPath,
@@ -83,6 +84,7 @@ export {
   type DevicePairRequest,
   type DevicePairResponse,
 } from './types/device.js'
+export { deviceSseEventSchema, formatDeviceSseData, type DeviceSseEvent } from './types/device-sse-events.js'
 export { pairInitResponseSchema, type PairInitResponse } from './types/pair.js'
 export {
   updateModelsConfigRequestSchema,

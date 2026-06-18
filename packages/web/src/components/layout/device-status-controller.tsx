@@ -13,6 +13,7 @@ function readAggregate(): DeviceAggregateStatus {
     hasDevice: state.hasDevice,
     healthReachable: state.healthReachable,
     healthChecking: state.healthChecking,
+    deviceSseStatus: state.deviceSseStatus,
     chatActive: state.chatActive,
     chatStatus: state.chatStatus,
     sseStatus: state.sseStatus,
@@ -65,7 +66,8 @@ export function DeviceStatusController() {
       }
 
       if (aggregate === 'reconnecting' && prev !== 'reconnecting') {
-        pushActivity('statusBar.activity.sseReconnecting')
+        const { deviceSseStatus } = useDeviceStatusStore.getState()
+        pushActivity(deviceSseStatus === 'reconnecting' ? 'statusBar.activity.deviceSseReconnecting' : 'statusBar.activity.sseReconnecting')
         if (sseReconnectTimerRef.current) window.clearTimeout(sseReconnectTimerRef.current)
         sseReconnectTimerRef.current = window.setTimeout(() => {
           if (readAggregate() === 'reconnecting') {
@@ -82,7 +84,10 @@ export function DeviceStatusController() {
 
       if (aggregate === 'ready' && prev !== null && prev !== 'ready' && prev !== 'checking' && prev !== 'connecting' && prev !== 'no_device') {
         if (prev === 'unreachable') pushActivity('statusBar.activity.healthRestored')
-        if (prev === 'reconnecting') pushActivity('statusBar.activity.sseReconnected')
+        if (prev === 'reconnecting') {
+          const { deviceSseStatus } = useDeviceStatusStore.getState()
+          pushActivity(deviceSseStatus === 'connected' ? 'statusBar.activity.deviceSseReconnected' : 'statusBar.activity.sseReconnected')
+        }
         if (prev === 'session_disconnected') pushActivity('statusBar.activity.connectRestored')
       }
 

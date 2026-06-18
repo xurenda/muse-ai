@@ -1,17 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { subscribeSessionEvents } from '@/api/cli-client'
+import { parseDeviceSseBuffer, subscribeDeviceEvents, subscribeSessionEvents } from '@/api/cli-client'
 
-function sseResponse(chunks: string[]): Response {
+function sseResponse(chunks: string[], options?: { hang?: boolean }): Response {
   const encoder = new TextEncoder()
-  let index = 0
   const stream = new ReadableStream<Uint8Array>({
-    pull(controller) {
-      if (index >= chunks.length) {
-        controller.close()
-        return
+    start(controller) {
+      for (const chunk of chunks) {
+        controller.enqueue(encoder.encode(chunk))
       }
-      controller.enqueue(encoder.encode(chunks[index]))
-      index += 1
+      if (!options?.hang) {
+        controller.close()
+      }
     },
   })
   return new Response(stream, { status: 200 })
@@ -65,5 +64,37 @@ describe('subscribeSessionEvents', () => {
 
     abort.abort()
     await subscription.catch(() => {})
+  })
+})
+
+describe('parseDeviceSseBuffer', () => {
+  it('应解析设备 SSE 行并保留 remainder', () => {
+    const { events, remainder } = parseDeviceSseBuffer('data: {"type":"ping"}\npartial')
+    expect(events).toEqual([{ type: 'ping' }])
+    expect(remainder).toBe('partial')
+  })
+})
+
+describe('subscribeDeviceEvents', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  it('首次连接应触发 onConnecting 与 onConnected', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse(['data: {"type":"connected","endpoint":"http://127.0.0.1:65433","service":"cli"}\n\n'], { hang: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const onConnecting = vi.fn()
+    const onConnected = vi.fn()
+    const abort = new AbortController()
+
+    subscribeDeviceEvents('http://127.0.0.1:65433', 'token', { onEvent: () => {}, onConnecting, onConnected }, abort.signal)
+
+    await vi.waitFor(() => expect(onConnecting).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(onConnected).toHaveBeenCalledTimes(1))
+    abort.abort()
   })
 })

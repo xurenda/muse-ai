@@ -24,7 +24,9 @@ import { SessionSettingsError } from './session-settings-service.js'
 import { SessionStoreError } from '@muse-ai/core'
 import { createCliAuthMiddleware } from './auth-middleware.js'
 import { createSseSubscriber } from './event-hub.js'
-import { startDeviceHeartbeat } from './heartbeat.js'
+import { createDeviceSseSubscriber, publishSessionRegistryChanged } from './device-event-hub.js'
+import { buildCliEndpoint } from '../backend/client.js'
+import { startDeviceRegistryHeartbeat } from './heartbeat.js'
 import type { CliDaemonDeps } from './deps.js'
 import { allToolNames } from '@/tools/index.js'
 
@@ -33,6 +35,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value)
 }
+
+const DEVICE_SSE_PING_MS = 30_000
 
 export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
   const app = new Hono()
@@ -51,6 +55,38 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     const body = createHealthResponse('cli', '0.0.0')
     healthResponseSchema.parse(body)
     return c.json(body)
+  })
+
+  app.get(CLI_API_PATHS.DEVICE_EVENTS, requireAuth, c => {
+    const endpoint = buildCliEndpoint(config.host, config.port)
+
+    return streamSSE(c, async stream => {
+      await stream.writeSSE({
+        data: JSON.stringify({
+          type: 'connected',
+          endpoint,
+          service: 'cli',
+          version: '0.0.0',
+        }),
+      })
+
+      const pingTimer = setInterval(() => {
+        void stream.writeSSE({ data: JSON.stringify({ type: 'ping' }) })
+      }, DEVICE_SSE_PING_MS)
+
+      const unsubscribe = deps.deviceEventHub.subscribe(
+        createDeviceSseSubscriber(c.req.raw.signal, async event => {
+          await stream.writeSSE({ data: JSON.stringify(event) })
+        }),
+      )
+
+      await new Promise<void>(resolve => {
+        c.req.raw.signal.addEventListener('abort', () => resolve(), { once: true })
+      })
+
+      clearInterval(pingTimer)
+      unsubscribe()
+    })
   })
 
   app.get(CLI_API_PATHS.AGENTS, requireAuth, async c => {
@@ -112,6 +148,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
 
     const session = await deps.sessionStore.create({ ...parsed.data, agentId })
     sessionMetaSchema.parse(session)
+    await publishSessionRegistryChanged(deps.deviceEventHub, 'created')
     return c.json({ session }, 201)
   })
 
@@ -130,6 +167,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
       return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
     }
     sessionMetaSchema.parse(updated)
+    await publishSessionRegistryChanged(deps.deviceEventHub, 'renamed')
     return c.json({ session: updated })
   })
 
@@ -146,6 +184,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
       return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
     }
     deps.chatService.evictRuntime(sessionId)
+    await publishSessionRegistryChanged(deps.deviceEventHub, 'deleted')
     return c.json({ deleted: true, sessionId })
   })
 
@@ -326,18 +365,46 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
 export function startCliServer(config: CliConfig, deps: CliDaemonDeps): void {
   const app = createCliApp(config, deps)
 
+  let stopRegistryHeartbeat: (() => Promise<void>) | undefined
+
   if (deps.authState.deviceToken) {
-    startDeviceHeartbeat(config)
-    console.log('[muse] 设备已配对，心跳已启动')
+    stopRegistryHeartbeat = startDeviceRegistryHeartbeat(config)
+    console.log('[muse] 设备已配对，目录心跳已启动（启动时已上报 online）')
   } else {
     console.warn('[muse] 未配对设备：CLI API 暂不强制鉴权；执行 muse pair <配对码> 后启用')
   }
 
-  serve({
+  const server = serve({
     fetch: app.fetch,
     hostname: config.host,
     port: config.port,
   })
 
   console.log(`muse cli daemon listening on http://${config.host}:${config.port}`)
+
+  let shuttingDown = false
+
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return
+    shuttingDown = true
+    console.log(`[muse] 收到 ${signal}，正在关闭…`)
+
+    if (stopRegistryHeartbeat) {
+      await deps.deviceEventHub.publishShuttingDown()
+      await stopRegistryHeartbeat()
+    }
+
+    if (server && typeof server.close === 'function') {
+      server.close(() => {
+        process.exit(0)
+      })
+      setTimeout(() => process.exit(0), 3_000).unref()
+      return
+    }
+
+    process.exit(0)
+  }
+
+  process.once('SIGINT', () => void shutdown('SIGINT'))
+  process.once('SIGTERM', () => void shutdown('SIGTERM'))
 }

@@ -22,14 +22,17 @@ export class BackendClient {
     return devicePairResponseSchema.parse(body)
   }
 
-  async heartbeat(deviceToken: string, endpoint?: string): Promise<void> {
+  async heartbeat(deviceToken: string, options?: { endpoint?: string; online?: boolean }): Promise<void> {
     const res = await fetch(`${this.baseUrl}${SERVER_API_PATHS.DEVICES_HEARTBEAT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${deviceToken}`,
       },
-      body: JSON.stringify({ endpoint, online: true }),
+      body: JSON.stringify({
+        endpoint: options?.endpoint,
+        online: options?.online ?? true,
+      }),
     })
     if (!res.ok) {
       throw new BackendClientError('heartbeat_failed', `心跳失败: ${res.status}`)

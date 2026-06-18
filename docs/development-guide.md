@@ -44,10 +44,19 @@ server ──► shared
 MuseAI 本地开发需同时运行 **Server、CLI、Web** 三个进程。Web 聊天 **直连 CLI**（SSE/REST），LLM 请求 **CLI → Server → Provider**。
 
 ```
-浏览器 ──SSE/HTTP──► CLI (65433)
-浏览器 ──HTTP──────► Server (65435)     登录、设备、Provider
-CLI ────HTTP──────► Server (65435)     LLM 代理、心跳
+浏览器 ──SSE/HTTP──► CLI (65433)          Agent runtime（底栏、聊天、Session）
+浏览器 ──HTTP──────► Server (65435)     登录、Provider、/devices
+CLI ────HTTP──────► Server (65435)     LLM 代理、**设备目录心跳**（非 Web 底栏）
 ```
+
+### Runtime vs Registry（两条通道）
+
+| 通道                         | 说明                                                                                          |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| **Web ↔ CLI（Runtime）**     | 聊天、底栏状态、Session 列表；Web 长连 `GET /device/events` + Session SSE                     |
+| **CLI → Server（Registry）** | 仅设备目录：`/devices` 配对列表、`online`、`endpoint` 更新；30s 心跳，**启动/退出各上报一次** |
+
+底栏「CLI 可达」来自 **设备 SSE**（非 `/health` 轮询），**不**等 Server 心跳。`/devices` 的「目录在线」仅为 Server 最近是否收到 CLI 注册。
 
 ### 1. 安装与配置
 
@@ -89,7 +98,7 @@ cd packages/server && docker compose up -d && cd ../..
 4. 「Provider 设置」配置 LLM API Key
 5. 在 Web 选择该设备，进入聊天
 
-配对成功后 CLI 会写入 `~/.muse/config.json`（device token、backend URL），并启动心跳上报 endpoint。
+配对成功后 CLI 会写入 `~/.muse/config.json`（device token、backend URL），并向 Server 发送**目录心跳**（启动立即 `online`，之后每 30s，退出时 `online: false`）。
 
 ### 5. 健康检查
 
@@ -230,17 +239,17 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 
 ## 常见排错
 
-| 现象                              | 可能原因                                      | 处理                                                       |
-| --------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
-| Web 底栏「CLI 不可达」            | CLI 未启动或防火墙拦截                        | `curl CLI/health`；检查端口与防火墙                        |
-| health 通过但「会话断开」         | SSE 订阅失败或 endpoint 错误                  | 设备页看 endpoint；是否为 `127.0.0.1` 代填；点底栏「重试」 |
-| 配对成功但聊天连不上              | endpoint 是内网地址，浏览器在另一网络         | 将 `MUSE_CLI_HOST` 设为浏览器可达 IP 后重新 pair           |
-| CORS 错误（控制台）               | `MUSE_CORS_ORIGINS` 未含 Web origin           | CLI / Server 的 CORS 都加上浏览器地址栏 origin             |
-| 改协议 / schema 后类型报错        | shared 未 rebuild                             | `pnpm --filter @muse-ai/shared build`，重启 cli / web      |
-| `pnpm dev:web` 报 shared 导入失败 | 首次 clone 未 build                           | `pnpm --filter @muse-ai/shared build`                      |
-| Server 启动失败                   | 缺 `JWT_SECRET` / `ENCRYPTION_KEY` 或 DB 未起 | 检查 `packages/server/.env` 与 `docker compose ps`         |
-| 发消息 401                        | 未 pair 或 device token 失效                  | `pnpm muse pair <码>`；Web 重新选设备                      |
-| Provider 报错                     | Server 未配置 API Key                         | Web「Provider 设置」                                       |
+| 现象                              | 可能原因                                      | 处理                                                    |
+| --------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| Web 底栏「CLI 不可达」            | CLI 未启动或防火墙拦截                        | 确认 CLI 运行；检查 endpoint 与防火墙；底栏「立即重连」 |
+| 设备 SSE 断开但会话仍在           | 仅设备长连接断线                              | 等待自动重连或点「立即重连」；Session SSE 独立          |
+| 配对成功但聊天连不上              | endpoint 是内网地址，浏览器在另一网络         | 将 `MUSE_CLI_HOST` 设为浏览器可达 IP 后重新 pair        |
+| CORS 错误（控制台）               | `MUSE_CORS_ORIGINS` 未含 Web origin           | CLI / Server 的 CORS 都加上浏览器地址栏 origin          |
+| 改协议 / schema 后类型报错        | shared 未 rebuild                             | `pnpm --filter @muse-ai/shared build`，重启 cli / web   |
+| `pnpm dev:web` 报 shared 导入失败 | 首次 clone 未 build                           | `pnpm --filter @muse-ai/shared build`                   |
+| Server 启动失败                   | 缺 `JWT_SECRET` / `ENCRYPTION_KEY` 或 DB 未起 | 检查 `packages/server/.env` 与 `docker compose ps`      |
+| 发消息 401                        | 未 pair 或 device token 失效                  | `pnpm muse pair <码>`；Web 重新选设备                   |
+| Provider 报错                     | Server 未配置 API Key                         | Web「Provider 设置」                                    |
 
 断线重连、Steer、Compact、Token 统计等行为见 [phase-7.md](./v0.1/phase-7.md)。
 

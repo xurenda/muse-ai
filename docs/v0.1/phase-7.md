@@ -66,8 +66,8 @@
 - [x] **重连 resync**：SSE 重连成功后 `getSessionTree` + `mergeBranchWithEphemeralTail`，修复断线 delta 丢失与 streaming 卡死
 - [x] **初始/会话连接失败**：底栏面板内 destructive 文案 + **「重试」**（`checkCliHealth` + `connectSession`）；CLI 恢复或 health 已通过时会话仍 error 时 **自动重试**
 - [x] **错误 i18n**：`connection-errors.ts` 规范 `cli_unreachable` / `sse_subscribe_failed` / `unknown`；文案走 `chat` 命名空间
-- [x] **设备 health**：`DeviceHealthProvider` 30s 轮询 + `visibilitychange` 聚焦探测；**health 不可达时立即禁发**（`canSend`）
-- [x] **设备状态 UI**：底栏 + 展开面板（endpoint、健康检查、SSE、最近活动、管理设备链接）；**CLI 不可达**与**健康通过但会话断开**分开展示（`unreachable` vs `session_disconnected`）
+- [x] **设备 health**：`DeviceHealthProvider` 订阅 CLI `GET /device/events`（设备 SSE）；指数退避重连 + 倒计时 +「立即重连」；**不可达时禁发**（`canSend`）
+- [x] **设备状态 UI**：底栏 + 展开面板（endpoint / 设备 SSE / Session SSE / 错误与重试 / 最近活动）；设备 SSE 重连时展示倒计时与「立即重连」
 - [x] **未连设备引导**：`/chat` 无设备时 `no-device-guide` 步骤化 CTA
 - [x] **侧栏 Session 列表**：`session-list-store` 的 `refreshNonce` / `requestRefresh`；去除 chat hook 内重复 `listCliSessions`
 
@@ -104,23 +104,23 @@
 - [x] **`packages/cli/.env.example`**（或 README 表格）列出 CLI 环境变量
 - [x] **根 `README.md`**：链到开发指南；远程场景摘要
 - [x] **`docs/README.md`**：索引更新为 phase-0 ~ **phase-7**；当前阶段指向 `current-phase.md`
-- [ ] **阶段完成记录**：本文件与 `docs/v0.1/` 各 phase 验收节在 **v0.1 整体交付**时补齐（7.5 产出已写入本文）
+- [x] **阶段完成记录（增补）**：Runtime/Registry 两通道 + 设备 SSE 已写入本文 [完成记录](#完成记录)（2026-06-18）；**v0.1 整体关闭**时补 Commit 与 B/C 勾选
 
 ---
 
 ## 设计决策（实现）
 
-| 项                | 决策                                      | 说明                                                                                                                       |
-| ----------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| SSE 传输          | Web 直连 CLI，fetch 流 + 客户端重连       | 与 architecture 一致；重连后以 **tree branch** 为真相源 resync                                                             |
-| 设备状态展示      | **AppLayout 全宽底栏**（含侧栏列）        | 替代 Header 设备按钮与聊天顶栏连接条；点击展开详情面板                                                                     |
-| 聚合状态          | health 优先，再区分会话/SSE               | `unreachable`（CLI 不可达）与 `session_disconnected`（health 通过但 SSE/会话失败）分开，避免「健康检查通过仍显示连接失败」 |
-| 面板自动展开      | 失败立即展开；SSE 重连 3s 后展开          | 恢复 `ready` 后 2s 自动收起（仅自动展开时；用户手动展开不强制收）                                                          |
-| Harness 生命周期  | **turn 结束即释放**；Session 删除时 evict | steer 仅需 turn 进行中同一实例；对齐 pi 语义，HTTP daemon 不跨 idle 常驻（pi REPL 因单进程复用 Agent）                     |
-| Compact 触发      | 手动 API + 自动 overflow                  | 自动失败时须 SSE `error` + 可选 UI 提示；手动可带 customInstructions                                                       |
-| Token             | turn_end 携带当轮 usage，Session 累加     | 不做账号级账单；仅自用观测                                                                                                 |
-| 远程 endpoint     | 用户/运维配置公网或 tunnel URL            | `buildCliEndpoint` 行为在文档中明确；必要时支持 pair 时覆盖 endpoint                                                       |
-| follow_up 跨 HTTP | 与 steer 同批交付                         | 依赖 7.2 turn 进行中 runtime                                                                                               |
+| 项                | 决策                                      | 说明                                                                                                                                            |
+| ----------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| SSE 传输          | Web 直连 CLI，fetch 流 + 客户端重连       | 与 architecture 一致；重连后以 **tree branch** 为真相源 resync                                                                                  |
+| 设备状态展示      | **AppLayout 全宽底栏**（含侧栏列）        | 替代 Header 设备按钮与聊天顶栏连接条；点击展开详情面板                                                                                          |
+| 聚合状态          | 设备 SSE 优先，再区分会话/SSE             | `deviceSseStatus === reconnecting` 优先于 `unreachable`；`session_disconnected` 表示设备已连但 Session SSE/会话失败（见 [完成记录](#完成记录)） |
+| 面板自动展开      | 失败立即展开；SSE 重连 3s 后展开          | 恢复 `ready` 后 2s 自动收起（仅自动展开时；用户手动展开不强制收）                                                                               |
+| Harness 生命周期  | **turn 结束即释放**；Session 删除时 evict | steer 仅需 turn 进行中同一实例；对齐 pi 语义，HTTP daemon 不跨 idle 常驻（pi REPL 因单进程复用 Agent）                                          |
+| Compact 触发      | 手动 API + 自动 overflow                  | 自动失败时须 SSE `error` + 可选 UI 提示；手动可带 customInstructions                                                                            |
+| Token             | turn_end 携带当轮 usage，Session 累加     | 不做账号级账单；仅自用观测                                                                                                                      |
+| 远程 endpoint     | 用户/运维配置公网或 tunnel URL            | `buildCliEndpoint` 行为在文档中明确；必要时支持 pair 时覆盖 endpoint                                                                            |
+| follow_up 跨 HTTP | 与 steer 同批交付                         | 依赖 7.2 turn 进行中 runtime                                                                                                                    |
 
 ---
 
@@ -148,7 +148,7 @@
 | 文件                            | 说明                                                                                                                                                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `hooks/use-chat-session.ts`     | 导出 `sseStatus`、`canSend`、`retryConnection`；SSE 回调更新连接态；重连/恢复后 `refreshTree` resync + toast；**health 不可达禁发**；CLI 恢复或 health 已通过时会话 error **自动重试** |
-| `hooks/use-device-health.tsx`   | `DeviceHealthProvider`：30s 轮询 + `visibilitychange` 调用 `checkCliHealth`                                                                                                            |
+| `hooks/use-device-health.tsx`   | `DeviceHealthProvider`：订阅 CLI **`/device/events`**（见 [完成记录](#完成记录) 增补）；`visibilitychange` 时 `retryNow`                                                               |
 | `routes/guards.tsx`             | Protected 路由包裹 `DeviceHealthProvider`                                                                                                                                              |
 | `stores/session-list-store.ts`  | `refreshNonce` / `requestRefresh`；SSE `session_meta_updated` 仍走 `patchSession`                                                                                                      |
 | `stores/device-status-store.ts` | 设备信息、health、chat/SSE 态、面板开闭、最近活动、重试 handler 注册                                                                                                                   |
@@ -408,20 +408,20 @@ _（阶段 7 全部子阶段完成后，在文首填完成日期与 Commit。）
 
 启动：`pnpm dev:server` + `pnpm dev:cli` + `pnpm dev:web`，浏览器 **http://127.0.0.1:65434**，已配对设备 + Provider Key。
 
-| 项  | 场景                                                        | 预期                                                               | 状态 |
-| --- | ----------------------------------------------------------- | ------------------------------------------------------------------ | ---- |
-| 7.1 | 停 CLI                                                      | 底栏「不可达」、面板展开、**禁发**                                 | ⬜   |
-| 7.1 | 启 CLI                                                      | 「会话断开」或自动重连 → 「就绪」；health 通过时不误报「连接失败」 | ⬜   |
-| 7.1 | streaming 中杀 CLI 再启                                     | 消息经 resync 与 branch 一致，不卡 streaming                       | ⬜   |
-| 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                | ⬜   |
-| 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                 | ⬜   |
-| 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                            | ⬜   |
-| 7.3 | Session 栏「压缩上下文」                                    | compact 中 disabled；完成后消息变短 + toast                        | ⬜   |
-| 7.3 | 长对话 / 真实 overflow                                      | 自动 compact + 提示（或 SSE error）                                | ⬜   |
-| 7.4 | 多轮对话                                                    | ChatSessionBar footer token 累计随轮次增加                         | ⬜   |
-| 7.4 | 刷新页 / 重启 CLI                                           | footer 与 JSONL 汇总一致                                           | ⬜   |
-| 7.5 | 按 [development-guide.md](../development-guide.md) 从零启动 | 新 clone 可跟文档跑通三进程                                        | ⬜   |
-| 7.5 | LAN IP + CORS（可选）                                       | endpoint 为 LAN IP 非 `127.0.0.1`；Web 可聊天                      | ⬜   |
+| 项  | 场景                                                        | 预期                                                                         | 状态 |
+| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- | ---- |
+| 7.1 | 停 CLI                                                      | 底栏「重连中」或「不可达」、倒计时 +「立即重连」、面板展开、**禁发**         | ⬜   |
+| 7.1 | 启 CLI                                                      | 设备 SSE 恢复 →「就绪」；侧栏 Session 自动刷新；会话 error 时可自动/手动重试 | ⬜   |
+| 7.1 | streaming 中杀 CLI 再启                                     | 消息经 resync 与 branch 一致，不卡 streaming                                 | ⬜   |
+| 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                          | ⬜   |
+| 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                           | ⬜   |
+| 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                                      | ⬜   |
+| 7.3 | Session 栏「压缩上下文」                                    | compact 中 disabled；完成后消息变短 + toast                                  | ⬜   |
+| 7.3 | 长对话 / 真实 overflow                                      | 自动 compact + 提示（或 SSE error）                                          | ⬜   |
+| 7.4 | 多轮对话                                                    | ChatSessionBar footer token 累计随轮次增加                                   | ⬜   |
+| 7.4 | 刷新页 / 重启 CLI                                           | footer 与 JSONL 汇总一致                                                     | ⬜   |
+| 7.5 | 按 [development-guide.md](../development-guide.md) 从零启动 | 新 clone 可跟文档跑通三进程                                                  | ⬜   |
+| 7.5 | LAN IP + CORS（可选）                                       | endpoint 为 LAN IP 非 `127.0.0.1`；Web 可聊天                                | ⬜   |
 
 ### C. 连续自用（阶段总目标）
 
@@ -512,7 +512,108 @@ pnpm --filter @muse-ai/web build
 
 ## 完成记录
 
-_（阶段完成后在此填写：Commit、验收结果摘要、与计划偏差说明。）_
+**2026-06-18 — 7.1 手动联调增补：Runtime / Registry 两通道 + 设备级 SSE**  
+**Commit**：待提交（基于 `a226a3a` 之后；含本记录所描述的全部代码与文档变更）
+
+### 背景
+
+7.1–7.5 代码交付后进行 **B. 手动联调**，暴露两类问题：
+
+1. **侧栏 Session 列表**在 CLI 恢复后仍 `Failed to fetch`（需在 runtime 恢复时主动 refresh）。
+2. **底栏「CLI 可达」**原用 `/health` 轮询，与架构上「Web↔CLI runtime / CLI→Server registry」分工不清；且无法推送 Session 目录变更。
+
+据此实施 **两通道重构**：Registry 只管 Server 设备目录；Runtime 由 Web 长连 CLI **设备级 SSE**，与 Session 聊天 SSE 分离。
+
+### 架构决策（增量）
+
+| 通道         | 路径         | 用途                                                  | 消费方                           |
+| ------------ | ------------ | ----------------------------------------------------- | -------------------------------- |
+| **Runtime**  | Web ↔ CLI    | 聊天 SSE/REST、Session、底栏可达、侧栏列表刷新        | Web 全局（除 `/devices` 弱提示） |
+| **Registry** | CLI → Server | 配对、endpoint、`/devices` 的 `online` / `lastSeenAt` | 主要设备页目录                   |
+
+| 项              | 原 7.1 计划                             | 实际                                                                           |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+| CLI 可达探测    | 30s `/health` 轮询 + `visibilitychange` | **`GET /device/events` 长连接**（30s `ping`）；断线指数退避（1s 起，上限 30s） |
+| 侧栏 Session    | SSE `session_meta_updated` 补丁         | 增加 **`session_registry_changed`** 广播 + runtime 恢复时 `requestRefresh`     |
+| `/devices` 在线 | —                                       | 保留 Server `online` 为**目录弱提示**；连接设备不再因 `online: false` 禁用     |
+| CLI 目录心跳    | —                                       | 启动立即 `online: true`；**SIGINT/SIGTERM** 上报 `online: false`；30s 周期心跳 |
+
+详见 [`architecture.md`](../architecture.md)「两条连接通道」与「设备级 SSE」、`development-guide.md` Runtime vs Registry 专节。
+
+### 实际产出（按包）
+
+#### `packages/shared`
+
+| 项                           | 说明                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `types/device-sse-events.ts` | `connected` / `ping` / `shutting_down` / `session_registry_changed`                                      |
+| `constants/api-paths.ts`     | `DEVICE_EVENTS`、`deviceEventsPath()`                                                                    |
+| `i18n/layout`                | `deviceReconnectIn`、`deviceReconnectNow`；activity：`deviceSseReconnecting` / `deviceSseReconnected` 等 |
+| `i18n/device`                | 目录在线/离线弱提示文案                                                                                  |
+
+#### `packages/cli`
+
+| 文件                         | 说明                                                                                           |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `daemon/device-event-hub.ts` | 设备 SSE 多订阅者广播                                                                          |
+| `daemon/server.ts`           | `GET /device/events`；Session 增删改发 `session_registry_changed`；shutdown 前 `shutting_down` |
+| `daemon/heartbeat.ts`        | `startDeviceRegistryHeartbeat`：启停各报 `online` + 30s 心跳                                   |
+| `backend/client.ts`          | `heartbeat(token, { endpoint?, online? })`                                                     |
+| `daemon/deps.ts`             | 注入 `deviceEventHub`                                                                          |
+
+#### `packages/web`
+
+| 文件                                             | 说明                                                                 |
+| ------------------------------------------------ | -------------------------------------------------------------------- |
+| `api/cli-client.ts`                              | `parseDeviceSseBuffer`、`subscribeDeviceEvents`（退避 + `retryNow`） |
+| `lib/sse-reconnect.ts`                           | `computeSseBackoffMs`、`waitForSseRetry`（倒计时 + wake）            |
+| `hooks/use-device-health.tsx`                    | 由 health 轮询改为设备 SSE 订阅；`visibilitychange` 时 `retryNow`    |
+| `hooks/use-session-list.ts`                      | `reachable` false→true 时 `requestRefresh`                           |
+| `lib/device-aggregate-status.ts`                 | 纳入 `deviceSseStatus`；设备 SSE `reconnecting` 优先于 `unreachable` |
+| `stores/device-status-store.ts`                  | `deviceSseStatus`、`deviceReconnectInMs`、`invokeDeviceRetry`        |
+| `components/layout/device-status-bar.tsx`        | 重连倒计时 +「立即重连」                                             |
+| `components/layout/device-status-controller.tsx` | 区分设备 SSE / Session SSE 活动日志                                  |
+| `pages/devices-page.tsx`                         | 去掉「目录离线」禁用连接；改为弱提示                                 |
+
+### 行为摘要（7.1 联调预期，更新后）
+
+```text
+底栏（聚合）：
+  device SSE reconnecting → 「重连中」+ 面板内「Xs 后重连」+「立即重连」
+  device SSE disconnected / 不可达 → 「不可达」、禁发
+  session SSE reconnecting（设备已连）→ 「重连中」（Session 通道）
+  session_disconnected → health/设备 SSE 通过但会话失败，面板内会话「重试」
+  ready → 就绪
+
+设备 SSE 事件：
+  connected → 底栏就绪；ping 保活
+  session_registry_changed → 侧栏 Session 列表 refresh
+  shutting_down → 标记不可达，等待重连
+
+Registry（与底栏无关）：
+  CLI 心跳 → Server /devices online；设备页仅作目录参考
+```
+
+### 自动化验收（本增补）
+
+- `pnpm --filter @muse-ai/shared build` — 通过
+- `pnpm --filter @muse-ai/cli build` — 通过
+- `pnpm --filter @muse-ai/web typecheck` — 通过
+- 相关单测子集 — **32 passed**（`device-event-hub`、`heartbeat`、`device-aggregate-status`、`sse-reconnect`、`cli-client-sse`、`api-paths`）
+
+### 与计划偏差
+
+| 项          | 说明                                                                                           |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| health 轮询 | **已替换**为设备 SSE；`/health` 仍保留于 CLI，供 `checkCliHealth` 等偶发探测，**不再驱动底栏** |
+| Tab 关闭    | 设备 SSE 随 Tab 断开；新 Tab 新建连接即可（**不**保留 health 轮询兜底）                        |
+| 阶段状态    | 7.1–7.5 任务清单不变；本增补为 **7.1 手动联调 blocker 修复**，阶段 7 整体仍待 **B/C/E** 收尾   |
+
+### 待办（阶段关闭前）
+
+- [ ] 提交本增补代码 + 文档的 **delivery commit**
+- [ ] 完成 [收尾 Checklist](#收尾-checklist) **B**（7.1 含设备 SSE 场景）与 **C** 连续自用
+- [ ] **E** 归档：文首 Commit、勾选「阶段完成记录」、同步 `current-phase.md` / `v0.1/README.md`
 
 ---
 

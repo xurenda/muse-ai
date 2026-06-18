@@ -62,7 +62,7 @@
       "title": "设备状态",
       "noDeviceTitle": "未选择设备",
       "endpoint": "Endpoint",
-      "health": "健康检查",
+      "health": "CLI 可达",
       "sse": "事件流 (SSE)",
       "healthOk": "通过",
       "healthFail": "失败",
@@ -74,11 +74,16 @@
       "sseDisconnected": "已断开",
       "sseIdle": "—",
       "recentActivity": "最近活动",
-      "manageDevices": "管理设备"
+      "manageDevices": "管理设备",
+      "deviceReconnectIn": "{{seconds}}s 后重连",
+      "deviceReconnectNow": "立即重连"
     },
     "activity": {
-      "healthLost": "CLI 健康检查失败",
-      "healthRestored": "CLI 已恢复可达",
+      "healthLost": "CLI 不可达",
+      "healthRestored": "CLI 已恢复连接",
+      "deviceSseReconnecting": "设备 SSE 开始重连",
+      "deviceSseReconnected": "设备 SSE 已重新连接",
+      "deviceShuttingDown": "CLI 正在关闭",
       "sseReconnecting": "SSE 开始重连",
       "sseReconnected": "SSE 已重新连接",
       "connectFailed": "会话连接失败",

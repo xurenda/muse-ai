@@ -8,10 +8,12 @@ import { SessionTitleService } from './session-title-service.js'
 import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
 import { resolveBackendUrl } from '../backend/llm-auth.js'
 import { SessionEventHub } from './event-hub.js'
+import { DeviceEventHub } from './device-event-hub.js'
 
 export interface CliDaemonDeps {
   sessionStore: MuseSessionStore
   eventHub: SessionEventHub
+  deviceEventHub: DeviceEventHub
   chatService: ChatService
   sessionSettingsService: SessionSettingsService
   agentRegistry: MuseAgentRegistry
@@ -50,6 +52,7 @@ export async function createCliDaemonDeps(options?: {
 
   const agentRegistry = new MuseAgentRegistry({ roots: assetRoots, cwd })
   const eventHub = new SessionEventHub()
+  const deviceEventHub = new DeviceEventHub()
 
   const resolveBackendAuth = async () => {
     try {
@@ -87,5 +90,5 @@ export async function createCliDaemonDeps(options?: {
     authState = {}
   }
 
-  return { sessionStore, eventHub, chatService, sessionSettingsService, agentRegistry, resolveDefaultAgentId, authState }
+  return { sessionStore, eventHub, deviceEventHub, chatService, sessionSettingsService, agentRegistry, resolveDefaultAgentId, authState }
 }

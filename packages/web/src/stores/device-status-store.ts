@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ChatSessionStatus, SseConnectionStatus } from '@/hooks/use-chat-session'
 import type { ParsedConnectionError } from '@/lib/connection-errors'
+import type { DeviceSseStatus } from '@/lib/device-aggregate-status'
 
 const MAX_ACTIVITIES = 20
 
@@ -18,12 +19,16 @@ interface ChatStatePatch {
   connectionError?: ParsedConnectionError | null
 }
 
+export type { DeviceSseStatus }
+
 interface DeviceStatusStore {
   deviceName: string | null
   deviceEndpoint: string | null
   hasDevice: boolean
   healthReachable: boolean | null
   healthChecking: boolean
+  deviceSseStatus: DeviceSseStatus
+  deviceReconnectInMs: number | null
   chatActive: boolean
   chatStatus: ChatSessionStatus
   sseStatus: SseConnectionStatus
@@ -33,16 +38,20 @@ interface DeviceStatusStore {
   retryInProgress: boolean
   activities: DeviceStatusActivity[]
   retryHandler: (() => Promise<void>) | null
+  deviceRetryHandler: (() => Promise<void>) | null
   setDeviceInfo: (info: { hasDevice: boolean; deviceName: string | null; deviceEndpoint: string | null }) => void
   setHealth: (reachable: boolean | null, checking: boolean) => void
+  setDeviceSseState: (patch: { status: DeviceSseStatus; reconnectInMs: number | null }) => void
   setChatState: (patch: ChatStatePatch) => void
   resetChatState: () => void
   registerRetryHandler: (handler: (() => Promise<void>) | null) => void
+  registerDeviceRetryHandler: (handler: (() => Promise<void>) | null) => void
   openPanel: (byUser?: boolean) => void
   closePanel: () => void
   togglePanel: () => void
   pushActivity: (messageKey: string, messageParams?: Record<string, string>) => void
   invokeRetry: () => Promise<void>
+  invokeDeviceRetry: () => Promise<void>
 }
 
 let activityCounter = 0
@@ -53,6 +62,8 @@ export const useDeviceStatusStore = create<DeviceStatusStore>((set, get) => ({
   hasDevice: false,
   healthReachable: null,
   healthChecking: false,
+  deviceSseStatus: 'idle',
+  deviceReconnectInMs: null,
   chatActive: false,
   chatStatus: 'idle',
   sseStatus: 'idle',
@@ -62,10 +73,13 @@ export const useDeviceStatusStore = create<DeviceStatusStore>((set, get) => ({
   retryInProgress: false,
   activities: [],
   retryHandler: null,
+  deviceRetryHandler: null,
 
   setDeviceInfo: info => set(info),
 
   setHealth: (reachable, checking) => set({ healthReachable: reachable, healthChecking: checking }),
+
+  setDeviceSseState: patch => set({ deviceSseStatus: patch.status, deviceReconnectInMs: patch.reconnectInMs }),
 
   setChatState: patch => set(patch),
 
@@ -78,6 +92,8 @@ export const useDeviceStatusStore = create<DeviceStatusStore>((set, get) => ({
     }),
 
   registerRetryHandler: handler => set({ retryHandler: handler }),
+
+  registerDeviceRetryHandler: handler => set({ deviceRetryHandler: handler }),
 
   openPanel: (byUser = false) =>
     set({
@@ -115,6 +131,17 @@ export const useDeviceStatusStore = create<DeviceStatusStore>((set, get) => ({
     set({ retryInProgress: true })
     try {
       await retryHandler()
+    } finally {
+      set({ retryInProgress: false })
+    }
+  },
+
+  invokeDeviceRetry: async () => {
+    const { deviceRetryHandler } = get()
+    if (!deviceRetryHandler) return
+    set({ retryInProgress: true })
+    try {
+      await deviceRetryHandler()
     } finally {
       set({ retryInProgress: false })
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, deviceCredentialsPath, sessionEventsPath } from '@/constants/api-paths.js'
+import { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, deviceCredentialsPath, deviceEventsPath, sessionEventsPath } from '@/constants/api-paths.js'
 import { createHealthResponse } from '@/types/health.js'
 import { formatSseData, museSseEventSchema } from '@/types/sse-events.js'
 import { deviceSchema } from '@/types/device.js'
@@ -19,6 +19,11 @@ describe('api-paths', () => {
   it('deviceCredentialsPath 应生成设备凭证路径', () => {
     const id = '550e8400-e29b-41d4-a716-446655440000'
     expect(deviceCredentialsPath(id)).toBe(`/devices/${id}/credentials`)
+  })
+
+  it('deviceEventsPath 应生成设备级 SSE 路径', () => {
+    expect(deviceEventsPath()).toBe('/device/events')
+    expect(CLI_API_PATHS.DEVICE_EVENTS).toBe('/device/events')
   })
 
   it('默认端口应符合架构约定', () => {

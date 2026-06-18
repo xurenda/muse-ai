@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { SessionMeta } from '@muse-ai/shared'
 import { listCliSessions } from '@/api/cli-client'
 import { useAuth } from '@/hooks/use-auth'
+import { useDeviceHealth } from '@/hooks/use-device-health'
 import { mergeSessionList } from '@/lib/merge-session-list'
 import { useSessionListStore } from '@/stores/session-list-store'
 
 export function useSessionList() {
   const { deviceSession } = useAuth()
+  const { reachable } = useDeviceHealth()
   const { pathname } = useLocation()
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -15,6 +17,8 @@ export function useSessionList() {
   const patches = useSessionListStore(state => state.patches)
   const clearPatches = useSessionListStore(state => state.clearPatches)
   const refreshNonce = useSessionListStore(state => state.refreshNonce)
+  const requestRefresh = useSessionListStore(state => state.requestRefresh)
+  const prevReachableRef = useRef<boolean | null>(null)
 
   const mergedSessions = useMemo(() => mergeSessionList(sessions, patches), [sessions, patches])
 
@@ -38,6 +42,15 @@ export function useSessionList() {
       setIsLoading(false)
     }
   }, [clearPatches, deviceSession])
+
+  // Web→CLI 恢复可达后重拉列表，清除断线期间的 Failed to fetch
+  useEffect(() => {
+    const prev = prevReachableRef.current
+    prevReachableRef.current = reachable
+    if (prev === false && reachable === true) {
+      requestRefresh()
+    }
+  }, [reachable, requestRefresh])
 
   useEffect(() => {
     let cancelled = false

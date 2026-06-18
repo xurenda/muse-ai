@@ -110,8 +110,13 @@ export function DevicesPage() {
         {!loading
           ? devices.map(device => (
               <SettingsRow key={device.id} title={device.name} description={device.endpoint ?? '—'}>
-                <span className={`text-xs ${device.online ? 'text-success' : 'text-muted-foreground'}`}>{device.online ? tc('online') : tc('offline')}</span>
-                <Button type="button" size="sm" disabled={!device.online || connectingId === device.id} onClick={() => void onSelectDevice(device)}>
+                <span
+                  className={`text-xs ${device.online ? 'text-success' : 'text-muted-foreground'}`}
+                  title={device.online ? t('registryOnline') : t('registryOffline')}
+                >
+                  {device.online ? t('registryOnline') : t('registryOffline')}
+                </span>
+                <Button type="button" size="sm" disabled={connectingId === device.id} onClick={() => void onSelectDevice(device)}>
                   {connectingId === device.id ? t('connecting') : t('select')}
                 </Button>
               </SettingsRow>

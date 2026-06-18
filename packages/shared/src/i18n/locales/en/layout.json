@@ -62,7 +62,7 @@
       "title": "Device status",
       "noDeviceTitle": "No device selected",
       "endpoint": "Endpoint",
-      "health": "Health check",
+      "health": "CLI reachable",
       "sse": "Event stream (SSE)",
       "healthOk": "OK",
       "healthFail": "Failed",
@@ -74,11 +74,16 @@
       "sseDisconnected": "Disconnected",
       "sseIdle": "—",
       "recentActivity": "Recent activity",
-      "manageDevices": "Manage devices"
+      "manageDevices": "Manage devices",
+      "deviceReconnectIn": "Reconnect in {{seconds}}s",
+      "deviceReconnectNow": "Reconnect now"
     },
     "activity": {
-      "healthLost": "CLI health check failed",
-      "healthRestored": "CLI reachable again",
+      "healthLost": "CLI unreachable",
+      "healthRestored": "CLI connected again",
+      "deviceSseReconnecting": "Device SSE reconnect started",
+      "deviceSseReconnected": "Device SSE reconnected",
+      "deviceShuttingDown": "CLI shutting down",
       "sseReconnecting": "SSE reconnect started",
       "sseReconnected": "SSE reconnected",
       "connectFailed": "Session connection failed",

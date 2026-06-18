@@ -44,6 +44,8 @@ function DeviceStatusPanel({ onClose }: { onClose: () => void }) {
   const hasDevice = useDeviceStatusStore(state => state.hasDevice)
   const healthReachable = useDeviceStatusStore(state => state.healthReachable)
   const healthChecking = useDeviceStatusStore(state => state.healthChecking)
+  const deviceSseStatus = useDeviceStatusStore(state => state.deviceSseStatus)
+  const deviceReconnectInMs = useDeviceStatusStore(state => state.deviceReconnectInMs)
   const chatActive = useDeviceStatusStore(state => state.chatActive)
   const chatStatus = useDeviceStatusStore(state => state.chatStatus)
   const sseStatus = useDeviceStatusStore(state => state.sseStatus)
@@ -52,11 +54,14 @@ function DeviceStatusPanel({ onClose }: { onClose: () => void }) {
   const retryInProgress = useDeviceStatusStore(state => state.retryInProgress)
   const invokeRetry = useDeviceStatusStore(state => state.invokeRetry)
   const retryHandler = useDeviceStatusStore(state => state.retryHandler)
+  const deviceRetryHandler = useDeviceStatusStore(state => state.deviceRetryHandler)
+  const invokeDeviceRetry = useDeviceStatusStore(state => state.invokeDeviceRetry)
 
   const aggregate = resolveDeviceAggregateStatus({
     hasDevice,
     healthReachable,
     healthChecking,
+    deviceSseStatus,
     chatActive,
     chatStatus,
     sseStatus,
@@ -92,7 +97,9 @@ function DeviceStatusPanel({ onClose }: { onClose: () => void }) {
   }
 
   const showError = connectionError !== null && aggregate !== 'ready'
-  const showRetry = showError && retryHandler !== null
+  const showChatRetry = showError && retryHandler !== null
+  const showDeviceRetry = deviceSseStatus === 'reconnecting' && deviceRetryHandler !== null
+  const reconnectSeconds = deviceReconnectInMs !== null ? Math.max(0, Math.ceil(deviceReconnectInMs / 1000)) : null
 
   return (
     <div
@@ -129,10 +136,21 @@ function DeviceStatusPanel({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
+      {showDeviceRetry ? (
+        <div className="border-t border-border px-3 py-2.5">
+          {reconnectSeconds !== null && reconnectSeconds > 0 ? (
+            <p className="text-xs text-muted-foreground">{t('statusBar.panel.deviceReconnectIn', { seconds: reconnectSeconds })}</p>
+          ) : null}
+          <Button type="button" variant="outline" size="sm" className="mt-2 h-7 text-xs" disabled={retryInProgress} onClick={() => void invokeDeviceRetry()}>
+            {retryInProgress ? tc('retryConnecting') : t('statusBar.panel.deviceReconnectNow')}
+          </Button>
+        </div>
+      ) : null}
+
       {showError ? (
         <div className="border-t border-border px-3 py-2.5">
           <p className="text-xs text-destructive">{formatConnectionErrorMessage(connectionError, tc)}</p>
-          {showRetry ? (
+          {showChatRetry ? (
             <Button type="button" variant="outline" size="sm" className="mt-2 h-7 text-xs" disabled={retryInProgress} onClick={() => void invokeRetry()}>
               {retryInProgress ? tc('retryConnecting') : tc('retryConnection')}
             </Button>
@@ -171,6 +189,7 @@ export function DeviceStatusBar() {
   const hasDevice = useDeviceStatusStore(state => state.hasDevice)
   const healthReachable = useDeviceStatusStore(state => state.healthReachable)
   const healthChecking = useDeviceStatusStore(state => state.healthChecking)
+  const deviceSseStatus = useDeviceStatusStore(state => state.deviceSseStatus)
   const chatActive = useDeviceStatusStore(state => state.chatActive)
   const chatStatus = useDeviceStatusStore(state => state.chatStatus)
   const sseStatus = useDeviceStatusStore(state => state.sseStatus)
@@ -180,6 +199,7 @@ export function DeviceStatusBar() {
     hasDevice,
     healthReachable,
     healthChecking,
+    deviceSseStatus,
     chatActive,
     chatStatus,
     sseStatus,

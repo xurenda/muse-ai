@@ -1,6 +1,6 @@
 {
   "title": "Select device",
-  "subtitle": "Chat connects directly to the CLI daemon. Ensure the device is online and paired.",
+  "subtitle": "The device registry is on the server; connecting always probes the CLI directly.",
   "empty": "No devices yet. Generate a pair code and run muse pair in your terminal.",
   "pairTitle": "Pair a new device",
   "pairGenerate": "Generate pair code",
@@ -9,6 +9,8 @@
   "pairHint": "On the machine running the CLI:",
   "pairCommand": "muse pair {{code}}",
   "listTitle": "My devices",
+  "registryOnline": "In registry",
+  "registryOffline": "Not in registry",
   "select": "Connect",
   "connecting": "Connecting…",
   "connectFailed": "Could not reach CLI",

@@ -1,6 +1,6 @@
 {
   "title": "选择设备",
-  "subtitle": "聊天需直连 CLI daemon；请确保设备在线且已配对。",
+  "subtitle": "设备目录由 Server 维护；连接聊天前会直连探测 CLI 是否可达。",
   "empty": "暂无设备，请先生成配对码并在终端执行 muse pair。",
   "pairTitle": "配对新设备",
   "pairGenerate": "生成配对码",
@@ -9,6 +9,8 @@
   "pairHint": "在运行 CLI 的机器上执行：",
   "pairCommand": "muse pair {{code}}",
   "listTitle": "我的设备",
+  "registryOnline": "目录在线",
+  "registryOffline": "目录离线",
   "select": "连接此设备",
   "connecting": "正在连接…",
   "connectFailed": "无法连接 CLI",

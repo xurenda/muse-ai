@@ -1,5 +1,7 @@
 import {
   CLI_API_PATHS,
+  deviceEventsPath,
+  deviceSseEventSchema,
   museSseEventSchema,
   sessionDetailPath,
   sessionCompactPath,
@@ -12,6 +14,7 @@ import {
   type ChatRequest,
   type CreateAgentRequest,
   type CreateSessionRequest,
+  type DeviceSseEvent,
   type MuseSseEvent,
   type Persona,
   type SessionMeta,
@@ -24,6 +27,7 @@ import {
   type SkillMeta,
   type ToolDescriptor,
 } from '@muse-ai/shared'
+import { computeSseBackoffMs, waitForSseRetry } from '@/lib/sse-reconnect'
 
 export class CliApiError extends Error {
   constructor(
@@ -224,6 +228,25 @@ export function parseSseBuffer(buffer: string): { events: MuseSseEvent[]; remain
   return { events, remainder }
 }
 
+/** 从 SSE 字节流解析设备级事件 */
+export function parseDeviceSseBuffer(buffer: string): { events: DeviceSseEvent[]; remainder: string } {
+  const events: DeviceSseEvent[] = []
+  const lines = buffer.split('\n')
+  const remainder = lines.pop() ?? ''
+  for (const line of lines) {
+    if (!line.startsWith('data: ')) continue
+    const payload = line.slice('data: '.length)
+    try {
+      const parsed: unknown = JSON.parse(payload)
+      const result = deviceSseEventSchema.safeParse(parsed)
+      if (result.success) events.push(result.data)
+    } catch {
+      // 忽略解析失败行
+    }
+  }
+  return { events, remainder }
+}
+
 const SSE_RECONNECT_MS = 1000
 
 export interface SseSubscriptionCallbacks {
@@ -269,6 +292,104 @@ async function readSseStream(body: ReadableStream<Uint8Array>, signal: AbortSign
       onEvent(event)
     }
   }
+}
+
+export interface DeviceSseSubscriptionCallbacks {
+  onEvent: (event: DeviceSseEvent) => void
+  onConnecting?: () => void
+  onConnected?: () => void
+  onConnectFailed?: () => void
+  /** 即将等待重连；delayMs 为本次退避时长 */
+  onReconnecting?: (delayMs: number) => void
+  onCountdown?: (remainingMs: number) => void
+  onReconnected?: () => void
+}
+
+async function readDeviceSseStream(body: ReadableStream<Uint8Array>, signal: AbortSignal, onEvent: (event: DeviceSseEvent) => void): Promise<void> {
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (!signal.aborted) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const parsed = parseDeviceSseBuffer(buffer)
+    buffer = parsed.remainder
+    for (const event of parsed.events) {
+      onEvent(event)
+    }
+  }
+}
+
+/** 订阅设备级 SSE（指数退避重连 + 倒计时；返回 retryNow 立即重连） */
+export function subscribeDeviceEvents(
+  endpoint: string,
+  accessToken: string,
+  callbacks: DeviceSseSubscriptionCallbacks,
+  signal: AbortSignal,
+): { retryNow: () => void } {
+  let retryAttempt = 0
+  let wakeRetry: (() => void) | undefined
+
+  const retryNow = () => {
+    retryAttempt = 0
+    wakeRetry?.()
+  }
+
+  void (async () => {
+    let everConnected = false
+
+    while (!signal.aborted) {
+      try {
+        if (retryAttempt > 0) {
+          const delayMs = computeSseBackoffMs(retryAttempt)
+          callbacks.onReconnecting?.(delayMs)
+          const waitResult = await waitForSseRetry({
+            delayMs,
+            signal,
+            onCountdown: ms => callbacks.onCountdown?.(ms),
+            registerWake: wake => {
+              wakeRetry = wake
+            },
+          })
+          if (waitResult === 'aborted') return
+          wakeRetry = undefined
+        } else if (!everConnected) {
+          callbacks.onConnecting?.()
+        }
+
+        const res = await fetch(`${endpoint}${deviceEventsPath()}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal,
+        })
+        if (!res.ok || !res.body) {
+          throw new CliApiError(res.status, 'sse_subscribe_failed', `订阅设备 SSE 失败 (${res.status})`)
+        }
+
+        if (everConnected) {
+          callbacks.onReconnected?.()
+        } else {
+          everConnected = true
+          callbacks.onConnected?.()
+        }
+        retryAttempt = 0
+
+        await readDeviceSseStream(res.body, signal, callbacks.onEvent)
+
+        if (signal.aborted) return
+        retryAttempt = Math.max(1, retryAttempt + 1)
+      } catch (_error: unknown) {
+        if (signal.aborted) return
+        if (!everConnected && retryAttempt === 0) {
+          callbacks.onConnectFailed?.()
+        }
+        retryAttempt = Math.max(1, retryAttempt + 1)
+      }
+    }
+  })()
+
+  return { retryNow }
 }
 
 /** 订阅 Session SSE（fetch 流；浏览器 EventSource 不支持 Authorization） */
