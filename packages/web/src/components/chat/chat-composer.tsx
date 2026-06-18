@@ -25,6 +25,7 @@ interface ChatComposerProps {
 export function ChatComposer({ value, onChange, streaming, disabled, userToken, sessionSettings, onUpdateSessionSettings, onSend }: ChatComposerProps) {
   const { t } = useTranslation('chat')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const isComposingRef = useRef(false)
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -45,14 +46,29 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
     [disabled, onChange, onSend, streaming, value],
   )
 
+  const handleCompositionStart = () => {
+    isComposingRef.current = true
+  }
+
+  const handleCompositionEnd = () => {
+    // compositionend 可能早于 keydown，延迟复位以免 Enter 确认候选词时误触发发送
+    setTimeout(() => {
+      isComposingRef.current = false
+    }, 0)
+  }
+
+  const isImeKeyEvent = (event: React.KeyboardEvent<HTMLTextAreaElement>) => event.nativeEvent.isComposing || isComposingRef.current || event.key === 'Process'
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key !== 'Enter' || isImeKeyEvent(event)) return
+
+    if (!event.shiftKey) {
       event.preventDefault()
       submit(streaming ? 'steer' : 'prompt')
       return
     }
 
-    if (event.key === 'Enter' && event.shiftKey && streaming) {
+    if (streaming) {
       event.preventDefault()
       submit('follow_up')
     }
@@ -69,6 +85,8 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
         placeholder={streaming ? t('input.placeholderStreaming') : t('input.placeholder')}
         value={value}
         onChange={event => onChange(event.target.value)}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
         onKeyDown={handleKeyDown}
         disabled={disabled}
       />
