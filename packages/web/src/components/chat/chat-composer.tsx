@@ -1,4 +1,4 @@
-import { ArrowUp } from 'lucide-react'
+import { ArrowUp, Square } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SessionSettingsResponse, ThinkingLevel } from '@muse-ai/shared'
@@ -15,14 +15,31 @@ interface ChatComposerProps {
   value: string
   onChange: (value: string) => void
   streaming: boolean
+  compacting: boolean
   disabled: boolean
+  canStop: boolean
+  stopping: boolean
   userToken: string | undefined
   sessionSettings: SessionSettingsResponse | null
   onUpdateSessionSettings: (patch: { modelRef?: string; thinkingLevel?: ThinkingLevel }) => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
+  onStop: () => void
 }
 
-export function ChatComposer({ value, onChange, streaming, disabled, userToken, sessionSettings, onUpdateSessionSettings, onSend }: ChatComposerProps) {
+export function ChatComposer({
+  value,
+  onChange,
+  streaming,
+  compacting,
+  disabled,
+  canStop,
+  stopping,
+  userToken,
+  sessionSettings,
+  onUpdateSessionSettings,
+  onSend,
+  onStop,
+}: ChatComposerProps) {
   const { t } = useTranslation('chat')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isComposingRef = useRef(false)
@@ -74,7 +91,8 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
     }
   }
 
-  const canSend = value.trim().length > 0 && !disabled
+  const canSubmit = value.trim().length > 0 && !disabled
+  const showStop = streaming || compacting
 
   return (
     <div className={cn('ui-surface', 'focus-within:border-ring focus-within:ring-1 focus-within:ring-ring')}>
@@ -82,7 +100,7 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
         ref={textareaRef}
         className="max-h-[200px] min-h-11 resize-none border-0 bg-transparent px-menu-x py-menu-y shadow-none focus-visible:ring-0"
         rows={1}
-        placeholder={streaming ? t('input.placeholderStreaming') : t('input.placeholder')}
+        placeholder={streaming ? t('input.placeholderStreaming') : compacting ? t('input.placeholderCompacting') : t('input.placeholder')}
         value={value}
         onChange={event => onChange(event.target.value)}
         onCompositionStart={handleCompositionStart}
@@ -92,10 +110,25 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
       />
 
       <div className="ui-surface-toolbar">
-        <p className="px-1 text-xs text-muted-foreground">{streaming ? t('input.hintStreaming') : t('input.hintIdle')}</p>
+        <p className="px-1 text-xs text-muted-foreground">
+          {streaming ? t('input.hintStreaming') : compacting ? t('input.hintCompacting') : t('input.hintIdle')}
+        </p>
 
         <div className="flex items-center gap-inline-sm">
           <ChatModelPicker userToken={userToken} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdateSessionSettings} />
+
+          {showStop ? (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" variant="outline" size="icon" disabled={!canStop} onClick={onStop} aria-label={t('input.stop')}>
+                    <Square className="size-3.5 fill-current" strokeWidth={0} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{stopping ? t('input.stopping') : t('input.stop')}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
 
           <TooltipProvider delayDuration={300}>
             <Tooltip>
@@ -103,7 +136,7 @@ export function ChatComposer({ value, onChange, streaming, disabled, userToken, 
                 <Button
                   type="button"
                   size="icon"
-                  disabled={!canSend}
+                  disabled={!canSubmit}
                   onClick={() => submit(streaming ? 'steer' : 'prompt')}
                   aria-label={streaming ? t('input.steer') : t('input.send')}
                 >

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MuseHarness } from '@muse-ai/core'
 import { BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS } from '@muse-ai/shared'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
+import { createSseSubscriber } from '@/daemon/event-hub.js'
 
 async function createPairedDeps() {
   const tempHome = await mkdtemp(join(tmpdir(), 'muse-chat-service-'))
@@ -145,6 +146,38 @@ describe('ChatService steer / follow_up', () => {
     expect(deps.chatService.isSessionBusy(session.id)).toBe(false)
   })
 
+  it('进行中的 turn 可被 abortTurn 中断', async () => {
+    const { deps } = await createPairedDeps()
+    let releasePrompt!: () => void
+    const promptGate = new Promise<void>(resolve => {
+      releasePrompt = resolve
+    })
+    const abortSpy = vi.spyOn(MuseHarness.prototype, 'abort').mockResolvedValue({ clearedSteer: [], clearedFollowUp: [] })
+    vi.spyOn(MuseHarness.prototype, 'prompt').mockImplementation(async () => {
+      await promptGate
+      return mockAssistantMessage()
+    })
+    vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    void deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const result = await deps.chatService.abortTurn(session.id)
+    expect(result.aborted).toBe(true)
+    expect(abortSpy).toHaveBeenCalled()
+
+    releasePrompt()
+    await new Promise(resolve => setTimeout(resolve, 50))
+  })
+
+  it('idle 时 abortTurn 应返回 aborted: false', async () => {
+    const { deps } = await createPairedDeps()
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const result = await deps.chatService.abortTurn(session.id)
+    expect(result.aborted).toBe(false)
+  })
+
   it('进行中的 turn 可被 evictRuntime 强制释放', async () => {
     const { deps } = await createPairedDeps()
     let releasePrompt!: () => void
@@ -195,6 +228,41 @@ describe('ChatService compact', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(compactSpy).toHaveBeenCalled()
+  })
+
+  it('compact 进行中 abortTurn 应调用 harness.abort 并标记 cancelled', async () => {
+    const { deps } = await createPairedDeps()
+    let compactReject!: (error: Error) => void
+    const compactPromise = new Promise<{ summary: string; firstKeptEntryId: string; tokensBefore: number }>((_, reject) => {
+      compactReject = reject
+    })
+    const abortSpy = vi.spyOn(MuseHarness.prototype, 'abort').mockImplementation(async () => {
+      compactReject(new Error('aborted'))
+      return { clearedSteer: [], clearedFollowUp: [] }
+    })
+    vi.spyOn(MuseHarness.prototype, 'compact').mockReturnValue(compactPromise)
+    vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const received: Array<{ type: string; cancelled?: boolean }> = []
+    const abort = new AbortController()
+    deps.eventHub.subscribe(
+      session.id,
+      createSseSubscriber(abort.signal, async event => {
+        received.push(event as { type: string; cancelled?: boolean })
+      }),
+    )
+
+    void deps.chatService.enqueueCompact(session.id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const result = await deps.chatService.abortTurn(session.id)
+    expect(result.aborted).toBe(true)
+    expect(abortSpy).toHaveBeenCalled()
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const compactionEnd = received.find(event => event.type === 'compaction_end')
+    expect(compactionEnd?.cancelled).toBe(true)
   })
 
   it('Session 忙碌时 compact 应拒绝', async () => {

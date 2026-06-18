@@ -1,5 +1,12 @@
 import type { MuseSseEvent } from '@muse-ai/shared'
-import { appendTextDelta, appendThinkingDelta, appendToolStart, finalizeOpenThinkingBlocks, updateToolEnd } from '@/lib/assistant-message-helpers'
+import {
+  appendTextDelta,
+  appendThinkingDelta,
+  appendToolStart,
+  finalizeAssistantTurnBlocks,
+  finalizeOpenThinkingBlocks,
+  updateToolEnd,
+} from '@/lib/assistant-message-helpers'
 import { type AssistantChatMessage, type ChatMessage, createAssistantMessage } from '@/lib/chat-types'
 
 function updateLastAssistant(messages: ChatMessage[], updater: (message: AssistantChatMessage) => AssistantChatMessage): ChatMessage[] {
@@ -22,8 +29,22 @@ function findLastAssistantIndex(messages: ChatMessage[]): number {
   return -1
 }
 
+export interface ApplySseEventOptions {
+  /** agent_end 时收尾仍 running 的 tool */
+  stoppedToolMessage?: string
+}
+
+/** 用户停止或 turn 结束时收尾最后一条 assistant（streaming + running tools） */
+export function finalizeStoppedAssistantTail(messages: ChatMessage[], stoppedToolMessage: string): ChatMessage[] {
+  return updateLastAssistant(messages, m => ({
+    ...m,
+    streaming: false,
+    blocks: finalizeAssistantTurnBlocks(m.blocks, stoppedToolMessage),
+  }))
+}
+
 /** 将 SSE 事件累积到消息列表 */
-export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent): ChatMessage[] {
+export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent, options?: ApplySseEventOptions): ChatMessage[] {
   switch (event.type) {
     case 'agent_start':
       return [...messages, createAssistantMessage()]
@@ -59,7 +80,7 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent): Cha
       return updateLastAssistant(messages, m => ({
         ...m,
         streaming: false,
-        blocks: finalizeOpenThinkingBlocks(m.blocks),
+        blocks: options?.stoppedToolMessage ? finalizeAssistantTurnBlocks(m.blocks, options.stoppedToolMessage) : finalizeOpenThinkingBlocks(m.blocks),
       }))
 
     case 'error':

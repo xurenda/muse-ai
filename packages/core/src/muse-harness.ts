@@ -1,5 +1,5 @@
 import { AgentHarness, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
-import type { AgentHarnessEvent, AgentTool, Session, ThinkingLevel } from '@earendil-works/pi-agent-core'
+import type { AbortResult, AgentHarnessEvent, AgentTool, Session, ThinkingLevel } from '@earendil-works/pi-agent-core'
 import type { AssistantMessage, ImageContent, Model } from '@earendil-works/pi-ai'
 import { placeholderGetApiKeyAndHeaders } from './get-api-key.js'
 import type { MuseHarnessOptions } from './types.js'
@@ -46,6 +46,11 @@ export class MuseHarness {
 
   followUp(text: string, options?: { images?: ImageContent[] }): Promise<void> {
     return this.harness.followUp(text, options)
+  }
+
+  /** 中断当前 turn（含 LLM 流式与进行中的 tool） */
+  abort(): Promise<AbortResult> {
+    return this.harness.abort()
   }
 
   compact(customInstructions?: string): Promise<{

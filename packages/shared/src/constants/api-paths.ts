@@ -36,6 +36,8 @@ export const CLI_API_PATHS = {
   SESSION_FORK: '/sessions/:sessionId/fork',
   /** 路由模式；实际路径用 `sessionCompactPath(sessionId)` */
   SESSION_COMPACT: '/sessions/:sessionId/compact',
+  /** 路由模式；实际路径用 `sessionAbortPath(sessionId)` */
+  SESSION_ABORT: '/sessions/:sessionId/abort',
   /** 设备级 SSE：`GET /device/events` */
   DEVICE_EVENTS: '/device/events',
 } as const
@@ -73,6 +75,11 @@ export function sessionForkPath(sessionId: string): string {
 /** 构建 Session compact 路径：`POST /sessions/:id/compact` */
 export function sessionCompactPath(sessionId: string): string {
   return `/sessions/${sessionId}/compact`
+}
+
+/** 构建 Session abort 路径：`POST /sessions/:id/abort` */
+export function sessionAbortPath(sessionId: string): string {
+  return `/sessions/${sessionId}/abort`
 }
 
 /** 构建设备级 SSE 路径：`GET /device/events` */

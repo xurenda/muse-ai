@@ -36,8 +36,8 @@ describe('extractAssistantTurnError', () => {
     expect(extractAssistantTurnError(message)).toBeNull()
   })
 
-  it('stopReason 为 aborted 时应返回中断提示', () => {
+  it('stopReason 为 aborted 时不应返回错误', () => {
     const message = createAssistantMessage({ stopReason: 'aborted' })
-    expect(extractAssistantTurnError(message)).toBe('请求已中断')
+    expect(extractAssistantTurnError(message)).toBeNull()
   })
 })

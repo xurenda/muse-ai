@@ -7,6 +7,7 @@ export {
   sessionEventsPath,
   sessionDetailPath,
   sessionCompactPath,
+  sessionAbortPath,
   sessionForkPath,
   sessionNavigatePath,
   sessionSettingsPath,

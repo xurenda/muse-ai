@@ -384,4 +384,23 @@ describe('ChatService', () => {
     const body = (await res.json()) as { error: string }
     expect(body.error).toBe('session_busy')
   })
+
+  it('POST /sessions/:id/abort 应调用 chatService.abortTurn', async () => {
+    const { app, deps } = await createTestApp()
+    const abortSpy = vi.spyOn(deps.chatService, 'abortTurn').mockResolvedValue({ aborted: true })
+
+    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const res = await app.request(`http://localhost/sessions/${session.id}/abort`, { method: 'POST' })
+
+    expect(res.status).toBe(202)
+    expect(abortSpy).toHaveBeenCalledWith(session.id)
+    const body = (await res.json()) as { aborted: boolean }
+    expect(body.aborted).toBe(true)
+  })
+
+  it('POST /sessions/:id/abort 在 session 不存在时应返回 404', async () => {
+    const { app } = await createTestApp()
+    const res = await app.request('http://localhost/sessions/550e8400-e29b-41d4-a716-446655440000/abort', { method: 'POST' })
+    expect(res.status).toBe(404)
+  })
 })

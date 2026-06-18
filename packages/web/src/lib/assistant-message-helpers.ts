@@ -174,6 +174,12 @@ export function updateToolEnd(
   })
 }
 
+/** turn 结束或用户停止时收尾 assistant blocks（thinking + running tools） */
+export function finalizeAssistantTurnBlocks(blocks: AssistantContentBlock[], stoppedToolMessage: string): AssistantContentBlock[] {
+  const withThinking = finalizeOpenThinkingBlocks(blocks)
+  return finalizeRunningTools(withThinking, stoppedToolMessage).blocks
+}
+
 export function finalizeRunningTools(
   blocks: AssistantContentBlock[],
   interruptedToolMessage: string,

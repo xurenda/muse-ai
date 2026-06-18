@@ -17,13 +17,28 @@ interface SessionChatFooterProps {
   sessionSettings: SessionSettingsResponse | null
   streaming: boolean
   disabled: boolean
+  canStop: boolean
+  stopping: boolean
   compacting: boolean
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
   onCompact: () => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
+  onStop: () => void
 }
 
-function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled, compacting, onUpdate, onCompact, onSend }: SessionChatFooterProps) {
+function SessionChatFooter({
+  deviceSession,
+  sessionSettings,
+  streaming,
+  disabled,
+  canStop,
+  stopping,
+  compacting,
+  onUpdate,
+  onCompact,
+  onSend,
+  onStop,
+}: SessionChatFooterProps) {
   const { auth } = useAuth()
   const [composerText, setComposerText] = useState('')
 
@@ -41,11 +56,15 @@ function SessionChatFooter({ deviceSession, sessionSettings, streaming, disabled
         value={composerText}
         onChange={setComposerText}
         streaming={streaming}
+        compacting={compacting}
         disabled={disabled}
+        canStop={canStop}
+        stopping={stopping}
         userToken={auth?.accessToken}
         sessionSettings={sessionSettings}
         onUpdateSessionSettings={onUpdate}
         onSend={onSend}
+        onStop={onStop}
       />
     </div>
   )
@@ -61,11 +80,14 @@ export function ChatPage() {
     messages,
     streaming,
     canSend,
+    canStop,
+    stopping,
     sendError,
     settingsError,
     treeError,
     compacting,
     sendMessage,
+    stopGeneration,
     compactContext,
     updateSessionSettings,
     startNewSession,
@@ -125,6 +147,8 @@ export function ChatPage() {
               sessionSettings={sessionSettings}
               streaming={streaming}
               disabled={composerDisabled}
+              canStop={canStop}
+              stopping={stopping}
               compacting={compacting}
               onUpdate={async patch => {
                 const result = await updateSessionSettings(patch)
@@ -132,6 +156,7 @@ export function ChatPage() {
               }}
               onCompact={compactContext}
               onSend={(text, mode) => void sendMessage(text, mode)}
+              onStop={() => void stopGeneration()}
             />
           </div>
         </>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse } from '@muse-ai/shared'
@@ -8,6 +8,7 @@ import {
   createCliSession,
   compactSession,
   forkSession,
+  abortSession,
   getSessionSettings,
   getSessionTree,
   navigateSession,
@@ -18,7 +19,7 @@ import {
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { hasRunningTool } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
-import { applySseEvent, isStreaming as checkStreaming } from '@/lib/chat-reducer'
+import { applySseEvent, finalizeStoppedAssistantTail, isStreaming as checkStreaming, type ApplySseEventOptions } from '@/lib/chat-reducer'
 import { createUserMessage, isAssistantMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
 import { parseConnectionError, type ParsedConnectionError } from '@/lib/connection-errors'
 import type { StoredDeviceSession } from '@/lib/config'
@@ -76,6 +77,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [treeError, setTreeError] = useState<string | null>(null)
   const [compacting, setCompacting] = useState(false)
+  const [stopping, setStopping] = useState(false)
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
@@ -92,7 +94,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
   const streaming = checkStreaming(messages)
   const deviceUnreachable = reachable === false
-  const canSend = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable && !compacting
+  const sessionReady = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable
+  const canSend = sessionReady && !compacting
+  const canStop = (streaming || compacting) && sessionReady && !stopping
 
   useEffect(() => {
     messagesRef.current = messages
@@ -110,6 +114,13 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       interruptedTurnMessage: t('turnInterrupted'),
     }
   }, [t])
+
+  const sseEventOptions = useMemo(
+    (): ApplySseEventOptions => ({
+      stoppedToolMessage: t('toolStopped'),
+    }),
+    [t],
+  )
 
   const shouldFinalizeStaleTail = useCallback((): boolean => {
     if (deviceWasUnreachableRef.current) return true
@@ -206,11 +217,12 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
               }
               if (event.type === 'compaction_end') {
                 setCompacting(false)
+                setStopping(false)
                 void refreshTreeRef.current(id)
                 void loadSettings(id)
                 if (event.success) {
                   toast.success(t('compactSuccess', { count: event.compactionCount ?? 1 }))
-                } else if (event.errorMessage) {
+                } else if (!event.cancelled && event.errorMessage) {
                   toast.error(t('compactFailed', { message: event.errorMessage }))
                 }
                 return
@@ -226,8 +238,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                     : prev,
                 )
               }
-              setMessages(prev => applySseEvent(prev, event))
+              setMessages(prev => applySseEvent(prev, event, sseEventOptions))
               if (event.type === 'agent_end') {
+                setStopping(false)
                 void refreshTreeRef.current(id)
                 void loadSettings(id)
               }
@@ -256,7 +269,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
       setStatus('ready')
     },
-    [deviceSession, loadSettings, refreshTree, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
+    [deviceSession, loadSettings, refreshTree, sseEventOptions, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
   )
 
   const retryConnection = useCallback(async () => {
@@ -401,6 +414,24 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     [canSend, deviceSession, sessionId],
   )
 
+  const stopGeneration = useCallback(async () => {
+    if (!deviceSession || !sessionId || !canStop) return
+    setSendError(null)
+    setStopping(true)
+    if (streaming) {
+      setMessages(prev => finalizeStoppedAssistantTail(prev, t('toolStopped')))
+    }
+    try {
+      const result = await abortSession(deviceSession.endpoint, deviceSession.accessToken, sessionId)
+      if (!result.aborted) {
+        setStopping(false)
+      }
+    } catch (error: unknown) {
+      setStopping(false)
+      setSendError(error instanceof Error ? error.message : String(error))
+    }
+  }, [canStop, deviceSession, sessionId, streaming, t])
+
   const updateSessionSettings = useCallback(
     async (patch: SessionSettingsPatch) => {
       if (!deviceSession || !sessionId) return null
@@ -495,6 +526,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     messages,
     streaming,
     canSend,
+    canStop,
+    stopping,
     deviceUnreachable,
     connectionError,
     sendError,
@@ -502,6 +535,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     treeError,
     compacting,
     sendMessage,
+    stopGeneration,
     compactContext,
     updateSessionSettings,
     startNewSession,

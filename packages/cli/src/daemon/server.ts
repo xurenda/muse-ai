@@ -341,6 +341,19 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     }
   })
 
+  app.post('/sessions/:sessionId/abort', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+    const session = await deps.sessionStore.get(sessionId)
+    if (!session) {
+      return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
+    }
+    const result = await deps.chatService.abortTurn(sessionId)
+    return c.json(result, 202)
+  })
+
   app.post(CLI_API_PATHS.CHAT, requireAuth, async c => {
     const body: unknown = await c.req.json()
     const parsed = chatRequestSchema.safeParse(body)

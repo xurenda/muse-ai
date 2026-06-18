@@ -27,10 +27,14 @@
   "input": {
     "placeholder": "输入消息…",
     "placeholderStreaming": "Agent 回复中：Enter 追加指令，Shift+Enter 排队下一条",
+    "placeholderCompacting": "正在压缩上下文…",
     "send": "发送",
     "steer": "追加",
+    "stop": "停止",
+    "stopping": "正在停止…",
     "hintIdle": "Enter 发送",
-    "hintStreaming": "Enter 追加 · Shift+Enter 排队"
+    "hintStreaming": "Enter 追加 · Shift+Enter 排队",
+    "hintCompacting": "可点停止取消压缩"
   },
   "newSession": "新会话",
   "inputPlaceholder": "输入消息…（Enter 发送，Shift+Enter 换行）",
@@ -54,6 +58,7 @@
   "sseReconnected": "已重新连接 CLI",
   "turnInterrupted": "连接中断，上一轮未正常结束",
   "turnInterruptedTool": "CLI 重启或断线导致工具未完成",
+  "toolStopped": "已停止",
   "cliHealthLost": "CLI 不可达，已暂停发送，等待恢复…",
   "cliHealthRestored": "CLI 已恢复连接",
   "retryConnection": "重试",

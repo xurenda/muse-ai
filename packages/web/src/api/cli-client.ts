@@ -5,6 +5,7 @@ import {
   museSseEventSchema,
   sessionDetailPath,
   sessionCompactPath,
+  sessionAbortPath,
   sessionEventsPath,
   sessionForkPath,
   sessionNavigatePath,
@@ -167,6 +168,27 @@ export async function compactSession(endpoint: string, accessToken: string, sess
     }
     throw new CliApiError(res.status, code, message)
   }
+}
+
+export async function abortSession(endpoint: string, accessToken: string, sessionId: string): Promise<{ aborted: boolean }> {
+  const res = await fetch(`${endpoint}${sessionAbortPath(sessionId)}`, {
+    method: 'POST',
+    headers: cliHeaders(accessToken),
+  })
+  if (res.status !== 202) {
+    const text = await res.text()
+    let code: string | undefined
+    let message = text || `停止生成失败 (${res.status})`
+    try {
+      const body = JSON.parse(text) as { error?: string; message?: string }
+      code = body.error
+      if (body.message) message = body.message
+    } catch {
+      // 非 JSON 响应，保留原始 text
+    }
+    throw new CliApiError(res.status, code, message)
+  }
+  return parseCliJson<{ aborted: boolean }>(res)
 }
 
 export async function getSessionSettings(endpoint: string, accessToken: string, sessionId: string): Promise<SessionSettingsResponse> {

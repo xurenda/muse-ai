@@ -38,6 +38,8 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
     tokensBefore: z.number().optional(),
     compactionCount: z.number().int().nonnegative().optional(),
     willRetry: z.boolean().optional(),
+    /** 用户主动 abort，Web 应静默恢复 UI */
+    cancelled: z.boolean().optional(),
     errorMessage: z.string().optional(),
   }),
   z.object({ type: z.literal('error'), message: z.string() }),

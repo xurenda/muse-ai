@@ -24,7 +24,7 @@ function formatDispatchError(error: unknown): string {
 type PiSession = NonNullable<Awaited<ReturnType<MuseSessionStore['openPiSession']>>>
 
 /** 单次 prompt turn 进行中的 Harness 与事件订阅（turn 结束即释放） */
-interface ActiveTurnRuntime {
+interface ActiveHarnessRuntime {
   harness: MuseHarness
   unsubscribeEvents: () => void
 }
@@ -33,9 +33,13 @@ interface ActiveTurnRuntime {
 export class ChatService {
   private readonly sessionChains = new Map<string, Promise<void>>()
   /** 仅在有进行中的 turn 时持有；steer/follow_up 依赖此实例 */
-  private readonly activeTurns = new Map<string, ActiveTurnRuntime>()
+  private readonly activeTurns = new Map<string, ActiveHarnessRuntime>()
+  /** compact 进行中可 abort 的 harness */
+  private readonly activeCompacts = new Map<string, ActiveHarnessRuntime>()
   /** compact 进行中（与 turn 互斥） */
   private readonly compactingSessions = new Set<string>()
+  /** 用户请求 abort compact（用于 compaction_end.cancelled） */
+  private readonly compactAbortRequested = new Set<string>()
 
   constructor(
     private readonly sessionStore: MuseSessionStore,
@@ -127,12 +131,38 @@ export class ChatService {
     return this.activeTurns.has(sessionId)
   }
 
+  /** 中断当前进行中的 turn 或 compact（无进行中的任务时返回 aborted: false） */
+  async abortTurn(sessionId: string): Promise<{ aborted: boolean }> {
+    const turnRuntime = this.activeTurns.get(sessionId)
+    if (turnRuntime) {
+      await turnRuntime.harness.abort()
+      return { aborted: true }
+    }
+
+    const compactRuntime = this.activeCompacts.get(sessionId)
+    if (compactRuntime) {
+      this.compactAbortRequested.add(sessionId)
+      await compactRuntime.harness.abort()
+      return { aborted: true }
+    }
+
+    return { aborted: false }
+  }
+
   /** Session 删除或 turn 结束时释放 Harness */
   evictRuntime(sessionId: string): void {
-    const runtime = this.activeTurns.get(sessionId)
-    if (!runtime) return
-    runtime.unsubscribeEvents()
-    this.activeTurns.delete(sessionId)
+    const turnRuntime = this.activeTurns.get(sessionId)
+    if (turnRuntime) {
+      turnRuntime.unsubscribeEvents()
+      this.activeTurns.delete(sessionId)
+    }
+    const compactRuntime = this.activeCompacts.get(sessionId)
+    if (compactRuntime) {
+      compactRuntime.unsubscribeEvents()
+      this.activeCompacts.delete(sessionId)
+      this.compactingSessions.delete(sessionId)
+      this.compactAbortRequested.delete(sessionId)
+    }
   }
 
   private schedulePromptTurn(request: ChatRequest, agentId: string): void {
@@ -227,10 +257,11 @@ export class ChatService {
     this.compactingSessions.add(sessionId)
     await this.eventHub.publish(sessionId, { type: 'compaction_start', reason: options.reason })
 
-    const { harness, unsubscribeEvents } = await this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth)
+    const runtime = await this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth)
+    this.activeCompacts.set(sessionId, runtime)
 
     try {
-      const result = await harness.compact(options.customInstructions)
+      const result = await runtime.harness.compact(options.customInstructions)
       const compactionCount = await this.countCompactionEntries(piSession)
       await this.publishCompactionEnd(sessionId, {
         reason: options.reason,
@@ -241,15 +272,19 @@ export class ChatService {
       await this.sessionStore.touch(sessionId)
       return true
     } catch (error: unknown) {
+      const cancelled = this.compactAbortRequested.has(sessionId)
       await this.publishCompactionEnd(sessionId, {
         reason: options.reason,
         success: false,
-        errorMessage: formatLlmErrorMessage(formatDispatchError(error)),
+        cancelled,
+        errorMessage: cancelled ? undefined : formatLlmErrorMessage(formatDispatchError(error)),
       })
       return false
     } finally {
-      unsubscribeEvents()
+      runtime.unsubscribeEvents()
+      this.activeCompacts.delete(sessionId)
       this.compactingSessions.delete(sessionId)
+      this.compactAbortRequested.delete(sessionId)
     }
   }
 
@@ -266,6 +301,7 @@ export class ChatService {
       tokensBefore?: number
       compactionCount?: number
       willRetry?: boolean
+      cancelled?: boolean
       errorMessage?: string
     },
   ): Promise<void> {
@@ -276,11 +312,12 @@ export class ChatService {
       tokensBefore: payload.tokensBefore,
       compactionCount: payload.compactionCount,
       willRetry: payload.willRetry,
+      cancelled: payload.cancelled,
       errorMessage: payload.errorMessage,
     })
   }
 
-  private async createTurnRuntime(sessionId: string, agentId: string, piSession: PiSession, backendAuth: BackendLlmAuthConfig): Promise<ActiveTurnRuntime> {
+  private async createTurnRuntime(sessionId: string, agentId: string, piSession: PiSession, backendAuth: BackendLlmAuthConfig): Promise<ActiveHarnessRuntime> {
     return this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth)
   }
 
@@ -289,7 +326,7 @@ export class ChatService {
     agentId: string,
     piSession: PiSession,
     backendAuth: BackendLlmAuthConfig,
-  ): Promise<ActiveTurnRuntime> {
+  ): Promise<ActiveHarnessRuntime> {
     const context = await this.agentRegistry.resolveRuntimeContext(agentId)
     const harnessOptions = await buildHarnessOptionsForSession(this.agentRegistry, agentId, piSession, this.cwd)
     const tools = resolveActiveTools(context.agent.activeToolNames, this.cwd)

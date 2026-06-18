@@ -17,17 +17,17 @@ function formatAssistantFailure(stopReason: 'error' | 'aborted', errorMessage?: 
   return formatLlmErrorMessage(errorMessage ?? 'LLM 请求失败')
 }
 
-/** pi prompt 返回 stopReason 为 error/aborted 时提取 SSE error 文案 */
+/** pi prompt 返回 stopReason 为 error 时提取 SSE error 文案（用户主动 abort 不算错误） */
 export function extractAssistantTurnError(message: AssistantMessage): string | null {
-  if (message.stopReason !== 'error' && message.stopReason !== 'aborted') {
+  if (message.stopReason !== 'error') {
     return null
   }
-  return formatAssistantFailure(message.stopReason, message.errorMessage)
+  return formatAssistantFailure('error', message.errorMessage)
 }
 
 /** 从 session 分支中的 assistant 消息提取持久化错误 */
 export function extractBranchMessageError(message: { role: string; stopReason?: string; errorMessage?: string }): string | null {
   if (message.role !== 'assistant') return null
-  if (message.stopReason !== 'error' && message.stopReason !== 'aborted') return null
-  return formatAssistantFailure(message.stopReason, message.errorMessage)
+  if (message.stopReason !== 'error') return null
+  return formatAssistantFailure('error', message.errorMessage)
 }

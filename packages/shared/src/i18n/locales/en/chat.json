@@ -27,10 +27,14 @@
   "input": {
     "placeholder": "Type a message…",
     "placeholderStreaming": "Agent replying: Enter to steer, Shift+Enter to queue",
+    "placeholderCompacting": "Compacting context…",
     "send": "Send",
     "steer": "Steer",
+    "stop": "Stop",
+    "stopping": "Stopping…",
     "hintIdle": "Enter to send",
-    "hintStreaming": "Enter steer · Shift+Enter queue"
+    "hintStreaming": "Enter steer · Shift+Enter queue",
+    "hintCompacting": "Stop to cancel compaction"
   },
   "send": "Send",
   "newSession": "New session",
@@ -55,6 +59,7 @@
   "sseReconnected": "Reconnected to CLI",
   "turnInterrupted": "Connection interrupted before the turn finished",
   "turnInterruptedTool": "Tool did not finish (CLI restarted or disconnected)",
+  "toolStopped": "Stopped",
   "cliHealthLost": "CLI unreachable. Sending paused until it recovers…",
   "cliHealthRestored": "CLI connection restored",
   "retryConnection": "Retry",

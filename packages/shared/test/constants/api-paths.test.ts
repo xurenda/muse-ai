@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { CLI_API_PATHS, DEFAULT_PORTS, SERVER_API_PATHS, deviceCredentialsPath, deviceEventsPath, sessionEventsPath } from '@/constants/api-paths.js'
+import {
+  CLI_API_PATHS,
+  DEFAULT_PORTS,
+  SERVER_API_PATHS,
+  deviceCredentialsPath,
+  deviceEventsPath,
+  sessionAbortPath,
+  sessionEventsPath,
+} from '@/constants/api-paths.js'
 import { createHealthResponse } from '@/types/health.js'
 import { formatSseData, museSseEventSchema } from '@/types/sse-events.js'
 import { deviceSchema } from '@/types/device.js'
@@ -14,6 +22,12 @@ describe('api-paths', () => {
     const id = '550e8400-e29b-41d4-a716-446655440000'
     expect(sessionEventsPath(id)).toBe(`/sessions/${id}/events`)
     expect(CLI_API_PATHS.SESSION_EVENTS).toBe('/sessions/:sessionId/events')
+  })
+
+  it('sessionAbortPath 应生成 abort 路径', () => {
+    const id = '550e8400-e29b-41d4-a716-446655440000'
+    expect(sessionAbortPath(id)).toBe(`/sessions/${id}/abort`)
+    expect(CLI_API_PATHS.SESSION_ABORT).toBe('/sessions/:sessionId/abort')
   })
 
   it('deviceCredentialsPath 应生成设备凭证路径', () => {
@@ -76,6 +90,14 @@ describe('sse-events', () => {
         success: true,
         tokensBefore: 120_000,
         compactionCount: 2,
+      }).success,
+    ).toBe(true)
+    expect(
+      museSseEventSchema.safeParse({
+        type: 'compaction_end',
+        reason: 'manual',
+        success: false,
+        cancelled: true,
       }).success,
     ).toBe(true)
   })

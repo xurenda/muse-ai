@@ -103,6 +103,29 @@ describe('applySseEvent', () => {
       expect(assistant.streaming).toBe(false)
     }
   })
+
+  it('agent_end 应收尾 running tool', () => {
+    let messages = applySseEvent([], { type: 'agent_start' })
+    messages = applySseEvent(messages, {
+      type: 'tool_start',
+      toolCallId: 'tc1',
+      toolName: 'bash',
+      args: { command: 'sleep 10' },
+    })
+    messages = applySseEvent(messages, { type: 'agent_end' }, { stoppedToolMessage: '已停止' })
+    const assistant = messages.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant') {
+      expect(assistant.streaming).toBe(false)
+      const tools = assistant.blocks.find(block => block.type === 'tools')
+      expect(tools?.type).toBe('tools')
+      if (tools?.type === 'tools') {
+        expect(tools.tools[0]?.status).toBe('done')
+        expect(tools.tools[0]?.isError).toBe(true)
+        expect(tools.tools[0]?.result).toBe('已停止')
+      }
+    }
+  })
 })
 
 describe('finalizeOpenThinkingBlock', () => {
