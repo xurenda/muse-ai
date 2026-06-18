@@ -4,7 +4,7 @@
   "personaId": "coding",
   "skillIds": ["git", "review"],
   "description": "内置编程 Agent，含 git 与 review skills",
-  "activeToolNames": ["read", "ls", "bash", "write", "edit", "grep", "find"],
+  "activeToolNames": ["read", "ls", "bash", "write", "edit", "grep", "find", "sleep"],
   "createdAt": "2026-01-01T00:00:00.000Z",
   "updatedAt": "2026-01-01T00:00:00.000Z"
 }

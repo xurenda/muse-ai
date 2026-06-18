@@ -4,7 +4,7 @@ import { createAllTools, resolveActiveTools } from '@/tools/index.js'
 describe('tools index', () => {
   it('createAllTools 返回 read/ls/bash', () => {
     const tools = createAllTools('/tmp')
-    expect(Object.keys(tools).sort()).toEqual(['bash', 'edit', 'find', 'grep', 'ls', 'read', 'write'])
+    expect(Object.keys(tools).sort()).toEqual(['bash', 'edit', 'find', 'grep', 'ls', 'read', 'sleep', 'write'])
     expect(tools.read.name).toBe('read')
   })
 

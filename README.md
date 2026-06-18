@@ -3,6 +3,7 @@
 可组装的 personal AI agent 平台。本地 CLI 运行 agent，Web 交互，Server 管理账号与 LLM Provider。
 
 - 产品文档：[docs/README.md](./docs/README.md)
+- **开发指南**：[docs/development-guide.md](./docs/development-guide.md)（三进程联调、排错、远程 CLI）
 - 贡献约定：[AGENTS.md](./AGENTS.md)
 
 ## 环境要求
@@ -24,9 +25,10 @@ pnpm install
 ```bash
 cp packages/server/.env.example packages/server/.env
 cp packages/web/.env.example packages/web/.env
+# 可选：cp packages/cli/.env.example packages/cli/.env
 ```
 
-`packages/server/.env` 开发环境可直接使用示例值；`packages/web/.env` 默认指向 `http://127.0.0.1:65435`。
+`packages/server/.env` 开发环境可直接使用示例值；`packages/web/.env` 默认指向 `http://127.0.0.1:65435`。CLI 环境变量见 [packages/cli/.env.example](./packages/cli/.env.example) 与开发指南。
 
 ### 3. 启动 Postgres / Redis
 
@@ -71,7 +73,13 @@ pnpm lint
 pnpm format:check
 ```
 
-开发日常只需按上文「开发环境」启动，不必每次 `pnpm build`。
+开发日常只需按上文「开发环境」启动，不必每次 `pnpm build`。修改 `packages/shared` 后需 `pnpm --filter @muse-ai/shared build`，详见开发指南。
+
+## 远程 CLI（摘要）
+
+Web 聊天 **直连 CLI**，不经 Server 转发 SSE。配对时 CLI 上报的 **endpoint 必须是浏览器能访问的地址**（局域网请设 `MUSE_CLI_HOST` 为本机 LAN IP，勿用 `127.0.0.1` 代填）。还需配置 CLI / Server 的 `MUSE_CORS_ORIGINS` 与 Web 的 `VITE_BACKEND_URL`。
+
+完整步骤（LAN 验收、HTTPS 限制、Tailscale 示例）：**[docs/development-guide.md](./docs/development-guide.md#远程-cli-与局域网)**。
 
 ## 健康检查
 

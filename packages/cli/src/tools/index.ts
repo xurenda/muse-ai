@@ -5,11 +5,12 @@ import { createFindTool, type FindToolOptions } from '@/tools/find.js'
 import { createGrepTool, type GrepToolOptions } from '@/tools/grep.js'
 import { createLsTool, type LsToolOptions } from '@/tools/ls.js'
 import { createReadTool, type ReadToolOptions } from '@/tools/read.js'
+import { createSleepTool, type SleepToolOptions } from '@/tools/sleep.js'
 import { createWriteTool, type WriteToolOptions } from '@/tools/write.js'
 
-export type MuseToolName = 'read' | 'ls' | 'bash' | 'write' | 'edit' | 'grep' | 'find'
+export type MuseToolName = 'read' | 'ls' | 'bash' | 'write' | 'edit' | 'grep' | 'find' | 'sleep'
 
-export const MUSE_TOOL_NAMES: readonly MuseToolName[] = ['read', 'ls', 'bash', 'write', 'edit', 'grep', 'find'] as const
+export const MUSE_TOOL_NAMES: readonly MuseToolName[] = ['read', 'ls', 'bash', 'write', 'edit', 'grep', 'find', 'sleep'] as const
 
 export const allToolNames = new Set<string>(MUSE_TOOL_NAMES)
 
@@ -21,6 +22,7 @@ export interface MuseToolsOptions {
   edit?: EditToolOptions
   grep?: GrepToolOptions
   find?: FindToolOptions
+  sleep?: SleepToolOptions
 }
 
 /** 创建全部内置工具（按名称索引） */
@@ -33,6 +35,7 @@ export function createAllTools(cwd: string, options?: MuseToolsOptions): Record<
     edit: createEditTool(cwd, options?.edit),
     grep: createGrepTool(cwd, options?.grep),
     find: createFindTool(cwd, options?.find),
+    sleep: createSleepTool(cwd, options?.sleep),
   }
 }
 
@@ -61,6 +64,7 @@ export {
   createEditTool,
   createGrepTool,
   createFindTool,
+  createSleepTool,
   type ReadToolOptions,
   type LsToolOptions,
   type BashToolOptions,
@@ -68,6 +72,7 @@ export {
   type EditToolOptions,
   type GrepToolOptions,
   type FindToolOptions,
+  type SleepToolOptions,
 }
 export { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, truncateHead, truncateTail } from '@/tools/truncate.js'
 export { resolveToCwd, resolveReadPath, resolveReadPathAsync } from '@/tools/path-utils.js'

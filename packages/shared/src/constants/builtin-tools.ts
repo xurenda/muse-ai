@@ -9,6 +9,7 @@ export const BUILTIN_TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
   { name: 'edit', description: '编辑文件' },
   { name: 'grep', description: '搜索文件内容（rg）' },
   { name: 'find', description: '查找文件（fd）' },
+  { name: 'sleep', description: '阻塞等待（联调测试用）' },
 ] as const
 
 export const BUILTIN_TOOL_NAMES = BUILTIN_TOOL_DESCRIPTORS.map(tool => tool.name)
