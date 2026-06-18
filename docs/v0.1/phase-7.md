@@ -513,7 +513,7 @@ pnpm --filter @muse-ai/web build
 ## 完成记录
 
 **2026-06-18 — 7.1 手动联调增补：Runtime / Registry 两通道 + 设备级 SSE**  
-**Commit**：待提交（基于 `a226a3a` 之后；含本记录所描述的全部代码与文档变更）
+**Commit**：`46e4b42`
 
 ### 背景
 
