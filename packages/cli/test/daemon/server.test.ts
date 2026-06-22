@@ -108,6 +108,22 @@ describe('createCliApp', () => {
     expect(created.session.agentId).toBe(BUILTIN_CODING_AGENT_ID)
   })
 
+  it('POST /sessions 应持久化 modelSelection', async () => {
+    const { app } = await createTestApp()
+
+    const createRes = await app.request('http://localhost/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agentId: BUILTIN_GENERAL_AGENT_ID,
+        modelSelection: { type: 'tier', tier: 'medium' },
+      }),
+    })
+    expect(createRes.status).toBe(201)
+    const created = (await createRes.json()) as { session: { modelSelection?: { type: string; tier: string } } }
+    expect(created.session.modelSelection).toEqual({ type: 'tier', tier: 'medium' })
+  })
+
   it('GET /sessions/:id/events 应返回 event-stream', async () => {
     const { app } = await createTestApp()
 
@@ -233,8 +249,8 @@ describe('createCliApp', () => {
 
     const getRes = await app.request(`http://localhost/sessions/${session.id}/settings`)
     expect(getRes.status).toBe(200)
-    const settings = (await getRes.json()) as { modelRef: string; thinkingLevel: string }
-    expect(settings.modelRef).toContain('/')
+    const settings = (await getRes.json()) as { modelRef?: string; thinkingLevel: string }
+    expect(settings.thinkingLevel).toBeTruthy()
 
     const patchRes = await app.request(`http://localhost/sessions/${session.id}/settings`, {
       method: 'PATCH',

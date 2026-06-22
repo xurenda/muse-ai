@@ -344,6 +344,7 @@ export class ChatService {
       getApiKeyAndHeaders: createBackendGetApiKeyAndHeaders(backendAuth, {
         task,
         selection: meta?.modelSelection,
+        lastResolvedModelRef: meta?.lastResolvedModelRef,
       }),
     })
 

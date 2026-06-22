@@ -71,7 +71,7 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
     cors({
       origin: ctx.config.corsOrigins,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'X-Muse-Provider', 'X-Muse-Task', 'X-Muse-Selection'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-Muse-Provider', 'X-Muse-Task', 'X-Muse-Selection', 'X-Muse-Last-Resolved-Model'],
     }),
   )
 

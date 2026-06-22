@@ -17,6 +17,7 @@ import {
   subscribeSessionEvents,
 } from '@/api/cli-client'
 import { fetchModelStrategy } from '@/api/settings-api'
+import type { ModelSelection } from '@muse-ai/shared'
 import { buildModelCatalog, resolveModelLabel, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { hasRunningTool } from '@/lib/assistant-message-helpers'
@@ -104,6 +105,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const sessionAutoRetryRef = useRef(false)
   const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
   const modelCatalogRef = useRef<ModelCatalogItem[]>([])
+  const userAccessToken = options?.userAccessToken
 
   const resolveModelDisplayName = useCallback((modelRef: string): string => {
     return resolveModelLabel(modelRef, modelCatalogRef.current)
@@ -122,10 +124,10 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   )
 
   useEffect(() => {
-    if (!options?.userAccessToken) return
+    if (!userAccessToken) return
 
     let cancelled = false
-    void fetchModelStrategy(options.userAccessToken)
+    void fetchModelStrategy(userAccessToken)
       .then(response => {
         if (cancelled) return
         const configured = response.options.filter(option => option.authStatus === 'configured')
@@ -138,7 +140,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     return () => {
       cancelled = true
     }
-  }, [options?.userAccessToken])
+  }, [userAccessToken])
 
   useEffect(() => {
     onSessionChangeRef.current = options?.onSessionChange
@@ -244,7 +246,10 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
       writeStoredSessionId(deviceSession.deviceId, id)
       setSessionId(id)
-      await loadSettings(id)
+      const settings = await loadSettings(id)
+      if (settings?.modelRef) {
+        setChatModelDisplay({ resolvedModelRef: settings.modelRef })
+      }
       await refreshTree(id, true)
 
       const abort = new AbortController()
@@ -532,8 +537,18 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       if (!deviceSession) return null
       try {
         const settings = sessionSettings ?? (routeSessionId ? await loadSettings(routeSessionId) : null)
+        let initialSelection: ModelSelection | undefined
+        if (userAccessToken) {
+          try {
+            const strategyResponse = await fetchModelStrategy(userAccessToken)
+            initialSelection = strategyResponse.strategy.taskRouting.chat
+          } catch {
+            // 无 user token 或拉取失败时仍创建 session，Server 会在缺 header 时用 taskRouting
+          }
+        }
         const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
           agentId: agentId ?? settings?.agentId,
+          ...(initialSelection ? { modelSelection: initialSelection } : {}),
         })
         requestSessionListRefresh()
         return session.id
@@ -544,7 +559,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         return null
       }
     },
-    [deviceSession, loadSettings, requestSessionListRefresh, routeSessionId, sessionSettings],
+    [deviceSession, loadSettings, requestSessionListRefresh, routeSessionId, sessionSettings, userAccessToken],
   )
 
   const startNewSession = useCallback(async () => {

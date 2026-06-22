@@ -51,6 +51,15 @@ export function resolveNextModelCandidate(current: ResolvedModelCandidate): Reso
   }
 }
 
+/** 将 preferredRef 置于候选列表首位（仍在列表内时），其余保序 */
+export function reorderCandidatesWithPreference(candidates: readonly string[], preferredRef?: string | null): string[] {
+  const preferred = preferredRef?.trim()
+  if (!preferred || !candidates.includes(preferred)) {
+    return [...candidates]
+  }
+  return [preferred, ...candidates.filter(ref => ref !== preferred)]
+}
+
 /** 从 HTTP 响应或 Error 提取状态码 */
 export function extractHttpStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined

@@ -111,4 +111,30 @@ describe('model-strategy-ui', () => {
       ),
     ).toBe('openai/deepseek-v4-pro')
   })
+
+  it('resolveDisplayModelRef tier persisted 在池内时优先于乐观首项', () => {
+    expect(
+      resolveDisplayModelRef(
+        { type: 'tier', tier: 'high' },
+        {
+          optimisticModelRef: 'openai/deepseek-v4-pro',
+          persistedModelRef: 'openai/deepseek-v4-flash',
+          tierPool: ['openai/deepseek-v4-pro', 'openai/deepseek-v4-flash'],
+        },
+      ),
+    ).toBe('openai/deepseek-v4-flash')
+  })
+
+  it('resolveDisplayModelRef tier persisted 不在当前池内时应回退乐观首项', () => {
+    expect(
+      resolveDisplayModelRef(
+        { type: 'tier', tier: 'medium' },
+        {
+          optimisticModelRef: 'openai/medium-model',
+          persistedModelRef: 'openai/high-only',
+          tierPool: ['openai/medium-model'],
+        },
+      ),
+    ).toBe('openai/medium-model')
+  })
 })

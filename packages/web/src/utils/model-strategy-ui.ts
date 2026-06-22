@@ -58,17 +58,21 @@ export function resolveDisplayModelRef(
     sseResolvedModelRef?: string | null
     optimisticModelRef?: string
     persistedModelRef?: string
+    /** 当前 tier 池；persisted 仅在其内时生效 */
+    tierPool?: readonly string[]
   },
 ): string {
   const sse = options.sseResolvedModelRef?.trim()
   const optimistic = options.optimisticModelRef?.trim()
-  const persisted = options.persistedModelRef?.trim()
+  const persistedRaw = options.persistedModelRef?.trim()
+  const persisted =
+    persistedRaw && options.tierPool && options.tierPool.includes(persistedRaw) ? persistedRaw : persistedRaw && !options.tierPool ? persistedRaw : undefined
 
   if (modelSelection?.type === 'model') {
     return sse || modelSelection.modelRef
   }
   if (modelSelection?.type === 'tier') {
-    return sse || optimistic || persisted || ''
+    return sse || persisted || optimistic || ''
   }
   return sse || persisted || ''
 }

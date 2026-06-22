@@ -29,6 +29,8 @@ export const createSessionRequestSchema = z.object({
   /** 省略时使用 config.activeAgentId，再回退内置默认 Agent */
   agentId: z.string().uuid().optional(),
   name: z.string().optional(),
+  /** 初始模型选择；省略时由 Web 从 taskRouting.chat 写入，或运行时由 Server 解析 */
+  modelSelection: modelSelectionSchema.optional(),
 })
 
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>

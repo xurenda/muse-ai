@@ -50,6 +50,7 @@ export {
   isRetryableModelError,
   normalizeModelStrategyPools,
   resolveNextModelCandidate,
+  reorderCandidatesWithPreference,
   resolvePrimaryModelCandidate,
   type ResolvedModelCandidate,
 } from './model-strategy.js'

@@ -19,6 +19,7 @@ export interface MuseSessionStoreOptions {
 export interface CreateSessionParams {
   agentId: string
   name?: string
+  modelSelection?: ModelSelection
 }
 
 /** 基于 pi JsonlSessionRepo 的本地 Session 存储，并用 registry 保存 agentId 等 Muse 元数据 */
@@ -78,6 +79,9 @@ export class MuseSessionStore {
     const session = await this.repo.create({ cwd: this.cwd, id })
     const metadata = await session.getMetadata()
     const entry = this.entryFromPiMetadata(metadata, request.agentId, { name: request.name })
+    if (request.modelSelection) {
+      entry.modelSelection = request.modelSelection
+    }
     this.entries.push(entry)
     await this.persistRegistry()
     return toSessionMeta(entry)
@@ -115,12 +119,13 @@ export class MuseSessionStore {
     return toSessionMeta(entry)
   }
 
-  /** 更新 Session 级模型选择（tier 或具体 model） */
+  /** 更新 Session 级模型选择（tier 或具体 model）；切换时清除粘性解析结果 */
   async updateModelSelection(id: string, modelSelection: ModelSelection): Promise<SessionMeta | undefined> {
     await this.ensureRegistry()
     const entry = this.findEntry(id)
     if (!entry) return undefined
     entry.modelSelection = modelSelection
+    delete entry.lastResolvedModelRef
     entry.updatedAt = new Date().toISOString()
     await this.persistRegistry()
     return toSessionMeta(entry)

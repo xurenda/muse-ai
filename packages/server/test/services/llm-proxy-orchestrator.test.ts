@@ -76,6 +76,28 @@ describe('LlmProxyOrchestrator', () => {
     expect(forward.mock.calls[1]?.[2]).toMatchObject({ model: 'flash' })
   })
 
+  it('X-Muse-Last-Resolved-Model 应优先尝试上次成功模型', async () => {
+    const forward = vi.fn<LlmProxyService['forward']>().mockResolvedValue(new Response(JSON.stringify({ choices: [] }), { status: 200 }))
+
+    const { orchestrator } = createOrchestrator(forward)
+    const response = await orchestrator.handle({
+      userId,
+      suffixPath: '/chat/completions',
+      body: { model: 'ignored', messages: [] },
+      incomingHeaders: new Headers(),
+      taskHeader: 'chat',
+      selectionHeader: 'tier:high',
+      lastResolvedModelHeader: 'openai/flash',
+      providerHint: undefined,
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get(MUSE_PROXY_HEADERS.RESOLVED_MODEL)).toBe('openai/flash')
+    expect(response.headers.get(MUSE_PROXY_HEADERS.FALLBACK_USED)).toBe('false')
+    expect(forward).toHaveBeenCalledTimes(1)
+    expect(forward.mock.calls[0]?.[2]).toMatchObject({ model: 'flash' })
+  })
+
   it('首候选 fetch 连接失败时应 fallback 到第二候选', async () => {
     const cause = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:11434'), { code: 'ECONNREFUSED' })
     const networkError = new TypeError('fetch failed', { cause })

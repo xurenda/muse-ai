@@ -36,7 +36,7 @@ export type SessionSettingsPatch = z.infer<typeof sessionSettingsPatchSchema>
 export const sessionSettingsResponseSchema = z.object({
   sessionId: z.string().uuid(),
   agentId: z.string().uuid(),
-  modelRef: modelRefSchema,
+  modelRef: modelRefSchema.optional(),
   modelSelection: modelSelectionSchema.optional(),
   thinkingLevel: thinkingLevelSchema,
   tokenUsage: sessionTokenUsageSchema,

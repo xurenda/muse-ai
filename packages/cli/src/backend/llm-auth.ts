@@ -10,6 +10,8 @@ export interface BackendLlmAuthConfig {
 export interface MuseProxyRequestContext {
   task: MuseLlmTask
   selection?: ModelSelection
+  /** 会话 meta 中上次 chat 成功模型；仍在池内时 Server 优先尝试 */
+  lastResolvedModelRef?: string
 }
 
 function normalizeBackendUrl(url: string): string {
@@ -27,6 +29,9 @@ export function createBackendGetApiKeyAndHeaders(config: BackendLlmAuthConfig, c
     }
     if (context.selection) {
       headers[MUSE_PROXY_HEADERS.SELECTION] = encodeModelSelectionHeader(context.selection)
+    }
+    if (context.task === 'chat' && context.lastResolvedModelRef?.trim()) {
+      headers[MUSE_PROXY_HEADERS.LAST_RESOLVED_MODEL] = context.lastResolvedModelRef.trim()
     }
     return {
       apiKey: config.deviceToken,

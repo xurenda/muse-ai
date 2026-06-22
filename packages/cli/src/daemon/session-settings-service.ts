@@ -6,6 +6,13 @@ import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
 import { MuseHarness, placeholderGetApiKeyAndHeaders, readSessionRuntimeOverrides, readSessionTokenUsage, resolveEffectiveHarnessConfig } from '@muse-ai/core'
 import { resolveActiveTools } from '@/tools/index.js'
 
+/** settings 响应中的 modelRef：仅回显 chat 粘性解析或显式 model 选择 */
+function resolveSessionSettingsModelRef(meta: { lastResolvedModelRef?: string }, selection: ModelSelection | undefined): string | undefined {
+  if (meta.lastResolvedModelRef) return meta.lastResolvedModelRef
+  if (selection?.type === 'model') return selection.modelRef
+  return undefined
+}
+
 export class SessionSettingsService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
@@ -38,7 +45,7 @@ export class SessionSettingsService {
     return sessionSettingsResponseSchema.parse({
       sessionId,
       agentId: meta.agentId,
-      modelRef: meta.lastResolvedModelRef ?? effectiveHarness.modelRef,
+      modelRef: resolveSessionSettingsModelRef(meta, storedSelection ?? legacySelection),
       modelSelection: storedSelection ?? legacySelection,
       thinkingLevel: effectiveHarness.thinkingLevel,
       tokenUsage,

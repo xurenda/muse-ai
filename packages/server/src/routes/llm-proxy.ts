@@ -31,6 +31,7 @@ export function registerLlmProxyRoutes(
         signal: c.req.raw.signal,
         taskHeader: c.req.header(MUSE_PROXY_HEADERS.TASK) ?? null,
         selectionHeader: c.req.header(MUSE_PROXY_HEADERS.SELECTION) ?? null,
+        lastResolvedModelHeader: c.req.header(MUSE_PROXY_HEADERS.LAST_RESOLVED_MODEL) ?? null,
         providerHint: c.req.header(MUSE_PROXY_HEADERS.PROVIDER) ?? c.req.header('x-muse-provider') ?? undefined,
       })
     } catch (error: unknown) {

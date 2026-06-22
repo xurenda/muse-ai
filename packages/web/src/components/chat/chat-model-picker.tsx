@@ -36,9 +36,11 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
   const [search, setSearch] = useState('')
   const [catalog, setCatalog] = useState<ModelCatalogItem[]>([])
   const [pools, setPools] = useState<{ high: string[]; medium: string[]; low: string[] } | null>(null)
+  const [defaultChatSelection, setDefaultChatSelection] = useState<ModelSelection | undefined>()
   const [saving, setSaving] = useState(false)
   const thinkingLevel = sessionSettings?.thinkingLevel ?? 'off'
-  const modelSelection = sessionSettings?.modelSelection
+  /** 会话未写入 selection 时，回退设置页「对话默认」（taskRouting.chat） */
+  const effectiveModelSelection = sessionSettings?.modelSelection ?? defaultChatSelection
 
   useEffect(() => {
     if (!userToken) return
@@ -50,11 +52,13 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
         const configured = response.options.filter(option => option.authStatus === 'configured')
         setCatalog(buildModelCatalog(configured))
         setPools(response.strategy.pools)
+        setDefaultChatSelection(response.strategy.taskRouting.chat)
       })
       .catch(() => {
         if (!cancelled) {
           setCatalog([])
           setPools(null)
+          setDefaultChatSelection(undefined)
         }
       })
 
@@ -96,28 +100,38 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
     setSearch('')
   }
 
-  const optimisticModelRef = useMemo(() => (pools ? resolveOptimisticModelRef(modelSelection, pools, catalog) : ''), [catalog, modelSelection, pools])
+  const optimisticModelRef = useMemo(
+    () => (pools ? resolveOptimisticModelRef(effectiveModelSelection, pools, catalog) : ''),
+    [catalog, effectiveModelSelection, pools],
+  )
+  const tierPool = effectiveModelSelection?.type === 'tier' && pools ? pools[effectiveModelSelection.tier] : undefined
   const displayModelRef = useMemo(
     () =>
-      resolveDisplayModelRef(modelSelection, {
+      resolveDisplayModelRef(effectiveModelSelection, {
         sseResolvedModelRef: chatModelDisplay?.resolvedModelRef,
         optimisticModelRef,
         persistedModelRef: sessionSettings?.modelRef,
+        tierPool,
       }),
-    [chatModelDisplay?.resolvedModelRef, modelSelection, optimisticModelRef, sessionSettings?.modelRef],
+    [chatModelDisplay?.resolvedModelRef, effectiveModelSelection, optimisticModelRef, sessionSettings?.modelRef, tierPool],
   )
 
   const triggerLabels = useMemo(
     () =>
-      resolvePickerTriggerLabels(modelSelection, displayModelRef, catalog, tier =>
+      resolvePickerTriggerLabels(effectiveModelSelection, displayModelRef, catalog, tier =>
         t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`),
       ),
-    [catalog, displayModelRef, modelSelection, t],
+    [catalog, displayModelRef, effectiveModelSelection, t],
   )
   const thinkingLevelLabel = thinkingLevel !== 'off' ? t(`thinkingLevelsShort.${thinkingLevel}`) : null
 
   async function applySelection(next: ModelSelection) {
-    if (!sessionSettings || isSameModelSelection(sessionSettings.modelSelection, next)) {
+    if (!sessionSettings) {
+      closePopover()
+      return
+    }
+    const current = sessionSettings.modelSelection ?? defaultChatSelection
+    if (isSameModelSelection(current, next)) {
       closePopover()
       return
     }
@@ -137,18 +151,18 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
   }
 
   function isTierSelected(tier: ModelTier): boolean {
-    return modelSelection?.type === 'tier' && modelSelection.tier === tier
+    return effectiveModelSelection?.type === 'tier' && effectiveModelSelection.tier === tier
   }
 
   function isOtherModelsSelected(): boolean {
-    return modelSelection?.type === 'model'
+    return effectiveModelSelection?.type === 'model'
   }
 
   function tierLabel(tier: ModelTier): string {
     return t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`)
   }
 
-  const selectedModelRef = modelSelection?.type === 'model' ? modelSelection.modelRef : null
+  const selectedModelRef = effectiveModelSelection?.type === 'model' ? effectiveModelSelection.modelRef : null
 
   return (
     <div ref={containerRef} className={cn('relative', statusBar ? 'ml-auto flex h-5 min-w-0 items-stretch' : undefined)}>

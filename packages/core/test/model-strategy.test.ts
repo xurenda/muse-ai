@@ -100,6 +100,14 @@ describe('isRetryableModelError', () => {
   })
 })
 
+describe('reorderCandidatesWithPreference', () => {
+  it('应将 preferredRef 置于首位且其余保序', async () => {
+    const { reorderCandidatesWithPreference } = await import('@/model-strategy.js')
+    expect(reorderCandidatesWithPreference(['openai/a', 'openai/b'], 'openai/b')).toEqual(['openai/b', 'openai/a'])
+    expect(reorderCandidatesWithPreference(['openai/a'], 'openai/missing')).toEqual(['openai/a'])
+  })
+})
+
 describe('extractHttpStatus', () => {
   it('应读取 status 与 statusCode', () => {
     expect(extractHttpStatus({ status: 503 })).toBe(503)

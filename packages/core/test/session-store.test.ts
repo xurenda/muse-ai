@@ -34,6 +34,19 @@ describe('MuseSessionStore', () => {
     expect(listed[0]?.id).toBe(created.id)
   })
 
+  it('create 应写入初始 modelSelection', async () => {
+    const store = await createStore()
+    const created = await store.create({
+      agentId: DEFAULT_AGENT_ID,
+      modelSelection: { type: 'tier', tier: 'medium' },
+    })
+
+    expect(created.modelSelection).toEqual({ type: 'tier', tier: 'medium' })
+
+    const loaded = await store.get(created.id)
+    expect(loaded?.modelSelection).toEqual({ type: 'tier', tier: 'medium' })
+  })
+
   it('重启后应能从 registry 恢复元数据并打开 JSONL', async () => {
     const store1 = await createStore()
     const created = await store1.create({ agentId: DEFAULT_AGENT_ID })

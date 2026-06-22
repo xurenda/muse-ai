@@ -1,5 +1,5 @@
 import { MUSE_PROXY_HEADERS, parseMuseLlmTask, parseProviderIdFromModelRef, type MuseLlmTask } from '@muse-ai/shared'
-import { isRetryableModelError } from '@muse-ai/core'
+import { isRetryableModelError, reorderCandidatesWithPreference } from '@muse-ai/core'
 import type { ModelResolutionService } from './model-resolution-service.js'
 import type { LlmProxyService } from './llm-proxy-service.js'
 import { isProviderAuthError, markProviderAuthFailure } from './provider-health.js'
@@ -14,6 +14,7 @@ export interface LlmProxyRequestContext {
   signal?: AbortSignal
   taskHeader: string | null
   selectionHeader: string | null
+  lastResolvedModelHeader: string | null
   providerHint: string | undefined
 }
 
@@ -87,12 +88,14 @@ export class LlmProxyOrchestrator {
       )
     }
 
+    const candidates = reorderCandidatesWithPreference(resolution.candidates, context.lastResolvedModelHeader)
+
     const attemptedModelRefs: string[] = []
     let lastResponse: Response | undefined
     let lastForwardError: unknown
 
-    for (let index = 0; index < resolution.candidates.length; index++) {
-      const modelRef = resolution.candidates[index]
+    for (let index = 0; index < candidates.length; index++) {
+      const modelRef = candidates[index]
       if (!modelRef) continue
 
       attemptedModelRefs.push(modelRef)
@@ -109,7 +112,7 @@ export class LlmProxyOrchestrator {
       } catch (error: unknown) {
         lastResponse = undefined
         lastForwardError = error
-        const hasMore = index < resolution.candidates.length - 1
+        const hasMore = index < candidates.length - 1
         if (!hasMore || !isRetryableModelError(error)) {
           break
         }
@@ -129,7 +132,7 @@ export class LlmProxyOrchestrator {
 
       lastResponse = upstream
       lastForwardError = undefined
-      const hasMore = index < resolution.candidates.length - 1
+      const hasMore = index < candidates.length - 1
       if (!hasMore || !isRetryableModelError({ status: upstream.status })) {
         break
       }
