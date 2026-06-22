@@ -12,8 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils'
 import {
   MODEL_TIERS,
-  addPoolItem,
-  availablePoolModels,
   buildModelCatalog,
   decodeModelSelection,
   decodeTaskModelSelection,
@@ -23,6 +21,7 @@ import {
   encodeTaskModelSelection,
   encodeTierValue,
   tierLabelKey,
+  tierDescKey,
   type ModelCatalogItem,
 } from '@/utils/model-strategy-ui'
 
@@ -45,7 +44,6 @@ interface ModelPoolTierEditorProps {
 
 function ModelPoolTierEditor({ tier, pool, catalog, expanded, onToggle, onChange }: ModelPoolTierEditorProps) {
   const { t } = useTranslation('settings')
-  const addCandidates = useMemo(() => availablePoolModels(catalog, pool), [catalog, pool])
 
   const trailingLabel = pool.length === 0 ? t('models.strategy.emptyTier') : t('models.strategy.poolCount', { count: pool.length })
 
@@ -55,9 +53,9 @@ function ModelPoolTierEditor({ tier, pool, catalog, expanded, onToggle, onChange
       onClick={onToggle}
       expanded={
         expanded ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
             {pool.length > 0 ? <ModelPoolDraggableList droppableId={`pool-${tier}`} pool={pool} catalog={catalog} onChange={onChange} /> : null}
-            <ModelPoolAddPicker candidates={addCandidates} onSelect={modelRef => onChange(addPoolItem(pool, modelRef))} />
+            <ModelPoolAddPicker catalog={catalog} pool={pool} onChange={onChange} />
           </div>
         ) : undefined
       }
@@ -138,14 +136,23 @@ export function ModelStrategyForm({ strategy, options, onChange }: ModelStrategy
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+                  className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                   aria-label={t('models.strategy.poolsDescription')}
                 >
                   <CircleHelp className="size-3.5" strokeWidth={2} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                {t('models.strategy.poolsDescription')}
+              <TooltipContent side="top" className="max-w-sm">
+                <p className="text-sm">{t('models.strategy.poolsDescription')}</p>
+                <ul className="mt-2 space-y-1.5 border-t border-border/60 pt-2 text-sm text-muted-foreground">
+                  {MODEL_TIERS.map(tier => (
+                    <li key={tier}>
+                      <span className="font-medium text-foreground">{t(`models.strategy.${tierLabelKey(tier)}`)}</span>
+                      <span aria-hidden>：</span>
+                      {t(`models.strategy.${tierDescKey(tier)}`)}
+                    </li>
+                  ))}
+                </ul>
               </TooltipContent>
             </Tooltip>
           }

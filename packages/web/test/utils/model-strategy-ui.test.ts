@@ -10,6 +10,7 @@ import {
   removePoolItem,
   reorderPoolItems,
   resolvePickerTriggerLabels,
+  togglePoolItem,
 } from '@/utils/model-strategy-ui'
 
 const catalog = [
@@ -57,6 +58,11 @@ describe('model-strategy-ui', () => {
     expect(addPoolItem(['a'], 'b')).toEqual(['a', 'b'])
     expect(addPoolItem(['a'], 'a')).toEqual(['a'])
     expect(removePoolItem(['a', 'b'], 0)).toEqual(['b'])
+  })
+
+  it('togglePoolItem 应切换成员', () => {
+    expect(togglePoolItem(['a'], 'b')).toEqual(['a', 'b'])
+    expect(togglePoolItem(['a', 'b'], 'a')).toEqual(['b'])
   })
 
   it('isSameModelSelection 应区分 tier 与 model', () => {

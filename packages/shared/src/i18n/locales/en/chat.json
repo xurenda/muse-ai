@@ -125,9 +125,9 @@
     "triggerAriaLabel": "Select model and reasoning level",
     "empty": "No matching models",
     "tierSection": "Tiers",
-    "tierHigh": "High",
-    "tierMedium": "Medium",
-    "tierLow": "Low"
+    "tierHigh": "Premium",
+    "tierMedium": "Standard",
+    "tierLow": "Lite"
   },
   "mode": {
     "prompt": "Prompt",

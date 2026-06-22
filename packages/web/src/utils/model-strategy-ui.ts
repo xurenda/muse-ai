@@ -17,6 +17,12 @@ export function tierLabelKey(tier: ModelTier): 'tierHigh' | 'tierMedium' | 'tier
   return 'tierMedium'
 }
 
+export function tierDescKey(tier: ModelTier): 'tierHighDesc' | 'tierMediumDesc' | 'tierLowDesc' {
+  if (tier === 'high') return 'tierHighDesc'
+  if (tier === 'low') return 'tierLowDesc'
+  return 'tierMediumDesc'
+}
+
 export function isSameModelSelection(a: ModelSelection | undefined, b: ModelSelection | undefined): boolean {
   if (a === undefined && b === undefined) return true
   if (a === undefined || b === undefined) return false
@@ -153,6 +159,13 @@ export function removePoolItem(items: readonly string[], index: number): string[
 export function addPoolItem(items: readonly string[], modelRef: string): string[] {
   if (!modelRef || items.includes(modelRef)) return [...items]
   return [...items, modelRef]
+}
+
+export function togglePoolItem(items: readonly string[], modelRef: string): string[] {
+  if (items.includes(modelRef)) {
+    return items.filter(ref => ref !== modelRef)
+  }
+  return addPoolItem(items, modelRef)
 }
 
 export function availablePoolModels(catalog: ModelCatalogItem[], pool: readonly string[]): ModelCatalogItem[] {

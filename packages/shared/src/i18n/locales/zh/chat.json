@@ -124,9 +124,9 @@
     "triggerAriaLabel": "选择模型与推理等级",
     "empty": "没有匹配的模型",
     "tierSection": "档位",
-    "tierHigh": "高",
-    "tierMedium": "中",
-    "tierLow": "低"
+    "tierHigh": "旗舰",
+    "tierMedium": "标准",
+    "tierLow": "轻量"
   },
   "mode": {
     "prompt": "Prompt",
