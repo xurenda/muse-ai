@@ -1,11 +1,11 @@
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { type ModelSelection, type ModelTier, type SessionSettingsPatch, type SessionSettingsResponse, type ThinkingLevel } from '@muse-ai/shared'
 import { fetchModelStrategy } from '@/api/settings-api'
 import { ReasoningLevelSlider } from '@/components/chat/reasoning-level-slider'
-import { Input } from '@/components/ui/input'
+import { ModelPickerPanel } from '@/components/model-picker/model-picker-panel'
 import { cn } from '@/lib/utils'
 import { MODEL_TIERS, buildModelCatalog, isSameModelSelection, resolvePickerTriggerLabels, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 
@@ -14,12 +14,15 @@ interface ChatModelPickerProps {
   sessionSettings: SessionSettingsResponse | null
   disabled: boolean
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
+  /** 嵌入底部状态栏的紧凑样式 */
+  statusBar?: boolean
 }
 
-export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate }: ChatModelPickerProps) {
+export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate, statusBar = false }: ChatModelPickerProps) {
   const { t } = useTranslation('chat')
   const containerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
+  const [otherModelsOpen, setOtherModelsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [catalog, setCatalog] = useState<ModelCatalogItem[]>([])
   const [saving, setSaving] = useState(false)
@@ -51,11 +54,18 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
 
     function handlePointerDown(event: MouseEvent) {
       if (containerRef.current?.contains(event.target as Node)) return
-      setOpen(false)
+      closePopover()
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') {
+        if (otherModelsOpen) {
+          setOtherModelsOpen(false)
+          setSearch('')
+          return
+        }
+        closePopover()
+      }
     }
 
     document.addEventListener('mousedown', handlePointerDown)
@@ -64,7 +74,13 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [open])
+  }, [open, otherModelsOpen])
+
+  function closePopover() {
+    setOpen(false)
+    setOtherModelsOpen(false)
+    setSearch('')
+  }
 
   const triggerLabels = useMemo(
     () =>
@@ -75,46 +91,16 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
   )
   const thinkingLevelLabel = thinkingLevel !== 'off' ? t(`thinkingLevelsShort.${thinkingLevel}`) : null
 
-  const filteredModels = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    if (!query) return catalog
-    return catalog.filter(item => {
-      return (
-        item.modelName.toLowerCase().includes(query) ||
-        item.modelId.toLowerCase().includes(query) ||
-        item.providerName.toLowerCase().includes(query) ||
-        item.modelRef.toLowerCase().includes(query)
-      )
-    })
-  }, [catalog, search])
-
-  const groupedModels = useMemo(() => {
-    const groups = new Map<string, { providerName: string; items: ModelCatalogItem[] }>()
-    for (const item of filteredModels) {
-      const existing = groups.get(item.providerId)
-      if (existing) {
-        existing.items.push(item)
-      } else {
-        groups.set(item.providerId, { providerName: item.providerName, items: [item] })
-      }
-    }
-    return [...groups.entries()]
-  }, [filteredModels])
-
   async function applySelection(next: ModelSelection) {
     if (!sessionSettings || isSameModelSelection(sessionSettings.modelSelection, next)) {
-      setSearch('')
-      setOpen(false)
+      closePopover()
       return
     }
 
     setSaving(true)
     const ok = await onUpdate({ modelSelection: next })
     setSaving(false)
-    if (ok) {
-      setSearch('')
-      setOpen(false)
-    }
+    if (ok) closePopover()
   }
 
   async function applyThinking(level: ThinkingLevel) {
@@ -129,12 +115,18 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
     return modelSelection?.type === 'tier' && modelSelection.tier === tier
   }
 
-  function isModelSelected(modelRef: string): boolean {
-    return modelSelection?.type === 'model' && modelSelection.modelRef === modelRef
+  function isOtherModelsSelected(): boolean {
+    return modelSelection?.type === 'model'
   }
 
+  function tierLabel(tier: ModelTier): string {
+    return t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`)
+  }
+
+  const selectedModelRef = modelSelection?.type === 'model' ? modelSelection.modelRef : null
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={cn('relative', statusBar ? 'ml-auto flex h-5 min-w-0 items-stretch' : undefined)}>
       <button
         type="button"
         disabled={disabled || saving || !sessionSettings}
@@ -142,15 +134,17 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
         aria-haspopup="dialog"
         aria-label={t('modelPicker.triggerAriaLabel')}
         onClick={() => {
-          setOpen(value => {
-            if (value) setSearch('')
-            return !value
-          })
+          if (open) closePopover()
+          else setOpen(true)
         }}
         className={cn(
-          'inline-flex h-7 min-w-0 max-w-[min(100%,20rem)] items-center gap-inline-sm rounded-control px-field-x text-xs transition-colors',
-          'hover:bg-foreground/6 disabled:pointer-events-none disabled:opacity-50',
-          open && 'bg-foreground/6',
+          'min-w-0 items-center transition-colors disabled:pointer-events-none disabled:opacity-50',
+          statusBar
+            ? cn(
+                'flex h-5 max-w-[min(100%,24rem)] gap-1.5 border-0 px-2 text-[11px] leading-none',
+                open ? 'bg-foreground/6 text-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
+              )
+            : cn('inline-flex h-7 max-w-[min(100%,20rem)] gap-inline-sm rounded-control px-field-x text-xs hover:bg-foreground/6', open && 'bg-foreground/6'),
         )}
       >
         <span className="flex min-w-0 items-center gap-1 truncate">
@@ -158,27 +152,18 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
           {triggerLabels.secondary ? <span className="truncate text-muted-foreground">{triggerLabels.secondary}</span> : null}
           {thinkingLevelLabel ? <span className="shrink-0 text-muted-foreground">{thinkingLevelLabel}</span> : null}
         </span>
-        <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} strokeWidth={2} />
+        <ChevronDown
+          className={cn('shrink-0 text-muted-foreground transition-transform', statusBar ? 'size-3' : 'size-3.5', open && 'rotate-180')}
+          strokeWidth={2}
+        />
       </button>
 
       {open ? (
-        <div role="dialog" aria-label={t('modelPicker.triggerAriaLabel')} className="absolute bottom-full right-0 z-50 mb-stack w-72 ui-popover-panel">
-          <div className="border-b border-border/60 px-panel-x py-menu-y">
-            <Input
-              value={search}
-              onChange={event => setSearch(event.target.value)}
-              placeholder={t('modelPicker.searchPlaceholder')}
-              className="h-7 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-              onKeyDown={event => event.stopPropagation()}
-            />
-          </div>
-
-          <div className="max-h-56 overflow-y-auto ui-popover-list">
-            <div className="flex flex-col gap-stack-sm">
-              <p className="ui-popover-label">{t('modelPicker.tierSection')}</p>
+        <div className={cn('absolute bottom-full right-2 z-50', statusBar ? 'mb-1' : 'mb-stack')}>
+          <div role="dialog" aria-label={t('modelPicker.triggerAriaLabel')} className="w-72 ui-popover-panel">
+            <div className="ui-popover-list">
               {MODEL_TIERS.map(tier => {
                 const selected = isTierSelected(tier)
-                const tierLabel = t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`)
                 return (
                   <button
                     key={tier}
@@ -187,55 +172,74 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
                     onClick={() => void applySelection({ type: 'tier', tier })}
                     className={cn('ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground', selected && 'bg-accent text-foreground')}
                   >
-                    <span className="min-w-0 flex-1 truncate text-left">{tierLabel}</span>
-                    {selected ? <Check className="size-3.5 shrink-0 text-foreground" /> : null}
+                    <span className="min-w-0 flex-1 truncate text-left">{tierLabel(tier)}</span>
+                    {selected ? <Check className="size-3.5 shrink-0 text-foreground" strokeWidth={2} /> : null}
                   </button>
                 )
               })}
+
+              <div className="border-t border-border/60" role="separator" />
+
+              <button
+                type="button"
+                disabled={disabled || saving}
+                aria-expanded={otherModelsOpen}
+                onClick={event => {
+                  event.stopPropagation()
+                  setOtherModelsOpen(value => {
+                    if (value) setSearch('')
+                    return !value
+                  })
+                }}
+                className={cn(
+                  'ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground',
+                  otherModelsOpen && 'bg-accent text-foreground',
+                  isOtherModelsSelected() && !otherModelsOpen && 'bg-accent text-foreground',
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate text-left">{t('modelPicker.otherModels')}</span>
+                <span className="flex shrink-0 items-center gap-1">
+                  {isOtherModelsSelected() ? <Check className="size-3.5 text-foreground" strokeWidth={2} /> : null}
+                  {otherModelsOpen ? (
+                    <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                  ) : (
+                    <ChevronRight className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                  )}
+                </span>
+              </button>
+
+              <Link to="/settings/models" className="ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground" onClick={closePopover}>
+                <span className="min-w-0 flex-1 truncate text-left">{t('modelPicker.manageModels')}</span>
+              </Link>
+
+              <div className="border-t border-border/60" role="separator" />
+
+              <ReasoningLevelSlider value={thinkingLevel} disabled={disabled || saving} onChange={level => void applyThinking(level)} />
             </div>
-
-            {groupedModels.length > 0 ? <div className="my-menu-y border-t border-border/60" role="separator" /> : null}
-
-            {groupedModels.length === 0 ? (
-              search.trim() ? (
-                <p className="py-menu-y text-center text-xs text-muted-foreground">{t('modelPicker.empty')}</p>
-              ) : null
-            ) : (
-              groupedModels.map(([providerId, group]) => (
-                <div key={providerId} className="flex flex-col gap-stack-sm">
-                  <p className="ui-popover-label">{group.providerName}</p>
-                  {group.items.map(item => {
-                    const selected = isModelSelected(item.modelRef)
-                    return (
-                      <button
-                        key={item.modelRef}
-                        type="button"
-                        disabled={disabled || saving}
-                        onClick={() => void applySelection({ type: 'model', modelRef: item.modelRef })}
-                        className={cn(
-                          'ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground',
-                          selected && 'bg-accent text-foreground',
-                        )}
-                      >
-                        <span className="min-w-0 flex-1 truncate text-left">{item.modelName}</span>
-                        {selected ? <Check className="size-3.5 shrink-0 text-foreground" /> : null}
-                      </button>
-                    )
-                  })}
-                </div>
-              ))
-            )}
           </div>
 
-          <div className="ui-popover-section">
-            <Link to="/settings/models" className="ui-popover-link" onClick={() => setOpen(false)}>
-              {t('modelPicker.editModels')}
-            </Link>
-          </div>
-
-          <div className="ui-popover-section">
-            <ReasoningLevelSlider value={thinkingLevel} disabled={disabled || saving} onChange={level => void applyThinking(level)} />
-          </div>
+          {otherModelsOpen ? (
+            <div
+              role="menu"
+              aria-label={t('modelPicker.otherModels')}
+              className={cn('absolute bottom-0 right-full z-50 mr-1', statusBar ? 'max-h-[min(20rem,calc(100vh-6rem))]' : 'max-h-80')}
+            >
+              <ModelPickerPanel
+                searchPlaceholder={t('modelPicker.searchPlaceholder')}
+                search={search}
+                onSearchChange={setSearch}
+                catalog={catalog}
+                selectionMode="single"
+                selectedModelRef={selectedModelRef}
+                onModelSelect={modelRef => void applySelection({ type: 'model', modelRef })}
+                emptyMessage={t('modelPicker.empty')}
+                disabled={disabled || saving}
+                autoFocusSearch
+                maxHeightClassName={statusBar ? 'max-h-[min(20rem,calc(100vh-6rem))]' : 'max-h-80'}
+                onSearchKeyDown={event => event.stopPropagation()}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

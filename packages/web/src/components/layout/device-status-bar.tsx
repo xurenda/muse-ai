@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { resolveDeviceAggregateStatus, type DeviceAggregateStatus } from '@/lib/device-aggregate-status'
 import { formatConnectionErrorMessage } from '@/lib/connection-errors'
 import { cn } from '@/lib/utils'
+import { STATUS_BAR_TRAILING_SLOT_ID } from '@/constants/status-bar'
 import { useDeviceStatusStore } from '@/stores/device-status-store'
 
 const STATUS_LABEL_KEYS: Record<DeviceAggregateStatus, string> = {
@@ -210,12 +211,12 @@ export function DeviceStatusBar() {
     <div className="relative shrink-0 border-t border-border bg-muted/30">
       {panelOpen ? <DeviceStatusPanel onClose={closePanel} /> : null}
 
-      <div className="flex h-5 items-stretch px-1">
+      <div className="flex h-5 items-stretch pl-1">
         <button
           type="button"
           data-device-status-trigger
           className={cn(
-            'inline-flex max-w-full items-center gap-1.5 px-2 text-left text-[11px] leading-none transition-colors',
+            'inline-flex h-full max-w-full items-center gap-1.5 px-2 text-left text-[11px] leading-none transition-colors',
             panelOpen ? 'bg-foreground/6 text-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
           )}
           aria-expanded={panelOpen}
@@ -229,6 +230,8 @@ export function DeviceStatusBar() {
             {t('statusBar.device')} · {t(STATUS_LABEL_KEYS[aggregate])}
           </span>
         </button>
+
+        <div id={STATUS_BAR_TRAILING_SLOT_ID} className="contents" />
       </div>
     </div>
   )

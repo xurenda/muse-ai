@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Group, Panel, usePanelRef } from 'react-resizable-panels'
 import { useLocation } from 'react-router-dom'
 import { ChatDeviceStatusBridge } from '@/components/layout/chat-device-status-bridge'
+import { ChatStatusBarModelPicker } from '@/components/layout/chat-status-bar-model-picker'
 import { DeviceStatusBar } from '@/components/layout/device-status-bar'
 import { DeviceStatusController } from '@/components/layout/device-status-controller'
 import { AppSidebar } from '@/components/layout/app-sidebar'
@@ -70,6 +71,7 @@ function MainPanelContent() {
         {isChatRoute ? (
           <ChatSessionProvider>
             <ChatDeviceStatusBridge />
+            <ChatStatusBarModelPicker />
             {mainInner}
           </ChatSessionProvider>
         ) : (

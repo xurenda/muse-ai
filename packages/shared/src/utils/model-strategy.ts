@@ -21,6 +21,30 @@ export function normalizeModelStrategyPools(pools: ModelStrategyPools): ModelStr
   }
 }
 
+function appendUniquePoolRefs(pool: readonly string[], refs: readonly string[]): string[] {
+  const seen = new Set(pool)
+  const next = [...pool]
+  for (const ref of refs) {
+    if (seen.has(ref)) continue
+    seen.add(ref)
+    next.push(ref)
+  }
+  return next
+}
+
+/** 将 modelRef 追加到旗舰/标准/轻量三档（已存在则跳过） */
+export function appendModelRefsToAllPools(strategy: ModelStrategyConfig, modelRefs: readonly string[]): ModelStrategyConfig {
+  if (modelRefs.length === 0) return strategy
+  return {
+    ...strategy,
+    pools: {
+      high: appendUniquePoolRefs(strategy.pools.high, modelRefs),
+      medium: appendUniquePoolRefs(strategy.pools.medium, modelRefs),
+      low: appendUniquePoolRefs(strategy.pools.low, modelRefs),
+    },
+  }
+}
+
 /** 收集 strategy 内所有 modelRef（去重，保序） */
 export function collectModelRefsFromStrategy(strategy: ModelStrategyConfig): string[] {
   const seen = new Set<string>()

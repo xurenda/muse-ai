@@ -69,6 +69,53 @@ export function buildModelCatalog(options: ModelsConfigProviderOption[]): ModelC
   )
 }
 
+export function filterModelCatalog(catalog: ModelCatalogItem[], search: string): ModelCatalogItem[] {
+  const query = search.trim().toLowerCase()
+  if (!query) return catalog
+  return catalog.filter(item => {
+    return (
+      item.modelName.toLowerCase().includes(query) ||
+      item.modelId.toLowerCase().includes(query) ||
+      item.providerName.toLowerCase().includes(query) ||
+      item.modelRef.toLowerCase().includes(query)
+    )
+  })
+}
+
+export function groupModelCatalogByProvider(items: ModelCatalogItem[]): Array<[string, { providerName: string; items: ModelCatalogItem[] }]> {
+  const groups = new Map<string, { providerName: string; items: ModelCatalogItem[] }>()
+  for (const item of items) {
+    const existing = groups.get(item.providerId)
+    if (existing) {
+      existing.items.push(item)
+    } else {
+      groups.set(item.providerId, { providerName: item.providerName, items: [item] })
+    }
+  }
+  return [...groups.entries()]
+}
+
+/** 编码后的路由/选择值 → 展示文案 */
+export function resolveEncodedSelectionLabel(
+  value: string,
+  catalog: ModelCatalogItem[],
+  options: { followChatLabel?: string; tierLabel?: (tier: ModelTier) => string } = {},
+): string {
+  if (value === encodeFollowChatValue() && options.followChatLabel) {
+    return options.followChatLabel
+  }
+  if (value.startsWith('tier:')) {
+    const tier = value.slice('tier:'.length) as ModelTier
+    if (tier === 'high' || tier === 'medium' || tier === 'low') {
+      return options.tierLabel?.(tier) ?? tier
+    }
+  }
+  if (value.startsWith('model:')) {
+    return resolveModelLabel(value.slice('model:'.length), catalog)
+  }
+  return value
+}
+
 export function resolveModelLabel(modelRef: string, catalog: ModelCatalogItem[]): string {
   const item = resolveCatalogItem(modelRef, catalog)
   if (item) return item.modelName

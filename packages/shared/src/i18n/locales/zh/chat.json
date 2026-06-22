@@ -118,6 +118,7 @@
   "modelPicker": {
     "searchPlaceholder": "搜索模型",
     "editModels": "编辑模型…",
+    "manageModels": "管理模型",
     "reasoningLevel": "推理等级",
     "reasoningSliderMin": "更快",
     "reasoningSliderMax": "更聪明",
@@ -126,7 +127,9 @@
     "tierSection": "档位",
     "tierHigh": "旗舰",
     "tierMedium": "标准",
-    "tierLow": "轻量"
+    "tierLow": "轻量",
+    "otherModels": "其他模型",
+    "thinkingLevelSection": "思考等级"
   },
   "mode": {
     "prompt": "Prompt",

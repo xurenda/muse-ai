@@ -14,9 +14,10 @@ export interface SelectProps {
   disabled?: boolean
   placeholder?: string
   className?: string
+  menuAlign?: 'start' | 'center' | 'end'
 }
 
-export function Select({ value, options, onValueChange, disabled, placeholder, className }: SelectProps) {
+export function Select({ value, options, onValueChange, disabled, placeholder, className, menuAlign = 'start' }: SelectProps) {
   const selectedLabel = options.find(option => option.value === value)?.label
 
   return (
@@ -34,7 +35,7 @@ export function Select({ value, options, onValueChange, disabled, placeholder, c
           <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={2} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)]">
+      <DropdownMenuContent align={menuAlign} className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)]">
         <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
           {options.map(option => (
             <DropdownMenuRadioItem key={option.value} value={option.value}>

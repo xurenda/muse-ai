@@ -1,8 +1,6 @@
 import { ArrowUp, Square } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
-import { ChatModelPicker } from '@/components/chat/chat-model-picker'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -19,27 +17,11 @@ interface ChatComposerProps {
   disabled: boolean
   canStop: boolean
   stopping: boolean
-  userToken: string | undefined
-  sessionSettings: SessionSettingsResponse | null
-  onUpdateSessionSettings: (patch: SessionSettingsPatch) => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
   onStop: () => void
 }
 
-export function ChatComposer({
-  value,
-  onChange,
-  streaming,
-  compacting,
-  disabled,
-  canStop,
-  stopping,
-  userToken,
-  sessionSettings,
-  onUpdateSessionSettings,
-  onSend,
-  onStop,
-}: ChatComposerProps) {
+export function ChatComposer({ value, onChange, streaming, compacting, disabled, canStop, stopping, onSend, onStop }: ChatComposerProps) {
   const { t } = useTranslation('chat')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isComposingRef = useRef(false)
@@ -115,8 +97,6 @@ export function ChatComposer({
         </p>
 
         <div className="flex items-center gap-inline-sm">
-          <ChatModelPicker userToken={userToken} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdateSessionSettings} />
-
           {showStop ? (
             <TooltipProvider delayDuration={300}>
               <Tooltip>

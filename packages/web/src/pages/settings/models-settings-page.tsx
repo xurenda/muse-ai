@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { ModelStrategyConfig, ModelStrategyResponse } from '@muse-ai/shared'
+import type { ModelStrategyConfig, ModelStrategyPools, ModelStrategyResponse, ModelStrategyTaskRouting } from '@muse-ai/shared'
 import { fetchModelStrategy, updateModelStrategy } from '@/api/settings-api'
 import { BackendApiError } from '@/api/backend-client'
 import { ModelStrategyForm } from '@/components/settings/model-strategy-form'
 import { PageShell } from '@/components/layout/page-shell'
-import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 import { cloneModelStrategy } from '@/utils/model-strategy-ui'
+
+/** 模型组拖拽/增删：停止操作后再保存，避免频繁请求 */
+const POOLS_SAVE_DEBOUNCE_MS = 600
 
 export function ModelsSettingsPage() {
   const { t } = useTranslation('settings')
@@ -17,13 +19,89 @@ export function ModelsSettingsPage() {
   const [response, setResponse] = useState<ModelStrategyResponse | null>(null)
   const [draft, setDraft] = useState<ModelStrategyConfig | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const draftRef = useRef<ModelStrategyConfig | null>(null)
+  const poolsSaveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const pendingPoolsSaveRef = useRef<ModelStrategyConfig | null>(null)
 
   const applyResponse = useCallback((next: ModelStrategyResponse) => {
     setResponse(next)
-    setDraft(cloneModelStrategy(next.strategy))
+    const cloned = cloneModelStrategy(next.strategy)
+    setDraft(cloned)
+    draftRef.current = cloned
   }, [])
+
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  const persistStrategy = useCallback(
+    async (next: ModelStrategyConfig) => {
+      if (!auth) return
+
+      try {
+        await updateModelStrategy(auth.accessToken, next)
+      } catch (error: unknown) {
+        if (error instanceof BackendApiError) {
+          toast.error(error.message || t('providers.failed'))
+        } else {
+          toast.error(error instanceof Error ? error.message : t('providers.failed'))
+        }
+      }
+    },
+    [auth, t],
+  )
+
+  const cancelPendingPoolsSave = useCallback(() => {
+    if (poolsSaveTimerRef.current) {
+      clearTimeout(poolsSaveTimerRef.current)
+      poolsSaveTimerRef.current = undefined
+    }
+    pendingPoolsSaveRef.current = null
+  }, [])
+
+  const schedulePoolsSave = useCallback(
+    (next: ModelStrategyConfig) => {
+      pendingPoolsSaveRef.current = next
+      if (poolsSaveTimerRef.current) {
+        clearTimeout(poolsSaveTimerRef.current)
+      }
+      poolsSaveTimerRef.current = setTimeout(() => {
+        poolsSaveTimerRef.current = undefined
+        const pending = pendingPoolsSaveRef.current
+        pendingPoolsSaveRef.current = null
+        if (pending) {
+          void persistStrategy(pending)
+        }
+      }, POOLS_SAVE_DEBOUNCE_MS)
+    },
+    [persistStrategy],
+  )
+
+  const handlePoolsChange = useCallback(
+    (pools: ModelStrategyPools) => {
+      setDraft(current => {
+        if (!current) return current
+        const next = { ...current, pools }
+        schedulePoolsSave(next)
+        return next
+      })
+    },
+    [schedulePoolsSave],
+  )
+
+  const handleTaskRoutingChange = useCallback(
+    (taskRouting: ModelStrategyTaskRouting) => {
+      // 仅取消 debounce，避免旧 pools 定时保存覆盖刚改的 taskRouting；无需先保存 pools
+      cancelPendingPoolsSave()
+      setDraft(current => {
+        if (!current) return current
+        const next = { ...current, taskRouting }
+        void persistStrategy(next)
+        return next
+      })
+    },
+    [cancelPendingPoolsSave, persistStrategy],
+  )
 
   useEffect(() => {
     if (!auth) return
@@ -51,26 +129,20 @@ export function ModelsSettingsPage() {
     }
   }, [applyResponse, auth, t])
 
-  const handleSave = async () => {
-    if (!auth || !draft) return
-
-    setSaving(true)
-    setSaved(false)
-    try {
-      await updateModelStrategy(auth.accessToken, draft)
-      setSaved(true)
-      const next = await fetchModelStrategy(auth.accessToken)
-      applyResponse(next)
-    } catch (error: unknown) {
-      if (error instanceof BackendApiError) {
-        toast.error(error.message || t('providers.failed'))
-      } else {
-        toast.error(error instanceof Error ? error.message : t('providers.failed'))
+  useEffect(() => {
+    return () => {
+      if (poolsSaveTimerRef.current) {
+        clearTimeout(poolsSaveTimerRef.current)
+        const latest = draftRef.current
+        if (latest && auth) {
+          void updateModelStrategy(auth.accessToken, latest).catch(() => {
+            // 离开页面时静默失败，避免 unmount 后 toast
+          })
+        }
       }
-    } finally {
-      setSaving(false)
+      pendingPoolsSaveRef.current = null
     }
-  }
+  }, [auth])
 
   if (!auth) return null
 
@@ -88,23 +160,7 @@ export function ModelsSettingsPage() {
       ) : null}
 
       {!loading && response && draft && response.options.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          <ModelStrategyForm
-            strategy={draft}
-            options={response.options}
-            onChange={next => {
-              setDraft(next)
-              setSaved(false)
-            }}
-          />
-
-          <div className="flex items-center gap-3 px-1">
-            <Button type="button" onClick={() => void handleSave()} disabled={saving}>
-              {saving ? t('models.saving') : t('models.save')}
-            </Button>
-            {saved ? <span className="text-sm text-muted-foreground">{t('models.saved')}</span> : null}
-          </div>
-        </div>
+        <ModelStrategyForm strategy={draft} options={response.options} onPoolsChange={handlePoolsChange} onTaskRoutingChange={handleTaskRoutingChange} />
       ) : null}
     </PageShell>
   )

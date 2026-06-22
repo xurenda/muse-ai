@@ -119,6 +119,7 @@
   "modelPicker": {
     "searchPlaceholder": "Search models",
     "editModels": "Edit models…",
+    "manageModels": "Manage models",
     "reasoningLevel": "Reasoning level",
     "reasoningSliderMin": "Faster",
     "reasoningSliderMax": "Smarter",
@@ -127,7 +128,9 @@
     "tierSection": "Tiers",
     "tierHigh": "Premium",
     "tierMedium": "Standard",
-    "tierLow": "Lite"
+    "tierLow": "Lite",
+    "otherModels": "Other models",
+    "thinkingLevelSection": "Thinking level"
   },
   "mode": {
     "prompt": "Prompt",

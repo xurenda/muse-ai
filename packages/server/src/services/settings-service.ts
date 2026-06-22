@@ -3,6 +3,7 @@ import { getProviders } from '@earendil-works/pi-ai'
 import {
   API_KEY_PROVIDER_IDS,
   DEFAULT_AGENT_ID,
+  appendModelRefsToAllPools,
   maskApiKey,
   PROVIDER_DISPLAY_NAMES,
   type ApiKeyCredential,
@@ -149,6 +150,29 @@ export class SettingsService {
     return configured
   }
 
+  /** 首次配置 provider 时，将其全部模型写入三档模型组 */
+  private async seedModelStrategyPoolsForProvider(userId: string, providerId: string): Promise<void> {
+    const modelsStore = await this.configStore.readAll(userId)
+    const modelRefs = listProviderModelOptions(providerId, modelsStore).map(model => `${providerId}/${model.id}`)
+    if (modelRefs.length === 0) return
+
+    const [settings] = await this.db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1)
+    const strategy = migrateModelStrategyFromLegacy(settings ?? {})
+    const next = appendModelRefsToAllPools(strategy, modelRefs)
+    const configuredProviderIds = await this.listConfiguredProviderIds(userId)
+
+    try {
+      validateModelStrategyForUser(next, modelsStore, configuredProviderIds)
+    } catch (error: unknown) {
+      if (error instanceof ModelStrategyValidationError) {
+        throw new SettingsError(error.code, error.message)
+      }
+      throw error
+    }
+
+    await this.persistModelStrategy(userId, next, settings ?? undefined)
+  }
+
   private async persistModelStrategy(
     userId: string,
     strategy: UpdateModelStrategyRequest,
@@ -267,9 +291,14 @@ export class SettingsService {
       throw new SettingsError('invalid_request', 'API Key 不能为空')
     }
 
+    const wasConfigured = await this.isConfigured(userId, providerId)
     const credential: ApiKeyCredential = { type: 'api_key', key: apiKey.trim() }
     await this.credentialStore.set(userId, providerId, credential)
     clearProviderAuthFailure(userId, providerId)
+
+    if (!wasConfigured) {
+      await this.seedModelStrategyPoolsForProvider(userId, providerId)
+    }
   }
 
   async deleteProviderApiKey(userId: string, providerId: string): Promise<void> {

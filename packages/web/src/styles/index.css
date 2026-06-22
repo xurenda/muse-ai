@@ -180,7 +180,7 @@
 }
 
 @utility ui-popover-label {
-  @apply py-1 text-[10px] font-medium tracking-wide text-muted-foreground uppercase;
+  @apply py-1 text-[10px] font-medium tracking-wide text-muted-foreground;
 }
 
 @utility ui-popover-section {

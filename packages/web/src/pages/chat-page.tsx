@@ -39,7 +39,6 @@ function SessionChatFooter({
   onSend,
   onStop,
 }: SessionChatFooterProps) {
-  const { auth } = useAuth()
   const [composerText, setComposerText] = useState('')
 
   return (
@@ -60,9 +59,6 @@ function SessionChatFooter({
         disabled={disabled}
         canStop={canStop}
         stopping={stopping}
-        userToken={auth?.accessToken}
-        sessionSettings={sessionSettings}
-        onUpdateSessionSettings={onUpdate}
         onSend={onSend}
         onStop={onStop}
       />
