@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { modelSelectionSchema } from './model-strategy.js'
 
 export const sessionNameSourceSchema = z.enum(['first_message', 'auto_llm', 'manual'])
 
@@ -9,6 +10,7 @@ export const sessionMetaSchema = z.object({
   agentId: z.string().uuid(),
   name: z.string().optional(),
   nameSource: sessionNameSourceSchema.optional(),
+  modelSelection: modelSelectionSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

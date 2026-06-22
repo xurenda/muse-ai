@@ -25,6 +25,8 @@ function createMockContext(overrides?: Partial<ServerContext>): ServerContext {
     settingsService: {
       getModelsConfig: vi.fn(),
       updateModelsConfig: vi.fn(),
+      getModelStrategy: vi.fn(),
+      updateModelStrategy: vi.fn(),
       getProvidersConfig: vi.fn(),
       saveProviderApiKey: vi.fn(),
       deleteProviderApiKey: vi.fn(),

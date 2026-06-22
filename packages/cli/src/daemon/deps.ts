@@ -3,6 +3,7 @@ import { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 import { ChatService } from './chat-service.js'
+import { ModelStrategyProvider } from './model-strategy-provider.js'
 import { SessionSettingsService } from './session-settings-service.js'
 import { SessionTitleService } from './session-title-service.js'
 import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
@@ -16,6 +17,7 @@ export interface CliDaemonDeps {
   deviceEventHub: DeviceEventHub
   chatService: ChatService
   sessionSettingsService: SessionSettingsService
+  sessionTitleService: SessionTitleService
   agentRegistry: MuseAgentRegistry
   resolveDefaultAgentId: () => Promise<string>
   authState: CliAuthState
@@ -67,9 +69,10 @@ export async function createCliDaemonDeps(options?: {
     }
   }
 
-  const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd)
-  const sessionTitleService = new SessionTitleService(sessionStore, sessionSettingsService, eventHub, resolveBackendAuth)
-  const chatService = new ChatService(sessionStore, eventHub, sessionTitleService, agentRegistry, cwd, resolveBackendAuth)
+  const modelStrategyProvider = new ModelStrategyProvider(resolveBackendAuth)
+  const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd, modelStrategyProvider)
+  const sessionTitleService = new SessionTitleService(sessionStore, sessionSettingsService, modelStrategyProvider, eventHub, resolveBackendAuth)
+  const chatService = new ChatService(sessionStore, eventHub, sessionTitleService, agentRegistry, cwd, resolveBackendAuth, modelStrategyProvider)
 
   const resolveDefaultAgentId = async (): Promise<string> => {
     let activeAgentId: string | undefined
@@ -90,5 +93,5 @@ export async function createCliDaemonDeps(options?: {
     authState = {}
   }
 
-  return { sessionStore, eventHub, deviceEventHub, chatService, sessionSettingsService, agentRegistry, resolveDefaultAgentId, authState }
+  return { sessionStore, eventHub, deviceEventHub, chatService, sessionSettingsService, sessionTitleService, agentRegistry, resolveDefaultAgentId, authState }
 }

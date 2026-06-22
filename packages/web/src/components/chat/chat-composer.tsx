@@ -1,7 +1,7 @@
 import { ArrowUp, Square } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SessionSettingsResponse, ThinkingLevel } from '@muse-ai/shared'
+import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import { ChatModelPicker } from '@/components/chat/chat-model-picker'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,7 +21,7 @@ interface ChatComposerProps {
   stopping: boolean
   userToken: string | undefined
   sessionSettings: SessionSettingsResponse | null
-  onUpdateSessionSettings: (patch: { modelRef?: string; thinkingLevel?: ThinkingLevel }) => Promise<boolean>
+  onUpdateSessionSettings: (patch: SessionSettingsPatch) => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
   onStop: () => void
 }

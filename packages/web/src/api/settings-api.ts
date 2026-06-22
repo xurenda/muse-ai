@@ -1,7 +1,9 @@
 import {
   SERVER_API_PATHS,
+  type ModelStrategyResponse,
   type ModelsConfigResponse,
   type ProvidersConfigResponse,
+  type UpdateModelStrategyRequest,
   type UpdateModelsConfigRequest,
   type UpdateProviderApiKeyRequest,
   type UpsertCustomProviderRequest,
@@ -35,6 +37,20 @@ export function fetchModelsConfig(userToken: string): Promise<ModelsConfigRespon
 export function updateModelsConfig(userToken: string, input: UpdateModelsConfigRequest): Promise<{ ok: true }> {
   return fetch(`${backendBaseUrl}${SERVER_API_PATHS.SETTINGS_MODELS_CONFIG}`, {
     method: 'PATCH',
+    headers: authHeaders(userToken),
+    body: JSON.stringify(input),
+  }).then(res => parseJsonResponse(res))
+}
+
+export function fetchModelStrategy(userToken: string): Promise<ModelStrategyResponse> {
+  return fetch(`${backendBaseUrl}${SERVER_API_PATHS.SETTINGS_MODEL_STRATEGY}`, {
+    headers: authHeaders(userToken),
+  }).then(res => parseJsonResponse(res))
+}
+
+export function updateModelStrategy(userToken: string, input: UpdateModelStrategyRequest): Promise<{ ok: true }> {
+  return fetch(`${backendBaseUrl}${SERVER_API_PATHS.SETTINGS_MODEL_STRATEGY}`, {
+    method: 'PUT',
     headers: authHeaders(userToken),
     body: JSON.stringify(input),
   }).then(res => parseJsonResponse(res))

@@ -109,7 +109,28 @@ export {
   type UpdateProviderApiKeyRequest,
   type UpsertCustomProviderRequest,
 } from './types/settings-api.js'
+export {
+  DEFAULT_MODEL_STRATEGY,
+  modelSelectionFromLegacyModelRef,
+  modelSelectionSchema,
+  modelRefToModelSelection,
+  modelStrategyConfigSchema,
+  modelStrategyPoolsSchema,
+  modelStrategyTaskRoutingSchema,
+  modelTierSchema,
+  taskModelSelectionSchema,
+  updateModelStrategyRequestSchema,
+  type ModelSelection,
+  type ModelStrategyConfig,
+  type ModelStrategyPools,
+  type ModelStrategyResponse,
+  type ModelStrategyTaskRouting,
+  type ModelTier,
+  type TaskModelSelection,
+  type UpdateModelStrategyRequest,
+} from './types/model-strategy.js'
 export { maskApiKey } from './utils/mask-api-key.js'
+export { collectModelRefsFromStrategy, dedupeModelPoolRefs, normalizeModelStrategyPools } from './utils/model-strategy.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
 export { compactionReasonSchema, sessionCompactRequestSchema, type CompactionReason, type SessionCompactRequest } from './types/session-compact.js'

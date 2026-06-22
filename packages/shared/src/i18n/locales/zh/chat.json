@@ -122,7 +122,11 @@
     "reasoningSliderMin": "更快",
     "reasoningSliderMax": "更聪明",
     "triggerAriaLabel": "选择模型与推理等级",
-    "empty": "没有匹配的模型"
+    "empty": "没有匹配的模型",
+    "tierSection": "档位",
+    "tierHigh": "高",
+    "tierMedium": "中",
+    "tierLow": "低"
   },
   "mode": {
     "prompt": "Prompt",

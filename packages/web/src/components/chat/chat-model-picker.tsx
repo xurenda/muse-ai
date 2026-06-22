@@ -2,53 +2,18 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { type ModelsConfigProviderOption, type SessionSettingsResponse, type ThinkingLevel } from '@muse-ai/shared'
-import { fetchModelsConfig } from '@/api/settings-api'
+import { type ModelSelection, type ModelTier, type SessionSettingsPatch, type SessionSettingsResponse, type ThinkingLevel } from '@muse-ai/shared'
+import { fetchModelStrategy } from '@/api/settings-api'
 import { ReasoningLevelSlider } from '@/components/chat/reasoning-level-slider'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { MODEL_TIERS, buildModelCatalog, isSameModelSelection, resolvePickerTriggerLabels, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 
 interface ChatModelPickerProps {
   userToken: string | undefined
   sessionSettings: SessionSettingsResponse | null
   disabled: boolean
-  onUpdate: (patch: { modelRef?: string; thinkingLevel?: ThinkingLevel }) => Promise<boolean>
-}
-
-function resolveModelDisplayName(modelRef: string, options: ModelsConfigProviderOption[]): string {
-  const slash = modelRef.indexOf('/')
-  if (slash <= 0) return modelRef
-
-  const providerId = modelRef.slice(0, slash)
-  const modelId = modelRef.slice(slash + 1)
-  const provider = options.find(item => item.id === providerId)
-  const model = provider?.models.find(item => item.id === modelId)
-  if (model?.name) return model.name
-
-  return modelId
-    .split('-')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-}
-
-interface ModelListItem {
-  modelRef: string
-  providerId: string
-  providerName: string
-  modelId: string
-  modelName: string
-}
-
-function buildModelList(options: ModelsConfigProviderOption[]): ModelListItem[] {
-  return options.flatMap(provider =>
-    provider.models.map(model => ({
-      modelRef: `${provider.id}/${model.id}`,
-      providerId: provider.id,
-      providerName: provider.name,
-      modelId: model.id,
-      modelName: model.name,
-    })),
-  )
+  onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
 }
 
 export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate }: ChatModelPickerProps) {
@@ -56,23 +21,24 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
   const containerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [loadedProviderOptions, setLoadedProviderOptions] = useState<ModelsConfigProviderOption[]>([])
+  const [catalog, setCatalog] = useState<ModelCatalogItem[]>([])
   const [saving, setSaving] = useState(false)
-  const providerOptions = userToken ? loadedProviderOptions : []
   const thinkingLevel = sessionSettings?.thinkingLevel ?? 'off'
+  const modelSelection = sessionSettings?.modelSelection
+  const resolvedModelRef = sessionSettings?.modelRef ?? ''
 
   useEffect(() => {
     if (!userToken) return
 
     let cancelled = false
-    void fetchModelsConfig(userToken)
-      .then(config => {
-        if (!cancelled) {
-          setLoadedProviderOptions(config.options.filter(option => option.authStatus === 'configured'))
-        }
+    void fetchModelStrategy(userToken)
+      .then(response => {
+        if (cancelled) return
+        const configured = response.options.filter(option => option.authStatus === 'configured')
+        setCatalog(buildModelCatalog(configured))
       })
       .catch(() => {
-        if (!cancelled) setLoadedProviderOptions([])
+        if (!cancelled) setCatalog([])
       })
 
     return () => {
@@ -100,16 +66,19 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
     }
   }, [open])
 
-  const modelRef = sessionSettings?.modelRef ?? ''
-  const modelDisplayName = resolveModelDisplayName(modelRef, providerOptions).trim()
+  const triggerLabels = useMemo(
+    () =>
+      resolvePickerTriggerLabels(modelSelection, resolvedModelRef, catalog, tier =>
+        t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`),
+      ),
+    [catalog, modelSelection, resolvedModelRef, t],
+  )
   const thinkingLevelLabel = thinkingLevel !== 'off' ? t(`thinkingLevelsShort.${thinkingLevel}`) : null
-
-  const allModels = useMemo(() => buildModelList(providerOptions), [providerOptions])
 
   const filteredModels = useMemo(() => {
     const query = search.trim().toLowerCase()
-    if (!query) return allModels
-    return allModels.filter(item => {
+    if (!query) return catalog
+    return catalog.filter(item => {
       return (
         item.modelName.toLowerCase().includes(query) ||
         item.modelId.toLowerCase().includes(query) ||
@@ -117,10 +86,10 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
         item.modelRef.toLowerCase().includes(query)
       )
     })
-  }, [allModels, search])
+  }, [catalog, search])
 
   const groupedModels = useMemo(() => {
-    const groups = new Map<string, { providerName: string; items: ModelListItem[] }>()
+    const groups = new Map<string, { providerName: string; items: ModelCatalogItem[] }>()
     for (const item of filteredModels) {
       const existing = groups.get(item.providerId)
       if (existing) {
@@ -132,15 +101,15 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
     return [...groups.entries()]
   }, [filteredModels])
 
-  async function applyModel(nextModelRef: string) {
-    if (!sessionSettings || nextModelRef === sessionSettings.modelRef) {
+  async function applySelection(next: ModelSelection) {
+    if (!sessionSettings || isSameModelSelection(sessionSettings.modelSelection, next)) {
       setSearch('')
       setOpen(false)
       return
     }
 
     setSaving(true)
-    const ok = await onUpdate({ modelRef: nextModelRef })
+    const ok = await onUpdate({ modelSelection: next })
     setSaving(false)
     if (ok) {
       setSearch('')
@@ -154,6 +123,14 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
     setSaving(true)
     await onUpdate({ thinkingLevel: level })
     setSaving(false)
+  }
+
+  function isTierSelected(tier: ModelTier): boolean {
+    return modelSelection?.type === 'tier' && modelSelection.tier === tier
+  }
+
+  function isModelSelected(modelRef: string): boolean {
+    return modelSelection?.type === 'model' && modelSelection.modelRef === modelRef
   }
 
   return (
@@ -177,7 +154,8 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
         )}
       >
         <span className="flex min-w-0 items-center gap-1 truncate">
-          <span className="truncate text-foreground">{modelDisplayName}</span>
+          <span className="truncate text-foreground">{triggerLabels.primary}</span>
+          {triggerLabels.secondary ? <span className="truncate text-muted-foreground">{triggerLabels.secondary}</span> : null}
           {thinkingLevelLabel ? <span className="shrink-0 text-muted-foreground">{thinkingLevelLabel}</span> : null}
         </span>
         <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} strokeWidth={2} />
@@ -196,20 +174,44 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
           </div>
 
           <div className="max-h-56 overflow-y-auto ui-popover-list">
+            <div className="flex flex-col gap-stack-sm">
+              <p className="ui-popover-label">{t('modelPicker.tierSection')}</p>
+              {MODEL_TIERS.map(tier => {
+                const selected = isTierSelected(tier)
+                const tierLabel = t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`)
+                return (
+                  <button
+                    key={tier}
+                    type="button"
+                    disabled={disabled || saving}
+                    onClick={() => void applySelection({ type: 'tier', tier })}
+                    className={cn('ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground', selected && 'bg-accent text-foreground')}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-left">{tierLabel}</span>
+                    {selected ? <Check className="size-3.5 shrink-0 text-foreground" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+
+            {groupedModels.length > 0 ? <div className="my-menu-y border-t border-border/60" role="separator" /> : null}
+
             {groupedModels.length === 0 ? (
-              <p className="py-menu-y text-center text-xs text-muted-foreground">{t('modelPicker.empty')}</p>
+              search.trim() ? (
+                <p className="py-menu-y text-center text-xs text-muted-foreground">{t('modelPicker.empty')}</p>
+              ) : null
             ) : (
               groupedModels.map(([providerId, group]) => (
                 <div key={providerId} className="flex flex-col gap-stack-sm">
                   <p className="ui-popover-label">{group.providerName}</p>
                   {group.items.map(item => {
-                    const selected = item.modelRef === modelRef
+                    const selected = isModelSelected(item.modelRef)
                     return (
                       <button
                         key={item.modelRef}
                         type="button"
                         disabled={disabled || saving}
-                        onClick={() => void applyModel(item.modelRef)}
+                        onClick={() => void applySelection({ type: 'model', modelRef: item.modelRef })}
                         className={cn(
                           'ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground',
                           selected && 'bg-accent text-foreground',

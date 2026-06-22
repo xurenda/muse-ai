@@ -1,4 +1,5 @@
-import type { ThinkingLevel } from '@muse-ai/shared'
+import type { ModelSelection, ThinkingLevel } from '@muse-ai/shared'
+import { modelRefToModelSelection } from '@muse-ai/shared'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import { sessionSettingsResponseSchema } from '@muse-ai/shared'
 import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
@@ -8,15 +9,19 @@ import {
   placeholderGetApiKeyAndHeaders,
   readSessionRuntimeOverrides,
   readSessionTokenUsage,
+  resolveEffectiveChatModelSelection,
   resolveEffectiveHarnessConfig,
+  resolvePrimaryModelRef,
 } from '@muse-ai/core'
 import { resolveActiveTools } from '@/tools/index.js'
+import type { ModelStrategyProvider } from './model-strategy-provider.js'
 
 export class SessionSettingsService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
     private readonly agentRegistry: MuseAgentRegistry,
     private readonly cwd: string,
+    private readonly modelStrategyProvider: ModelStrategyProvider,
   ) {}
 
   async get(sessionId: string): Promise<SessionSettingsResponse> {
@@ -32,18 +37,24 @@ export class SessionSettingsService {
 
     const context = await this.agentRegistry.resolveRuntimeContext(meta.agentId)
     const overrides = await readSessionRuntimeOverrides(piSession)
-    const effective = resolveEffectiveHarnessConfig(
+    const effectiveHarness = resolveEffectiveHarnessConfig(
       context.persona.definition.defaultModel,
       context.persona.definition.thinkingLevel as ThinkingLevel | undefined,
       overrides,
     )
+    const strategy = await this.modelStrategyProvider.getStrategy()
+    const storedSelection = meta.modelSelection
+    const legacySelection = !storedSelection && overrides.hasModelOverride && overrides.modelRef ? modelRefToModelSelection(overrides.modelRef) : undefined
+    const chatSelection = resolveEffectiveChatModelSelection(storedSelection ?? legacySelection, strategy, context.persona.definition.defaultModel)
+    const effectiveModelRef = resolvePrimaryModelRef(chatSelection, strategy.pools, effectiveHarness.modelRef)
     const tokenUsage = await readSessionTokenUsage(piSession)
 
     return sessionSettingsResponseSchema.parse({
       sessionId,
       agentId: meta.agentId,
-      modelRef: effective.modelRef,
-      thinkingLevel: effective.thinkingLevel,
+      modelRef: effectiveModelRef,
+      modelSelection: storedSelection ?? legacySelection,
+      thinkingLevel: effectiveHarness.thinkingLevel,
       tokenUsage,
     })
   }
@@ -66,10 +77,17 @@ export class SessionSettingsService {
       meta = updated
     }
 
-    if (patch.modelRef !== undefined || patch.thinkingLevel !== undefined) {
+    const nextSelection: ModelSelection | undefined =
+      patch.modelSelection ?? (patch.modelRef !== undefined ? modelRefToModelSelection(patch.modelRef) : undefined)
+
+    if (nextSelection !== undefined || patch.thinkingLevel !== undefined) {
       const piSession = await this.sessionStore.openPiSession(sessionId)
       if (!piSession) {
         throw new SessionSettingsError('session_not_found', `Session 不存在: ${sessionId}`)
+      }
+
+      if (nextSelection !== undefined) {
+        await this.sessionStore.updateModelSelection(sessionId, nextSelection)
       }
 
       const context = await this.agentRegistry.resolveRuntimeContext(meta.agentId)
@@ -81,8 +99,11 @@ export class SessionSettingsService {
         getApiKeyAndHeaders: placeholderGetApiKeyAndHeaders,
       })
 
-      if (patch.modelRef !== undefined) {
-        await harness.setModel(parseModelRef(patch.modelRef))
+      if (nextSelection !== undefined) {
+        const strategy = await this.modelStrategyProvider.getStrategy()
+        const fallbackRef = `${harnessOptions.model.provider}/${harnessOptions.model.id}`
+        const modelRef = resolvePrimaryModelRef(nextSelection, strategy.pools, fallbackRef)
+        await harness.setModel(parseModelRef(modelRef))
       }
       if (patch.thinkingLevel !== undefined) {
         await harness.setThinkingLevel(patch.thinkingLevel as ThinkingLevel)

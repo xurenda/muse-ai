@@ -45,6 +45,10 @@ describe('api-paths', () => {
     expect(DEFAULT_PORTS.CLI).toBe(65433)
     expect(DEFAULT_PORTS.WEB_DEV).toBe(65434)
   })
+
+  it('应包含 model-strategy 路径', () => {
+    expect(SERVER_API_PATHS.SETTINGS_MODEL_STRATEGY).toBe('/settings/model-strategy')
+  })
 })
 
 describe('health', () => {

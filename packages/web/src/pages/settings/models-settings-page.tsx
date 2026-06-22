@@ -1,35 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { ModelsConfigResponse } from '@muse-ai/shared'
-import { fetchModelsConfig, updateModelsConfig } from '@/api/settings-api'
+import type { ModelStrategyConfig, ModelStrategyResponse } from '@muse-ai/shared'
+import { fetchModelStrategy, updateModelStrategy } from '@/api/settings-api'
+import { BackendApiError } from '@/api/backend-client'
+import { ModelStrategyForm } from '@/components/settings/model-strategy-form'
 import { PageShell } from '@/components/layout/page-shell'
 import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
+import { cloneModelStrategy } from '@/utils/model-strategy-ui'
 
 export function ModelsSettingsPage() {
   const { t } = useTranslation('settings')
   const { auth } = useAuth()
-  const [config, setConfig] = useState<ModelsConfigResponse | null>(null)
-  const [providerId, setProviderId] = useState('')
-  const [modelId, setModelId] = useState('')
+  const [response, setResponse] = useState<ModelStrategyResponse | null>(null)
+  const [draft, setDraft] = useState<ModelStrategyConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const applyConfig = useCallback((next: ModelsConfigResponse) => {
-    setConfig(next)
-
-    const initialProvider =
-      next.defaultProvider && next.options.some(item => item.id === next.defaultProvider) ? next.defaultProvider : (next.options[0]?.id ?? '')
-
-    setProviderId(initialProvider)
-    const providerOption = next.options.find(item => item.id === initialProvider)
-    const initialModel =
-      next.defaultModel && providerOption?.models.some(item => item.id === next.defaultModel) ? next.defaultModel : (providerOption?.models[0]?.id ?? '')
-    setModelId(initialModel)
+  const applyResponse = useCallback((next: ModelStrategyResponse) => {
+    setResponse(next)
+    setDraft(cloneModelStrategy(next.strategy))
   }, [])
 
   useEffect(() => {
@@ -38,9 +31,9 @@ export function ModelsSettingsPage() {
     let cancelled = false
     void (async () => {
       try {
-        const next = await fetchModelsConfig(auth.accessToken)
+        const next = await fetchModelStrategy(auth.accessToken)
         if (!cancelled) {
-          applyConfig(next)
+          applyResponse(next)
         }
       } catch (error: unknown) {
         if (!cancelled) {
@@ -56,39 +49,24 @@ export function ModelsSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [applyConfig, auth, t])
-
-  const refreshConfig = useCallback(async () => {
-    if (!auth) return
-
-    try {
-      const next = await fetchModelsConfig(auth.accessToken)
-      applyConfig(next)
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('providers.failed'))
-    }
-  }, [applyConfig, auth, t])
-
-  const selectedProvider = useMemo(() => config?.options.find(item => item.id === providerId), [config, providerId])
-
-  const handleProviderChange = (nextProviderId: string) => {
-    setProviderId(nextProviderId)
-    setSaved(false)
-    const nextProvider = config?.options.find(item => item.id === nextProviderId)
-    setModelId(nextProvider?.models[0]?.id ?? '')
-  }
+  }, [applyResponse, auth, t])
 
   const handleSave = async () => {
-    if (!auth || !providerId || !modelId) return
+    if (!auth || !draft) return
 
     setSaving(true)
     setSaved(false)
     try {
-      await updateModelsConfig(auth.accessToken, { defaultProvider: providerId, defaultModel: modelId })
+      await updateModelStrategy(auth.accessToken, draft)
       setSaved(true)
-      await refreshConfig()
+      const next = await fetchModelStrategy(auth.accessToken)
+      applyResponse(next)
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : t('providers.failed'))
+      if (error instanceof BackendApiError) {
+        toast.error(error.message || t('providers.failed'))
+      } else {
+        toast.error(error instanceof Error ? error.message : t('providers.failed'))
+      }
     } finally {
       setSaving(false)
     }
@@ -100,7 +78,7 @@ export function ModelsSettingsPage() {
     <PageShell title={t('nav.models')} subtitle={t('models.description')}>
       {loading ? <p className="px-1 text-sm text-muted-foreground">{t('models.loading')}</p> : null}
 
-      {!loading && config?.options.length === 0 ? (
+      {!loading && response?.options.length === 0 ? (
         <div className="rounded-lg border border-border px-4 py-3.5 text-sm">
           <p className="text-muted-foreground">{t('models.noProviders')}</p>
           <Link to="/settings/providers" className="mt-2 inline-block text-primary hover:underline">
@@ -109,32 +87,19 @@ export function ModelsSettingsPage() {
         </div>
       ) : null}
 
-      {!loading && config && config.options.length > 0 ? (
-        <div className="flex max-w-lg flex-col gap-4 px-1">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium">{t('models.provider')}</span>
-            <Select
-              value={providerId}
-              options={config.options.map(option => ({ value: option.id, label: option.name }))}
-              onValueChange={handleProviderChange}
-            />
-          </label>
+      {!loading && response && draft && response.options.length > 0 ? (
+        <div className="flex flex-col gap-4">
+          <ModelStrategyForm
+            strategy={draft}
+            options={response.options}
+            onChange={next => {
+              setDraft(next)
+              setSaved(false)
+            }}
+          />
 
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium">{t('models.model')}</span>
-            <Select
-              value={modelId}
-              options={(selectedProvider?.models ?? []).map(model => ({ value: model.id, label: model.name }))}
-              disabled={!selectedProvider?.models.length}
-              onValueChange={nextModelId => {
-                setModelId(nextModelId)
-                setSaved(false)
-              }}
-            />
-          </label>
-
-          <div className="flex items-center gap-3">
-            <Button type="button" onClick={() => void handleSave()} disabled={saving || !providerId || !modelId}>
+          <div className="flex items-center gap-3 px-1">
+            <Button type="button" onClick={() => void handleSave()} disabled={saving}>
               {saving ? t('models.saving') : t('models.save')}
             </Button>
             {saved ? <span className="text-sm text-muted-foreground">{t('models.saved')}</span> : null}

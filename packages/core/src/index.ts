@@ -41,4 +41,17 @@ export { mapHarnessEventToSse } from './harness-events.js'
 export { aggregateSessionTokenUsage, extractTurnUsageFromMessage, normalizeTurnTokenUsage, readSessionTokenUsage } from './session-token-usage.js'
 export { extractAssistantTurnError, extractBranchMessageError, formatLlmErrorMessage } from './assistant-turn-error.js'
 export { isAssistantContextOverflow } from './context-overflow.js'
+export {
+  collectModelRefsFromStrategy,
+  dedupeModelPoolRefs,
+  expandModelSelection,
+  expandTaskModelSelection,
+  extractHttpStatus,
+  isRetryableModelError,
+  normalizeModelStrategyPools,
+  resolveNextModelCandidate,
+  resolvePrimaryModelCandidate,
+  type ResolvedModelCandidate,
+} from './model-strategy.js'
+export { resolveEffectiveChatModelSelection, resolvePrimaryModelRef, resolveTaskModelCandidates } from './model-strategy-resolver.js'
 export type { AgentTool, AgentToolResult } from '@earendil-works/pi-agent-core'

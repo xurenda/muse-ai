@@ -44,6 +44,7 @@ export const userSettings = pgTable('user_settings', {
     .references(() => users.id, { onDelete: 'cascade' }),
   defaultProvider: text('default_provider'),
   defaultModel: text('default_model'),
+  modelStrategyJson: text('model_strategy_json'),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 })
 

@@ -123,7 +123,11 @@
     "reasoningSliderMin": "Faster",
     "reasoningSliderMax": "Smarter",
     "triggerAriaLabel": "Select model and reasoning level",
-    "empty": "No matching models"
+    "empty": "No matching models",
+    "tierSection": "Tiers",
+    "tierHigh": "High",
+    "tierMedium": "Medium",
+    "tierLow": "Low"
   },
   "mode": {
     "prompt": "Prompt",

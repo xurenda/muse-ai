@@ -7,9 +7,11 @@ import {
   PROVIDER_DISPLAY_NAMES,
   type ApiKeyCredential,
   type AuthCredential,
+  type ModelStrategyResponse,
   type ModelsConfigResponse,
   type ProviderAuthStatus,
   type ProvidersConfigResponse,
+  type UpdateModelStrategyRequest,
   type UpdateModelsConfigRequest,
   type UpsertCustomProviderRequest,
   type UpsertProviderAdvancedConfigRequest,
@@ -18,6 +20,15 @@ import type { MuseDb } from '../db/client.js'
 import { userSettings } from '../db/schema.js'
 import type { CredentialStore } from '../stores/credential-store.js'
 import { providerConfigToAdvanced, ProviderConfigStore } from '../stores/provider-config-store.js'
+import {
+  deriveLegacyDefaultFromStrategy,
+  migrateModelStrategyFromLegacy,
+  normalizeUpdateModelStrategy,
+  parseStoredModelStrategy,
+  serializeModelStrategy,
+  validateModelStrategyForUser,
+  ModelStrategyValidationError,
+} from './model-strategy-io.js'
 import { findCatalogModel, isBuiltInProvider, listProviderModelOptions } from './provider-catalog.js'
 import { clearProviderAuthFailure, getProviderAuthFailureMessage, getProviderHealth } from './provider-health.js'
 
@@ -60,6 +71,8 @@ export class SettingsService {
   async getModelsConfig(userId: string): Promise<ModelsConfigResponse> {
     const modelsStore = await this.configStore.readAll(userId)
     const [settings] = await this.db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1)
+    const strategy = migrateModelStrategyFromLegacy(settings ?? {})
+    const legacyDefaults = deriveLegacyDefaultFromStrategy(strategy)
 
     const configuredProviderIds = new Set<string>()
     for (const providerId of API_KEY_PROVIDER_IDS) {
@@ -83,10 +96,86 @@ export class SettingsService {
 
     return {
       agentId: DEFAULT_AGENT_ID,
-      defaultProvider: settings?.defaultProvider ?? undefined,
-      defaultModel: settings?.defaultModel ?? undefined,
+      defaultProvider: legacyDefaults.defaultProvider ?? settings?.defaultProvider ?? undefined,
+      defaultModel: legacyDefaults.defaultModel ?? settings?.defaultModel ?? undefined,
       options: options.sort((left, right) => left.name.localeCompare(right.name)),
     }
+  }
+
+  async getModelStrategy(userId: string): Promise<ModelStrategyResponse> {
+    const modelsConfig = await this.getModelsConfig(userId)
+    const [settings] = await this.db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1)
+    const strategy = migrateModelStrategyFromLegacy(settings ?? {})
+
+    if (!parseStoredModelStrategy(settings?.modelStrategyJson)) {
+      await this.persistModelStrategy(userId, strategy, settings ?? undefined)
+    }
+
+    return {
+      strategy,
+      options: modelsConfig.options,
+    }
+  }
+
+  async updateModelStrategy(userId: string, input: UpdateModelStrategyRequest): Promise<void> {
+    const strategy = normalizeUpdateModelStrategy(input)
+    const modelsStore = await this.configStore.readAll(userId)
+    const configuredProviderIds = await this.listConfiguredProviderIds(userId)
+    try {
+      validateModelStrategyForUser(strategy, modelsStore, configuredProviderIds)
+    } catch (error: unknown) {
+      if (error instanceof ModelStrategyValidationError) {
+        throw new SettingsError(error.code, error.message)
+      }
+      throw error
+    }
+
+    await this.persistModelStrategy(userId, strategy)
+  }
+
+  private async listConfiguredProviderIds(userId: string): Promise<Set<string>> {
+    const configured = new Set<string>()
+    for (const providerId of API_KEY_PROVIDER_IDS) {
+      if (await this.isConfigured(userId, providerId)) {
+        configured.add(providerId)
+      }
+    }
+    const modelsStore = await this.configStore.readAll(userId)
+    for (const providerId of Object.keys(modelsStore.providers ?? {})) {
+      if (await this.isConfigured(userId, providerId)) {
+        configured.add(providerId)
+      }
+    }
+    return configured
+  }
+
+  private async persistModelStrategy(
+    userId: string,
+    strategy: UpdateModelStrategyRequest,
+    existingRow?: { defaultProvider?: string | null; defaultModel?: string | null },
+  ): Promise<void> {
+    const legacy = deriveLegacyDefaultFromStrategy(strategy)
+    const now = new Date().toISOString()
+    const baseValues = {
+      userId,
+      modelStrategyJson: serializeModelStrategy(strategy),
+      updatedAt: now,
+      defaultProvider: legacy.defaultProvider ?? existingRow?.defaultProvider ?? null,
+      defaultModel: legacy.defaultModel ?? existingRow?.defaultModel ?? null,
+    }
+
+    await this.db
+      .insert(userSettings)
+      .values(baseValues)
+      .onConflictDoUpdate({
+        target: userSettings.userId,
+        set: {
+          modelStrategyJson: baseValues.modelStrategyJson,
+          updatedAt: now,
+          ...(legacy.defaultProvider ? { defaultProvider: legacy.defaultProvider } : {}),
+          ...(legacy.defaultModel ? { defaultModel: legacy.defaultModel } : {}),
+        },
+      })
   }
 
   async updateModelsConfig(userId: string, input: UpdateModelsConfigRequest): Promise<void> {
@@ -117,6 +206,15 @@ export class SettingsService {
           updatedAt: now,
         },
       })
+
+    const migratedStrategy = migrateModelStrategyFromLegacy({
+      defaultProvider: input.defaultProvider,
+      defaultModel: input.defaultModel,
+    })
+    await this.persistModelStrategy(userId, migratedStrategy, {
+      defaultProvider: input.defaultProvider,
+      defaultModel: input.defaultModel,
+    })
   }
 
   async getProvidersConfig(userId: string): Promise<ProvidersConfigResponse> {

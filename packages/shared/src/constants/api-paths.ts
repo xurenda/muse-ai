@@ -11,6 +11,7 @@ export const SERVER_API_PATHS = {
   DEVICE_CREDENTIALS: '/devices/:deviceId/credentials',
   SETTINGS_PROVIDERS: '/settings/providers',
   SETTINGS_MODELS_CONFIG: '/settings/models-config',
+  SETTINGS_MODEL_STRATEGY: '/settings/model-strategy',
   /** LLM 代理根路径；实际转发路径为 `/v1/*` */
   LLM_PROXY: '/v1/chat/completions',
 } as const

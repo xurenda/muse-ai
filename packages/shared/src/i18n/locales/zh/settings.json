@@ -7,7 +7,7 @@
     "providers": "Provider"
   },
   "models": {
-    "description": "选择 Agent 对话时使用的默认模型。仅显示已配置凭证的供应方。",
+    "description": "配置模型池与任务路由：高/中/低分组支持组内 fallback，并可单独指定压缩、标题等任务使用的模型。",
     "loading": "加载中…",
     "provider": "Provider",
     "model": "模型",
@@ -15,7 +15,30 @@
     "saving": "保存中…",
     "saved": "已保存",
     "noProviders": "尚未配置任何供应方凭证，请先在 Provider 页面添加 API Key 或本地服务。",
-    "goToProviders": "前往 Provider 设置"
+    "goToProviders": "前往 Provider 设置",
+    "strategy": {
+      "poolsTitle": "模型池",
+      "poolsDescription": "每个分组内模型按顺序作为 fallback：前一个不可用时会尝试下一个。",
+      "tierHigh": "高",
+      "tierMedium": "中",
+      "tierLow": "低",
+      "addModel": "添加模型",
+      "pickModel": "选择要添加的模型…",
+      "removeModel": "移除",
+      "dragHandle": "拖拽排序",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "poolCount": "{{count}} 个模型",
+      "emptyTier": "该分组暂无模型",
+      "routingTitle": "任务路由",
+      "routingDescription": "为不同任务指定使用的模型策略。",
+      "taskChat": "对话默认",
+      "taskCompaction": "压缩",
+      "taskTitle": "会话标题生成",
+      "selectionTier": "分组",
+      "selectionModel": "具体模型",
+      "selectionFollowChat": "跟随对话"
+    }
   },
   "providers": {
     "description": "配置 API Key 或本地 / 自定义模型服务（如 Ollama）。凭证保存在 Backend，CLI 经代理调用。",

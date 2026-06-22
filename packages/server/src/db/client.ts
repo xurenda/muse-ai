@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS user_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS model_strategy_json TEXT;
+
 CREATE INDEX IF NOT EXISTS user_provider_credentials_user_id_idx ON user_provider_credentials(user_id);
 CREATE INDEX IF NOT EXISTS user_provider_config_user_id_idx ON user_provider_config(user_id);
 `

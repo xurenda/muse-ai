@@ -3,6 +3,7 @@ import type { MuseSessionStore } from '@muse-ai/core'
 import type { SessionMeta } from '@muse-ai/shared'
 import { DEFAULT_PORTS } from '@muse-ai/shared'
 import { SessionEventHub } from '@/daemon/event-hub.js'
+import { ModelStrategyProvider } from '@/daemon/model-strategy-provider.js'
 import { SessionTitleService } from '@/daemon/session-title-service.js'
 import type { SessionSettingsService } from '@/daemon/session-settings-service.js'
 
@@ -72,10 +73,29 @@ describe('SessionTitleService', () => {
       })),
     )
 
-    const service = new SessionTitleService(sessionStore as MuseSessionStore, sessionSettingsService as SessionSettingsService, eventHub, async () => ({
+    const modelStrategyProvider = new ModelStrategyProvider(async () => ({
       backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
       deviceToken: 'device-token',
     }))
+    modelStrategyProvider.setStrategyForTest({
+      pools: { high: [], medium: ['openai/deepseek-v4-flash'], low: [] },
+      taskRouting: {
+        chat: { type: 'model', modelRef: 'openai/deepseek-v4-flash' },
+        compaction: { type: 'follow_chat' },
+        titleGeneration: { type: 'model', modelRef: 'openai/deepseek-v4-flash' },
+      },
+    })
+
+    const service = new SessionTitleService(
+      sessionStore as MuseSessionStore,
+      sessionSettingsService as SessionSettingsService,
+      modelStrategyProvider,
+      eventHub,
+      async () => ({
+        backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
+        deviceToken: 'device-token',
+      }),
+    )
 
     await service.maybeGenerateAfterTurn(sessionId)
 
@@ -118,6 +138,10 @@ describe('SessionTitleService', () => {
     const service = new SessionTitleService(
       sessionStore as MuseSessionStore,
       { get: vi.fn() } as unknown as SessionSettingsService,
+      new ModelStrategyProvider(async () => ({
+        backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
+        deviceToken: 'device-token',
+      })),
       new SessionEventHub(),
       async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
     )
@@ -162,6 +186,19 @@ describe('SessionTitleService', () => {
       })),
     )
 
+    const modelStrategyProvider = new ModelStrategyProvider(async () => ({
+      backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
+      deviceToken: 'device-token',
+    }))
+    modelStrategyProvider.setStrategyForTest({
+      pools: { high: [], medium: [], low: [] },
+      taskRouting: {
+        chat: { type: 'model', modelRef: 'openai/deepseek-v4-pro' },
+        compaction: { type: 'follow_chat' },
+        titleGeneration: { type: 'model', modelRef: 'openai/deepseek-v4-pro' },
+      },
+    })
+
     const service = new SessionTitleService(
       sessionStore as MuseSessionStore,
       {
@@ -172,6 +209,7 @@ describe('SessionTitleService', () => {
           thinkingLevel: 'low' as const,
         })),
       } as SessionSettingsService,
+      modelStrategyProvider,
       new SessionEventHub(),
       async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
     )

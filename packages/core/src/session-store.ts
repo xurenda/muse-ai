@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { JsonlSessionRepo, NodeExecutionEnv } from '@earendil-works/pi-agent-core/node'
 import type { JsonlSessionMetadata } from '@earendil-works/pi-agent-core'
 import type { SessionBranchMessage, SessionForkRequest, SessionMeta, SessionNameSource, SessionTreeNode } from '@muse-ai/shared'
+import type { ModelSelection } from '@muse-ai/shared'
 import { loadSessionRegistry, saveSessionRegistry, type SessionRegistryEntry, toSessionMeta } from './session-registry.js'
 import { deriveSessionTitle } from './session-title.js'
 import { buildBranchFromSession, getMessagePathToLeaf, mapSessionTreeEntryForWeb, resolveBranchLeafId, resolveNavigateTargetLeafId } from './session-tree.js'
@@ -109,6 +110,17 @@ export class MuseSessionStore {
     const entry = this.findEntry(id)
     if (!entry) return undefined
     entry.agentId = agentId
+    entry.updatedAt = new Date().toISOString()
+    await this.persistRegistry()
+    return toSessionMeta(entry)
+  }
+
+  /** 更新 Session 级模型选择（tier 或具体 model） */
+  async updateModelSelection(id: string, modelSelection: ModelSelection): Promise<SessionMeta | undefined> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry) return undefined
+    entry.modelSelection = modelSelection
     entry.updatedAt = new Date().toISOString()
     await this.persistRegistry()
     return toSessionMeta(entry)

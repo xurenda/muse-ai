@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { modelRefSchema, thinkingLevelSchema } from './agent.js'
+import { modelSelectionSchema } from './model-strategy.js'
 import { sessionTokenUsageSchema } from './session-token-usage.js'
 
 export const createAgentRequestSchema = z.object({
@@ -23,9 +24,10 @@ export const sessionSettingsPatchSchema = z
   .object({
     agentId: z.string().uuid().optional(),
     modelRef: modelRefSchema.optional(),
+    modelSelection: modelSelectionSchema.optional(),
     thinkingLevel: thinkingLevelSchema.optional(),
   })
-  .refine(data => data.agentId !== undefined || data.modelRef !== undefined || data.thinkingLevel !== undefined, {
+  .refine(data => data.agentId !== undefined || data.modelRef !== undefined || data.modelSelection !== undefined || data.thinkingLevel !== undefined, {
     message: '至少提供一个设置字段',
   })
 
@@ -35,6 +37,7 @@ export const sessionSettingsResponseSchema = z.object({
   sessionId: z.string().uuid(),
   agentId: z.string().uuid(),
   modelRef: modelRefSchema,
+  modelSelection: modelSelectionSchema.optional(),
   thinkingLevel: thinkingLevelSchema,
   tokenUsage: sessionTokenUsageSchema,
 })

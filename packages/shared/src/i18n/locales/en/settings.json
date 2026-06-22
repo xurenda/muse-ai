@@ -7,7 +7,7 @@
     "providers": "Providers"
   },
   "models": {
-    "description": "Choose the default model for agent conversations. Only configured providers are shown.",
+    "description": "Configure model pools and task routing: high/medium/low tiers with in-tier fallback, plus per-task model assignments.",
     "loading": "Loading…",
     "provider": "Provider",
     "model": "Model",
@@ -15,7 +15,30 @@
     "saving": "Saving…",
     "saved": "Saved",
     "noProviders": "No provider credentials configured yet. Add an API key or local service on the Providers page first.",
-    "goToProviders": "Go to provider settings"
+    "goToProviders": "Go to provider settings",
+    "strategy": {
+      "poolsTitle": "Model pools",
+      "poolsDescription": "Models in each tier are tried in order when the previous one is unavailable.",
+      "tierHigh": "High",
+      "tierMedium": "Medium",
+      "tierLow": "Low",
+      "addModel": "Add model",
+      "pickModel": "Select a model to add…",
+      "removeModel": "Remove",
+      "dragHandle": "Drag to reorder",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "poolCount": "{{count}} models",
+      "emptyTier": "No models in this tier",
+      "routingTitle": "Task routing",
+      "routingDescription": "Choose which model strategy each task uses.",
+      "taskChat": "Default chat",
+      "taskCompaction": "Compaction",
+      "taskTitle": "Session title",
+      "selectionTier": "Tier",
+      "selectionModel": "Specific model",
+      "selectionFollowChat": "Follow chat"
+    }
   },
   "providers": {
     "description": "Configure API keys or local / custom model services (e.g. Ollama). Credentials are stored on the backend; the CLI calls through the proxy.",

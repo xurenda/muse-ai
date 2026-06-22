@@ -1,7 +1,8 @@
-import { deriveSessionTitle, parseModelRef, type MuseSessionStore } from '@muse-ai/core'
+import { deriveSessionTitle, parseModelRef, resolveEffectiveChatModelSelection, resolveTaskModelCandidates, type MuseSessionStore } from '@muse-ai/core'
 import type { SessionBranchMessage, SessionMeta } from '@muse-ai/shared'
 import type { BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import type { SessionEventHub } from './event-hub.js'
+import type { ModelStrategyProvider } from './model-strategy-provider.js'
 import type { SessionSettingsService } from './session-settings-service.js'
 
 const TITLE_SYSTEM_PROMPT =
@@ -82,6 +83,7 @@ export class SessionTitleService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
     private readonly sessionSettingsService: SessionSettingsService,
+    private readonly modelStrategyProvider: ModelStrategyProvider,
     private readonly eventHub: SessionEventHub,
     private readonly resolveBackendAuth: () => Promise<BackendLlmAuthConfig | undefined>,
   ) {}
@@ -116,10 +118,19 @@ export class SessionTitleService {
     await this.publishMetaUpdate(updated)
   }
 
+  private async resolveTitleModelRef(sessionId: string): Promise<string> {
+    const settings = await this.sessionSettingsService.get(sessionId)
+    const strategy = await this.modelStrategyProvider.getStrategy()
+    const meta = await this.sessionStore.get(sessionId)
+    const chatSelection = resolveEffectiveChatModelSelection(meta?.modelSelection ?? settings.modelSelection, strategy, undefined)
+    const candidates = resolveTaskModelCandidates('titleGeneration', strategy, chatSelection)
+    return candidates[0] ?? settings.modelRef
+  }
+
   private async generateTitle(sessionId: string, context: TitleTurnContext, backendAuth: BackendLlmAuthConfig): Promise<string | null> {
     try {
-      const settings = await this.sessionSettingsService.get(sessionId)
-      const model = parseModelRef(settings.modelRef)
+      const modelRef = await this.resolveTitleModelRef(sessionId)
+      const model = parseModelRef(modelRef)
       const response = await fetch(`${backendAuth.backendUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {

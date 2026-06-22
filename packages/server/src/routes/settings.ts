@@ -1,6 +1,7 @@
 import type { Hono } from 'hono'
 import {
   SERVER_API_PATHS,
+  updateModelStrategyRequestSchema,
   updateModelsConfigRequestSchema,
   updateProviderApiKeyRequestSchema,
   upsertCustomProviderRequestSchema,
@@ -32,6 +33,30 @@ export function registerSettingsRoutes(
 
     try {
       await settingsService.updateModelsConfig(user.id, parsed.data)
+      return c.json({ ok: true as const })
+    } catch (error: unknown) {
+      if (error instanceof SettingsError) {
+        return c.json({ error: error.code, message: error.message }, 400)
+      }
+      throw error
+    }
+  })
+
+  app.get(SERVER_API_PATHS.SETTINGS_MODEL_STRATEGY, userAuth, async c => {
+    const user = c.get('user')
+    return c.json(await settingsService.getModelStrategy(user.id))
+  })
+
+  app.put(SERVER_API_PATHS.SETTINGS_MODEL_STRATEGY, userAuth, async c => {
+    const user = c.get('user')
+    const json: unknown = await c.req.json()
+    const parsed = updateModelStrategyRequestSchema.safeParse(json)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+
+    try {
+      await settingsService.updateModelStrategy(user.id, parsed.data)
       return c.json({ ok: true as const })
     } catch (error: unknown) {
       if (error instanceof SettingsError) {
