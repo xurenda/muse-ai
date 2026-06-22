@@ -85,6 +85,16 @@ describe('sse-events', () => {
     expect(parsed.success).toBe(true)
   })
 
+  it('museSseEventSchema 应支持 model_resolved', () => {
+    const parsed = museSseEventSchema.safeParse({
+      type: 'model_resolved',
+      modelRef: 'openai/gpt-4o-mini',
+      task: 'chat',
+      usedFallback: true,
+    })
+    expect(parsed.success).toBe(true)
+  })
+
   it('museSseEventSchema 应支持 compaction 事件', () => {
     expect(museSseEventSchema.safeParse({ type: 'compaction_start', reason: 'manual' }).success).toBe(true)
     expect(

@@ -1,7 +1,13 @@
 import { z } from 'zod'
+import { MUSE_LLM_TASKS } from '../constants/llm-proxy.js'
 import { compactionReasonSchema } from './session-compact.js'
 import { sessionNameSourceSchema } from './session.js'
 import { turnTokenUsageSchema } from './session-token-usage.js'
+import { modelRefSchema } from './agent.js'
+
+export const museLlmTaskSchema = z.enum(MUSE_LLM_TASKS)
+
+export type MuseLlmTaskSchema = z.infer<typeof museLlmTaskSchema>
 
 /** CLI → Web SSE 事件（对齐 pi AgentEvent 子集） */
 export const museSseEventSchema = z.discriminatedUnion('type', [
@@ -49,6 +55,14 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
     name: z.string(),
     nameSource: sessionNameSourceSchema.optional(),
     updatedAt: z.string().datetime(),
+  }),
+  z.object({
+    type: z.literal('model_resolved'),
+    modelRef: modelRefSchema,
+    task: museLlmTaskSchema,
+    usedFallback: z.boolean().optional(),
+    /** 按尝试顺序排列的 modelRef；fallback 时首项为失败模型 */
+    attemptedModelRefs: z.array(modelRefSchema).optional(),
   }),
 ])
 

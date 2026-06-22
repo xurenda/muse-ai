@@ -130,7 +130,8 @@
     "tierMedium": "Standard",
     "tierLow": "Lite",
     "otherModels": "Other models",
-    "thinkingLevelSection": "Thinking level"
+    "thinkingLevelSection": "Thinking level",
+    "fallbackToast": "{{fromModelName}} unavailable, switched to {{toModelName}}"
   },
   "mode": {
     "prompt": "Prompt",

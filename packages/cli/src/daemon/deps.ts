@@ -2,8 +2,8 @@ import { join } from 'node:path'
 import { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
+import { installMuseProxyFetchInterceptor } from '../backend/muse-proxy-context.js'
 import { ChatService } from './chat-service.js'
-import { ModelStrategyProvider } from './model-strategy-provider.js'
 import { SessionSettingsService } from './session-settings-service.js'
 import { SessionTitleService } from './session-title-service.js'
 import { resolveCliAuthState, type CliAuthState } from './auth-middleware.js'
@@ -69,10 +69,16 @@ export async function createCliDaemonDeps(options?: {
     }
   }
 
-  const modelStrategyProvider = new ModelStrategyProvider(resolveBackendAuth)
-  const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd, modelStrategyProvider)
-  const sessionTitleService = new SessionTitleService(sessionStore, sessionSettingsService, modelStrategyProvider, eventHub, resolveBackendAuth)
-  const chatService = new ChatService(sessionStore, eventHub, sessionTitleService, agentRegistry, cwd, resolveBackendAuth, modelStrategyProvider)
+  try {
+    const museConfig = await loadMuseConfig(musePaths)
+    installMuseProxyFetchInterceptor(resolveBackendUrl(museConfig.backendUrl))
+  } catch {
+    // 未配对时不安装；legacy 路径不受影响
+  }
+
+  const sessionSettingsService = new SessionSettingsService(sessionStore, agentRegistry, cwd)
+  const sessionTitleService = new SessionTitleService(sessionStore, eventHub, resolveBackendAuth)
+  const chatService = new ChatService(sessionStore, eventHub, sessionTitleService, agentRegistry, cwd, resolveBackendAuth)
 
   const resolveDefaultAgentId = async (): Promise<string> => {
     let activeAgentId: string | undefined

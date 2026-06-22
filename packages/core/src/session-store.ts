@@ -126,6 +126,17 @@ export class MuseSessionStore {
     return toSessionMeta(entry)
   }
 
+  /** 记录 Server 代理最近一次 chat 解析结果 */
+  async updateLastResolvedModelRef(id: string, modelRef: string): Promise<SessionMeta | undefined> {
+    await this.ensureRegistry()
+    const entry = this.findEntry(id)
+    if (!entry) return undefined
+    entry.lastResolvedModelRef = modelRef
+    entry.updatedAt = new Date().toISOString()
+    await this.persistRegistry()
+    return toSessionMeta(entry)
+  }
+
   /** 重命名 Session；manual 来源不会被自动标题覆盖 */
   async updateName(id: string, name: string, nameSource: SessionNameSource = 'manual'): Promise<SessionMeta | undefined> {
     await this.ensureRegistry()

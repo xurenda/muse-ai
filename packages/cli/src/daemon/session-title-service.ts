@@ -1,9 +1,8 @@
-import { deriveSessionTitle, parseModelRef, resolveEffectiveChatModelSelection, resolveTaskModelCandidates, type MuseSessionStore } from '@muse-ai/core'
-import type { SessionBranchMessage, SessionMeta } from '@muse-ai/shared'
+import { deriveSessionTitle, type MuseSessionStore } from '@muse-ai/core'
+import { MUSE_PROXY_HEADERS, type SessionBranchMessage, type SessionMeta } from '@muse-ai/shared'
+import { buildMuseProxyRequestHeaders } from '../backend/muse-proxy-context.js'
 import type { BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import type { SessionEventHub } from './event-hub.js'
-import type { ModelStrategyProvider } from './model-strategy-provider.js'
-import type { SessionSettingsService } from './session-settings-service.js'
 
 const TITLE_SYSTEM_PROMPT =
   'Generate a short chat title. Reply with ONLY the title text: no quotes, no trailing punctuation, max 20 characters. Use the same language as the user message.'
@@ -82,8 +81,6 @@ function extractCompletionText(body: unknown): string | null {
 export class SessionTitleService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
-    private readonly sessionSettingsService: SessionSettingsService,
-    private readonly modelStrategyProvider: ModelStrategyProvider,
     private readonly eventHub: SessionEventHub,
     private readonly resolveBackendAuth: () => Promise<BackendLlmAuthConfig | undefined>,
   ) {}
@@ -110,7 +107,7 @@ export class SessionTitleService {
     const backendAuth = await this.resolveBackendAuth()
     if (!backendAuth?.deviceToken) return
 
-    const title = await this.generateTitle(sessionId, context, backendAuth)
+    const title = await this.generateTitle(sessionId, context, backendAuth, meta)
     if (!title) return
 
     const updated = await this.sessionStore.updateName(sessionId, title, 'auto_llm')
@@ -118,27 +115,18 @@ export class SessionTitleService {
     await this.publishMetaUpdate(updated)
   }
 
-  private async resolveTitleModelRef(sessionId: string): Promise<string> {
-    const settings = await this.sessionSettingsService.get(sessionId)
-    const strategy = await this.modelStrategyProvider.getStrategy()
-    const meta = await this.sessionStore.get(sessionId)
-    const chatSelection = resolveEffectiveChatModelSelection(meta?.modelSelection ?? settings.modelSelection, strategy, undefined)
-    const candidates = resolveTaskModelCandidates('titleGeneration', strategy, chatSelection)
-    return candidates[0] ?? settings.modelRef
-  }
-
-  private async generateTitle(sessionId: string, context: TitleTurnContext, backendAuth: BackendLlmAuthConfig): Promise<string | null> {
+  private async generateTitle(sessionId: string, context: TitleTurnContext, backendAuth: BackendLlmAuthConfig, meta: SessionMeta): Promise<string | null> {
     try {
-      const modelRef = await this.resolveTitleModelRef(sessionId)
-      const model = parseModelRef(modelRef)
+      const proxyHeaders = buildMuseProxyRequestHeaders('titleGeneration', meta.modelSelection)
       const response = await fetch(`${backendAuth.backendUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${backendAuth.deviceToken}`,
+          ...proxyHeaders,
         },
         body: JSON.stringify({
-          model: model.id,
+          model: 'proxy',
           ...TITLE_REQUEST_EXTRA,
           messages: [
             { role: 'system', content: TITLE_SYSTEM_PROMPT },
@@ -150,6 +138,16 @@ export class SessionTitleService {
         }),
         signal: AbortSignal.timeout(TITLE_FETCH_TIMEOUT_MS),
       })
+
+      const modelRef = response.headers.get(MUSE_PROXY_HEADERS.RESOLVED_MODEL)
+      if (modelRef) {
+        await this.eventHub.publish(sessionId, {
+          type: 'model_resolved',
+          modelRef,
+          task: 'titleGeneration',
+          usedFallback: response.headers.get(MUSE_PROXY_HEADERS.FALLBACK_USED) === 'true' || undefined,
+        })
+      }
 
       if (!response.ok) return null
       const body: unknown = await response.json()

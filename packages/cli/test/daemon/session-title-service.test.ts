@@ -1,11 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSessionStore } from '@muse-ai/core'
 import type { SessionMeta } from '@muse-ai/shared'
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@muse-ai/shared'
 import { SessionEventHub } from '@/daemon/event-hub.js'
-import { ModelStrategyProvider } from '@/daemon/model-strategy-provider.js'
 import { SessionTitleService } from '@/daemon/session-title-service.js'
-import type { SessionSettingsService } from '@/daemon/session-settings-service.js'
 
 describe('SessionTitleService', () => {
   afterEach(() => {
@@ -43,15 +41,6 @@ describe('SessionTitleService', () => {
       })),
     } satisfies Pick<MuseSessionStore, 'get' | 'getTree' | 'updateName'>
 
-    const sessionSettingsService = {
-      get: vi.fn(async () => ({
-        sessionId,
-        agentId: meta.agentId,
-        modelRef: 'openai/deepseek-v4-flash',
-        thinkingLevel: 'off' as const,
-      })),
-    } satisfies Pick<SessionSettingsService, 'get'>
-
     const eventHub = new SessionEventHub()
     const received: unknown[] = []
     const abort = new AbortController()
@@ -65,37 +54,22 @@ describe('SessionTitleService', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({
-        ok: true,
-        json: async () => ({
-          choices: [{ message: { content: 'Todo App 规划' } }],
-        }),
-      })),
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ choices: [{ message: { content: 'Todo App 规划' } }] }), {
+            status: 200,
+            headers: {
+              [MUSE_PROXY_HEADERS.RESOLVED_MODEL]: 'openai/deepseek-v4-flash',
+              [MUSE_PROXY_HEADERS.FALLBACK_USED]: 'false',
+            },
+          }),
+      ),
     )
 
-    const modelStrategyProvider = new ModelStrategyProvider(async () => ({
+    const service = new SessionTitleService(sessionStore as MuseSessionStore, eventHub, async () => ({
       backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
       deviceToken: 'device-token',
     }))
-    modelStrategyProvider.setStrategyForTest({
-      pools: { high: [], medium: ['openai/deepseek-v4-flash'], low: [] },
-      taskRouting: {
-        chat: { type: 'model', modelRef: 'openai/deepseek-v4-flash' },
-        compaction: { type: 'follow_chat' },
-        titleGeneration: { type: 'model', modelRef: 'openai/deepseek-v4-flash' },
-      },
-    })
-
-    const service = new SessionTitleService(
-      sessionStore as MuseSessionStore,
-      sessionSettingsService as SessionSettingsService,
-      modelStrategyProvider,
-      eventHub,
-      async () => ({
-        backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
-        deviceToken: 'device-token',
-      }),
-    )
 
     await service.maybeGenerateAfterTurn(sessionId)
 
@@ -104,10 +78,18 @@ describe('SessionTitleService', () => {
       `http://127.0.0.1:${DEFAULT_PORTS.SERVER}/v1/chat/completions`,
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          [MUSE_PROXY_HEADERS.TASK]: 'titleGeneration',
+        }),
         body: expect.stringContaining('"thinking":{"type":"disabled"}'),
       }),
     )
     expect(received).toEqual([
+      {
+        type: 'model_resolved',
+        modelRef: 'openai/deepseek-v4-flash',
+        task: 'titleGeneration',
+      },
       {
         type: 'session_meta_updated',
         sessionId,
@@ -135,16 +117,10 @@ describe('SessionTitleService', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    const service = new SessionTitleService(
-      sessionStore as MuseSessionStore,
-      { get: vi.fn() } as unknown as SessionSettingsService,
-      new ModelStrategyProvider(async () => ({
-        backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
-        deviceToken: 'device-token',
-      })),
-      new SessionEventHub(),
-      async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
-    )
+    const service = new SessionTitleService(sessionStore as MuseSessionStore, new SessionEventHub(), async () => ({
+      backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
+      deviceToken: 'device-token',
+    }))
 
     await service.maybeGenerateAfterTurn('550e8400-e29b-41d4-a716-446655440000')
 
@@ -178,41 +154,19 @@ describe('SessionTitleService', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({
-        ok: true,
-        json: async () => ({
-          choices: [{ message: { content: '', reasoning_content: 'only reasoning' } }],
-        }),
-      })),
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ choices: [{ message: { content: '', reasoning_content: 'only reasoning' } }] }), {
+            status: 200,
+            headers: { [MUSE_PROXY_HEADERS.RESOLVED_MODEL]: 'openai/deepseek-v4-pro' },
+          }),
+      ),
     )
 
-    const modelStrategyProvider = new ModelStrategyProvider(async () => ({
+    const service = new SessionTitleService(sessionStore as MuseSessionStore, new SessionEventHub(), async () => ({
       backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`,
       deviceToken: 'device-token',
     }))
-    modelStrategyProvider.setStrategyForTest({
-      pools: { high: [], medium: [], low: [] },
-      taskRouting: {
-        chat: { type: 'model', modelRef: 'openai/deepseek-v4-pro' },
-        compaction: { type: 'follow_chat' },
-        titleGeneration: { type: 'model', modelRef: 'openai/deepseek-v4-pro' },
-      },
-    })
-
-    const service = new SessionTitleService(
-      sessionStore as MuseSessionStore,
-      {
-        get: vi.fn(async () => ({
-          sessionId,
-          agentId: '00000000-0000-4000-8000-000000000001',
-          modelRef: 'openai/deepseek-v4-pro',
-          thinkingLevel: 'low' as const,
-        })),
-      } as SessionSettingsService,
-      modelStrategyProvider,
-      new SessionEventHub(),
-      async () => ({ backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`, deviceToken: 'device-token' }),
-    )
 
     await service.maybeGenerateAfterTurn(sessionId)
     expect(sessionStore.updateName).not.toHaveBeenCalled()

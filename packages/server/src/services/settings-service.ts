@@ -69,6 +69,11 @@ export class SettingsService {
     return this.hasCredential(userId, providerId)
   }
 
+  /** 供 ModelResolutionService 过滤未配置 Provider 的候选 */
+  async isProviderConfigured(userId: string, providerId: string): Promise<boolean> {
+    return this.isConfigured(userId, providerId)
+  }
+
   async getModelsConfig(userId: string): Promise<ModelsConfigResponse> {
     const modelsStore = await this.configStore.readAll(userId)
     const [settings] = await this.db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1)

@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth'
 export function ChatStatusBarModelPicker() {
   const { sessionId: routeSessionId } = useParams()
   const { auth } = useAuth()
-  const { status, sessionSettings, canSend, updateSessionSettings } = useChatSessionContext()
+  const { status, sessionSettings, chatModelDisplay, canSend, updateSessionSettings } = useChatSessionContext()
 
   if (!routeSessionId || status !== 'ready') return null
 
@@ -21,6 +21,7 @@ export function ChatStatusBarModelPicker() {
       statusBar
       userToken={auth?.accessToken}
       sessionSettings={sessionSettings}
+      chatModelDisplay={chatModelDisplay}
       disabled={!canSend}
       onUpdate={async patch => {
         const result = await updateSessionSettings(patch)

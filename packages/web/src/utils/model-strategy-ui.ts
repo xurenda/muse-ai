@@ -1,4 +1,4 @@
-import type { ModelSelection, ModelStrategyConfig, ModelsConfigProviderOption, ModelTier, TaskModelSelection } from '@muse-ai/shared'
+import type { ModelSelection, ModelStrategyConfig, ModelStrategyPools, ModelsConfigProviderOption, ModelTier, TaskModelSelection } from '@muse-ai/shared'
 import { DEFAULT_MODEL_STRATEGY } from '@muse-ai/shared'
 
 export interface ModelCatalogItem {
@@ -35,6 +35,42 @@ export function isSameModelSelection(a: ModelSelection | undefined, b: ModelSele
 export interface PickerTriggerLabels {
   primary: string
   secondary: string | null
+}
+
+/** tier 池首项（优先已配置 Provider），供 Picker 乐观副文案 */
+export function resolveOptimisticModelRef(modelSelection: ModelSelection | undefined, pools: ModelStrategyPools, catalog: ModelCatalogItem[]): string {
+  if (modelSelection?.type === 'tier') {
+    const configuredRefs = new Set(catalog.map(item => item.modelRef))
+    const tierPool = pools[modelSelection.tier]
+    const firstConfigured = tierPool.find(ref => configuredRefs.has(ref))
+    return firstConfigured ?? tierPool[0] ?? ''
+  }
+  if (modelSelection?.type === 'model') {
+    return modelSelection.modelRef
+  }
+  return ''
+}
+
+/** 合并 SSE 解析结果、乐观池首项与 session 持久化 modelRef */
+export function resolveDisplayModelRef(
+  modelSelection: ModelSelection | undefined,
+  options: {
+    sseResolvedModelRef?: string | null
+    optimisticModelRef?: string
+    persistedModelRef?: string
+  },
+): string {
+  const sse = options.sseResolvedModelRef?.trim()
+  const optimistic = options.optimisticModelRef?.trim()
+  const persisted = options.persistedModelRef?.trim()
+
+  if (modelSelection?.type === 'model') {
+    return sse || modelSelection.modelRef
+  }
+  if (modelSelection?.type === 'tier') {
+    return sse || optimistic || persisted || ''
+  }
+  return sse || persisted || ''
 }
 
 /** 聊天 Picker trigger 主/副文案（tier 时副文案为解析到的具体模型名） */

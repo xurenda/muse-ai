@@ -92,6 +92,12 @@ describe('isRetryableModelError', () => {
     error.name = 'TimeoutError'
     expect(isRetryableModelError(error)).toBe(true)
   })
+
+  it('fetch 连接失败（含 cause ECONNREFUSED）应 retry', () => {
+    const cause = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:11434'), { code: 'ECONNREFUSED' })
+    const error = new TypeError('fetch failed', { cause })
+    expect(isRetryableModelError(error)).toBe(true)
+  })
 })
 
 describe('extractHttpStatus', () => {

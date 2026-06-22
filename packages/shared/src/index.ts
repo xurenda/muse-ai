@@ -33,6 +33,15 @@ export {
   BUILTIN_SKILL_GIT,
   BUILTIN_SKILL_REVIEW,
 } from './constants/builtin-agents.js'
+export {
+  MUSE_LLM_TASKS,
+  MUSE_PROXY_HEADERS,
+  encodeModelSelectionHeader,
+  parseModelSelectionHeader,
+  parseMuseLlmTask,
+  parseProviderIdFromModelRef,
+  type MuseLlmTask,
+} from './constants/llm-proxy.js'
 export { loginRequestSchema, loginResponseSchema, registerRequestSchema, type LoginRequest, type LoginResponse, type RegisterRequest } from './types/auth.js'
 export type { ApiKeyCredential, AuthCredential, AuthStorageData, OAuthCredential } from './types/credential.js'
 export {
@@ -132,7 +141,7 @@ export {
 export { maskApiKey } from './utils/mask-api-key.js'
 export { appendModelRefsToAllPools, collectModelRefsFromStrategy, dedupeModelPoolRefs, normalizeModelStrategyPools } from './utils/model-strategy.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
-export { chatRequestSchema, formatSseData, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
+export { chatRequestSchema, formatSseData, museLlmTaskSchema, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
 export { compactionReasonSchema, sessionCompactRequestSchema, type CompactionReason, type SessionCompactRequest } from './types/session-compact.js'
 export {
   createAgentRequestSchema,

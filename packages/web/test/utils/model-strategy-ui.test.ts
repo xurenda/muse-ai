@@ -9,6 +9,8 @@ import {
   movePoolItem,
   removePoolItem,
   reorderPoolItems,
+  resolveOptimisticModelRef,
+  resolveDisplayModelRef,
   resolvePickerTriggerLabels,
   togglePoolItem,
 } from '@/utils/model-strategy-ui'
@@ -80,5 +82,33 @@ describe('model-strategy-ui', () => {
   it('resolvePickerTriggerLabels model 时仅主文案', () => {
     const labels = resolvePickerTriggerLabels({ type: 'model', modelRef: 'openai/deepseek-v4-flash' }, 'openai/deepseek-v4-flash', catalog, () => '')
     expect(labels).toEqual({ primary: 'DeepSeek V4 Flash', secondary: null })
+  })
+
+  it('resolveOptimisticModelRef tier 应取池内首个已配置模型', () => {
+    const pools = { high: ['openai/missing', 'openai/deepseek-v4-pro'], medium: [], low: [] }
+    expect(resolveOptimisticModelRef({ type: 'tier', tier: 'high' }, pools, catalog)).toBe('openai/deepseek-v4-pro')
+  })
+
+  it('resolveDisplayModelRef SSE 应覆盖乐观值', () => {
+    expect(
+      resolveDisplayModelRef(
+        { type: 'tier', tier: 'high' },
+        {
+          sseResolvedModelRef: 'openai/deepseek-v4-flash',
+          optimisticModelRef: 'openai/deepseek-v4-pro',
+        },
+      ),
+    ).toBe('openai/deepseek-v4-flash')
+  })
+
+  it('resolveDisplayModelRef tier 无 SSE 时用乐观池首项', () => {
+    expect(
+      resolveDisplayModelRef(
+        { type: 'tier', tier: 'high' },
+        {
+          optimisticModelRef: 'openai/deepseek-v4-pro',
+        },
+      ),
+    ).toBe('openai/deepseek-v4-pro')
   })
 })

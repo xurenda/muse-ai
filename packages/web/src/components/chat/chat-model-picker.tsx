@@ -7,28 +7,38 @@ import { fetchModelStrategy } from '@/api/settings-api'
 import { ReasoningLevelSlider } from '@/components/chat/reasoning-level-slider'
 import { ModelPickerPanel } from '@/components/model-picker/model-picker-panel'
 import { cn } from '@/lib/utils'
-import { MODEL_TIERS, buildModelCatalog, isSameModelSelection, resolvePickerTriggerLabels, type ModelCatalogItem } from '@/utils/model-strategy-ui'
+import type { ChatModelResolvedDisplay } from '@/hooks/use-chat-session'
+import {
+  MODEL_TIERS,
+  buildModelCatalog,
+  isSameModelSelection,
+  resolveDisplayModelRef,
+  resolveOptimisticModelRef,
+  resolvePickerTriggerLabels,
+  type ModelCatalogItem,
+} from '@/utils/model-strategy-ui'
 
 interface ChatModelPickerProps {
   userToken: string | undefined
   sessionSettings: SessionSettingsResponse | null
+  chatModelDisplay?: ChatModelResolvedDisplay
   disabled: boolean
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
   /** 嵌入底部状态栏的紧凑样式 */
   statusBar?: boolean
 }
 
-export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate, statusBar = false }: ChatModelPickerProps) {
+export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, disabled, onUpdate, statusBar = false }: ChatModelPickerProps) {
   const { t } = useTranslation('chat')
   const containerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const [otherModelsOpen, setOtherModelsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [catalog, setCatalog] = useState<ModelCatalogItem[]>([])
+  const [pools, setPools] = useState<{ high: string[]; medium: string[]; low: string[] } | null>(null)
   const [saving, setSaving] = useState(false)
   const thinkingLevel = sessionSettings?.thinkingLevel ?? 'off'
   const modelSelection = sessionSettings?.modelSelection
-  const resolvedModelRef = sessionSettings?.modelRef ?? ''
 
   useEffect(() => {
     if (!userToken) return
@@ -39,9 +49,13 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
         if (cancelled) return
         const configured = response.options.filter(option => option.authStatus === 'configured')
         setCatalog(buildModelCatalog(configured))
+        setPools(response.strategy.pools)
       })
       .catch(() => {
-        if (!cancelled) setCatalog([])
+        if (!cancelled) {
+          setCatalog([])
+          setPools(null)
+        }
       })
 
     return () => {
@@ -82,12 +96,23 @@ export function ChatModelPicker({ userToken, sessionSettings, disabled, onUpdate
     setSearch('')
   }
 
+  const optimisticModelRef = useMemo(() => (pools ? resolveOptimisticModelRef(modelSelection, pools, catalog) : ''), [catalog, modelSelection, pools])
+  const displayModelRef = useMemo(
+    () =>
+      resolveDisplayModelRef(modelSelection, {
+        sseResolvedModelRef: chatModelDisplay?.resolvedModelRef,
+        optimisticModelRef,
+        persistedModelRef: sessionSettings?.modelRef,
+      }),
+    [chatModelDisplay?.resolvedModelRef, modelSelection, optimisticModelRef, sessionSettings?.modelRef],
+  )
+
   const triggerLabels = useMemo(
     () =>
-      resolvePickerTriggerLabels(modelSelection, resolvedModelRef, catalog, tier =>
+      resolvePickerTriggerLabels(modelSelection, displayModelRef, catalog, tier =>
         t(`modelPicker.${tier === 'high' ? 'tierHigh' : tier === 'low' ? 'tierLow' : 'tierMedium'}`),
       ),
-    [catalog, modelSelection, resolvedModelRef, t],
+    [catalog, displayModelRef, modelSelection, t],
   )
   const thinkingLevelLabel = thinkingLevel !== 'off' ? t(`thinkingLevelsShort.${thinkingLevel}`) : null
 

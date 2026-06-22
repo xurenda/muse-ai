@@ -11,6 +11,8 @@ import { registerLlmProxyRoutes } from './routes/llm-proxy.js'
 import { registerSettingsRoutes } from './routes/settings.js'
 import { AuthService } from './services/auth-service.js'
 import { DeviceService } from './services/device-service.js'
+import { createModelResolutionService } from './services/model-resolution-service.js'
+import { LlmProxyOrchestrator } from './services/llm-proxy-orchestrator.js'
 import { LlmProxyService } from './services/llm-proxy-service.js'
 import { ProviderResolver } from './services/provider-resolver.js'
 import { SettingsService } from './services/settings-service.js'
@@ -24,6 +26,7 @@ export interface ServerContext {
   providerResolver: ProviderResolver
   deviceService: DeviceService
   llmProxyService: LlmProxyService
+  llmProxyOrchestrator: LlmProxyOrchestrator
   close: () => Promise<void>
 }
 
@@ -40,6 +43,8 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
   const providerResolver = new ProviderResolver(db, credentialStore)
   const deviceService = new DeviceService(db, redis, config.encryptionKey)
   const llmProxyService = new LlmProxyService()
+  const modelResolutionService = createModelResolutionService(settingsService)
+  const llmProxyOrchestrator = new LlmProxyOrchestrator(modelResolutionService, providerResolver, llmProxyService)
 
   return {
     config,
@@ -48,6 +53,7 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
     providerResolver,
     deviceService,
     llmProxyService,
+    llmProxyOrchestrator,
     close: async () => {
       await redis.quit()
       await pool.end()
@@ -65,7 +71,7 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
     cors({
       origin: ctx.config.corsOrigins,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'X-Muse-Provider'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-Muse-Provider', 'X-Muse-Task', 'X-Muse-Selection'],
     }),
   )
 
@@ -78,7 +84,7 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
   registerAuthRoutes(app, ctx.authService)
   registerSettingsRoutes(app, ctx.settingsService, userAuth)
   registerDeviceRoutes(app, ctx.deviceService, userAuth, deviceAuth)
-  registerLlmProxyRoutes(app, ctx.providerResolver, ctx.llmProxyService, deviceAuth)
+  registerLlmProxyRoutes(app, ctx.llmProxyOrchestrator, deviceAuth)
 
   return app
 }

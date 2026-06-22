@@ -166,12 +166,17 @@ packages/server/
 
 CLI 调 Backend 的典型接口：
 
-| 接口                        | 用途                                 |
-| --------------------------- | ------------------------------------ |
-| `POST /auth/login`          | 用户登录                             |
-| `POST /devices/pair`        | 配对码换 device token                |
-| `POST /devices/heartbeat`   | 上报 online + endpoint               |
-| `POST /v1/chat/completions` | LLM 代理（兼容 OpenAI 格式或自定义） |
+| 接口                               | 用途                                                          |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `POST /auth/login`                 | 用户登录                                                      |
+| `POST /devices/pair`               | 配对码换 device token                                         |
+| `POST /devices/heartbeat`          | 上报 online + endpoint                                        |
+| `POST /v1/chat/completions`        | LLM 代理（兼容 OpenAI 格式或自定义）                          |
+| `GET /settings/model-strategy`     | 模型策略（pools + taskRouting）；**Web userAuth**，CLI 不拉取 |
+| `X-Muse-Task` / `X-Muse-Selection` | LLM 请求头：Server 按 task 解析候选并 fallback                |
+| `X-Muse-Resolved-Model` 等响应头   | 实际 modelRef；CLI 转 SSE `model_resolved` 给 Web             |
+
+**模型解析（v0.1.1）**：Server 负责 expand pools + fallback 循环；CLI 仅注入 `X-Muse-*` 头并读响应头；Web Picker 乐观显示池首项，以 SSE `model_resolved`（`task: chat`）为准。
 
 ---
 
@@ -202,6 +207,7 @@ type MuseSSEEvent =
   | { type: 'tool_end'; toolName: string; result: unknown }
   | { type: 'turn_end' }
   | { type: 'agent_end' }
+  | { type: 'model_resolved'; modelRef: string; task: 'chat' | 'compaction' | 'titleGeneration'; usedFallback?: boolean }
   | { type: 'error'; message: string }
 ```
 

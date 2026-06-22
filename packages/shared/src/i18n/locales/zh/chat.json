@@ -129,7 +129,8 @@
     "tierMedium": "标准",
     "tierLow": "轻量",
     "otherModels": "其他模型",
-    "thinkingLevelSection": "思考等级"
+    "thinkingLevelSection": "思考等级",
+    "fallbackToast": "{{fromModelName}} 不可用，已切换至 {{toModelName}}"
   },
   "mode": {
     "prompt": "Prompt",

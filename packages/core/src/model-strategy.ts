@@ -72,6 +72,33 @@ export function extractHttpStatus(error: unknown): number | undefined {
 
 const NON_RETRYABLE_HTTP_STATUSES = new Set([400, 404, 413, 422])
 
+const RETRYABLE_NETWORK_ERROR_CODES = new Set(['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN'])
+
+function isRetryableNetworkErrorCode(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return false
+  const code = error.code
+  return typeof code === 'string' && RETRYABLE_NETWORK_ERROR_CODES.has(code)
+}
+
+function isRetryableErrorMessage(message: string): boolean {
+  const normalized = message.toLowerCase()
+  if (normalized.includes('content policy') || normalized.includes('moderation') || normalized.includes('invalid_request')) {
+    return false
+  }
+  return (
+    normalized.includes('timeout') ||
+    normalized.includes('timed out') ||
+    normalized.includes('econnrefused') ||
+    normalized.includes('enotfound') ||
+    normalized.includes('network') ||
+    normalized.includes('fetch failed') ||
+    normalized.includes('rate limit') ||
+    normalized.includes('overloaded') ||
+    normalized.includes('503') ||
+    normalized.includes('429')
+  )
+}
+
 /** 是否应对 tier 池内下一个模型 retry（对齐 phase-1 决策） */
 export function isRetryableModelError(error: unknown): boolean {
   const status = extractHttpStatus(error)
@@ -82,27 +109,15 @@ export function isRetryableModelError(error: unknown): boolean {
     return false
   }
 
+  if (isRetryableNetworkErrorCode(error)) return true
+
   if (error instanceof Error) {
     const name = error.name
     if (name === 'AbortError' || name === 'TimeoutError') return true
 
-    const message = error.message.toLowerCase()
-    if (message.includes('content policy') || message.includes('moderation') || message.includes('invalid_request')) {
-      return false
-    }
-    if (
-      message.includes('timeout') ||
-      message.includes('timed out') ||
-      message.includes('econnrefused') ||
-      message.includes('enotfound') ||
-      message.includes('network') ||
-      message.includes('rate limit') ||
-      message.includes('overloaded') ||
-      message.includes('503') ||
-      message.includes('429')
-    ) {
-      return true
-    }
+    if (isRetryableErrorMessage(error.message)) return true
+
+    if (error.cause !== undefined && isRetryableModelError(error.cause)) return true
   }
 
   return false

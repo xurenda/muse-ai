@@ -240,3 +240,5 @@ pnpm --filter @muse-ai/web typecheck
 ## 下一阶段
 
 本版本交付并自用稳定后，按 [roadmap.md](../roadmap.md) 进入 **v0.2**（市场、附件、记忆 v1 等）；Auto 路由可作为 v0.2 早期独立子项单独立项。
+
+**解析位置演进**：阶段 1 将解析放在 CLI；[phase-2.md](./phase-2.md) 将 **resolve + fallback 下沉至 Server LLM 代理**，CLI 仅传 `ModelSelection` 请求头。

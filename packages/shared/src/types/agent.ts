@@ -4,11 +4,19 @@ export const thinkingLevelSchema = z.enum(['off', 'minimal', 'low', 'medium', 'h
 
 export type ThinkingLevel = z.infer<typeof thinkingLevelSchema>
 
-/** provider/modelId，例如 anthropic/claude-sonnet-4-20250514 */
-export const modelRefSchema = z
-  .string()
-  .min(3)
-  .regex(/^[a-z0-9_-]+\/[a-z0-9._-]+$/i, '应为 provider/modelId 格式')
+const MODEL_REF_PROVIDER_PATTERN = /^[a-z0-9_-]+$/i
+
+/** 校验 provider/modelId；modelId 允许空格等字符以兼容 Ollama 等本地供应方 */
+function isValidModelRef(ref: string): boolean {
+  const slash = ref.indexOf('/')
+  if (slash <= 0 || slash >= ref.length - 1) return false
+  const provider = ref.slice(0, slash)
+  const modelId = ref.slice(slash + 1)
+  return MODEL_REF_PROVIDER_PATTERN.test(provider) && modelId.length > 0
+}
+
+/** provider/modelId，例如 anthropic/claude-sonnet-4-20250514、ollama/opus 4.8 */
+export const modelRefSchema = z.string().min(3).refine(isValidModelRef, '应为 provider/modelId 格式')
 
 export type ModelRef = z.infer<typeof modelRefSchema>
 

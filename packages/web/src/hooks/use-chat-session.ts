@@ -16,6 +16,8 @@ import {
   postChat,
   subscribeSessionEvents,
 } from '@/api/cli-client'
+import { fetchModelStrategy } from '@/api/settings-api'
+import { buildModelCatalog, resolveModelLabel, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { hasRunningTool } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
@@ -29,8 +31,18 @@ import { useSessionListStore } from '@/stores/session-list-store'
 export type ChatSessionStatus = 'idle' | 'connecting' | 'ready' | 'error'
 export type SseConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
+/** 对话模型 Picker 展示：SSE model_resolved（chat）驱动 */
+export interface ChatModelResolvedDisplay {
+  resolvedModelRef: string | null
+}
+
+const INITIAL_CHAT_MODEL_DISPLAY: ChatModelResolvedDisplay = {
+  resolvedModelRef: null,
+}
+
 interface UseChatSessionOptions {
   onSessionChange?: (sessionId: string) => void
+  userAccessToken?: string
 }
 
 function sessionStorageKey(deviceId: string): string {
@@ -51,6 +63,7 @@ function resetChatState(setters: {
   setSettingsError: (value: string | null) => void
   setTreeError: (value: string | null) => void
   setSseStatus: (value: SseConnectionStatus) => void
+  setChatModelDisplay: (value: ChatModelResolvedDisplay) => void
 }) {
   setters.setSessionId(null)
   setters.setSessionTree(null)
@@ -61,6 +74,7 @@ function resetChatState(setters: {
   setters.setSettingsError(null)
   setters.setTreeError(null)
   setters.setSseStatus('idle')
+  setters.setChatModelDisplay(INITIAL_CHAT_MODEL_DISPLAY)
 }
 
 export function useChatSession(deviceSession: StoredDeviceSession | null, routeSessionId: string | undefined, options?: UseChatSessionOptions) {
@@ -78,6 +92,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [treeError, setTreeError] = useState<string | null>(null)
   const [compacting, setCompacting] = useState(false)
   const [stopping, setStopping] = useState(false)
+  const [chatModelDisplay, setChatModelDisplay] = useState<ChatModelResolvedDisplay>(INITIAL_CHAT_MODEL_DISPLAY)
+  const lastModelResolvedDedupRef = useRef<string | null>(null)
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
@@ -87,6 +103,42 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const deviceWasUnreachableRef = useRef(false)
   const sessionAutoRetryRef = useRef(false)
   const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
+  const modelCatalogRef = useRef<ModelCatalogItem[]>([])
+
+  const resolveModelDisplayName = useCallback((modelRef: string): string => {
+    return resolveModelLabel(modelRef, modelCatalogRef.current)
+  }, [])
+
+  const showModelFallbackToast = useCallback(
+    (failedModelRef: string, resolvedModelRef: string) => {
+      toast.info(
+        t('modelPicker.fallbackToast', {
+          fromModelName: resolveModelDisplayName(failedModelRef),
+          toModelName: resolveModelDisplayName(resolvedModelRef),
+        }),
+      )
+    },
+    [resolveModelDisplayName, t],
+  )
+
+  useEffect(() => {
+    if (!options?.userAccessToken) return
+
+    let cancelled = false
+    void fetchModelStrategy(options.userAccessToken)
+      .then(response => {
+        if (cancelled) return
+        const configured = response.options.filter(option => option.authStatus === 'configured')
+        modelCatalogRef.current = buildModelCatalog(configured)
+      })
+      .catch(() => {
+        if (!cancelled) modelCatalogRef.current = []
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [options?.userAccessToken])
 
   useEffect(() => {
     onSessionChangeRef.current = options?.onSessionChange
@@ -184,6 +236,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       setSseStatus('connecting')
       setConnectionError(null)
       setSendError(null)
+      setChatModelDisplay(INITIAL_CHAT_MODEL_DISPLAY)
+      lastModelResolvedDedupRef.current = null
       if (connectOptions?.resetMessages) {
         setMessages([])
       }
@@ -203,6 +257,26 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
           id,
           {
             onEvent: event => {
+              if (event.type === 'turn_start') {
+                lastModelResolvedDedupRef.current = null
+                return
+              }
+              if (event.type === 'model_resolved') {
+                if (event.task !== 'chat') return
+                const dedupKey = `${event.modelRef}|${event.usedFallback === true}|${event.attemptedModelRefs?.join(',') ?? ''}`
+                if (lastModelResolvedDedupRef.current === dedupKey) return
+                lastModelResolvedDedupRef.current = dedupKey
+                setChatModelDisplay({
+                  resolvedModelRef: event.modelRef,
+                })
+                if (event.usedFallback === true) {
+                  const failedModelRef = event.attemptedModelRefs?.[0]
+                  if (failedModelRef && failedModelRef !== event.modelRef) {
+                    showModelFallbackToast(failedModelRef, event.modelRef)
+                  }
+                }
+                return
+              }
               if (event.type === 'session_meta_updated') {
                 useSessionListStore.getState().patchSession(event.sessionId, {
                   name: event.name,
@@ -269,7 +343,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
       setStatus('ready')
     },
-    [deviceSession, loadSettings, refreshTree, sseEventOptions, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
+    [deviceSession, loadSettings, refreshTree, showModelFallbackToast, sseEventOptions, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
   )
 
   const retryConnection = useCallback(async () => {
@@ -343,6 +417,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setSettingsError,
         setTreeError,
         setSseStatus,
+        setChatModelDisplay,
       })
     }
 
@@ -436,6 +511,10 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     async (patch: SessionSettingsPatch) => {
       if (!deviceSession || !sessionId) return null
       setSettingsError(null)
+      if (patch.modelSelection !== undefined || patch.modelRef !== undefined) {
+        setChatModelDisplay(INITIAL_CHAT_MODEL_DISPLAY)
+        lastModelResolvedDedupRef.current = null
+      }
       try {
         const updated = await patchSessionSettings(deviceSession.endpoint, deviceSession.accessToken, sessionId, patch)
         setSessionSettings(updated)
@@ -534,6 +613,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     settingsError,
     treeError,
     compacting,
+    chatModelDisplay,
     sendMessage,
     stopGeneration,
     compactContext,

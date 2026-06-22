@@ -5,18 +5,15 @@ import {
   extractAssistantTurnError,
   formatLlmErrorMessage,
   isAssistantContextOverflow,
-  isRetryableModelError,
-  parseModelRef,
-  resolveEffectiveChatModelSelection,
-  resolveTaskModelCandidates,
   type MuseAgentRegistry,
   type MuseSessionStore,
 } from '@muse-ai/core'
-import type { ChatRequest, CompactionReason } from '@muse-ai/shared'
-import { createBackendGetApiKeyAndHeaders, withProxyBaseUrl, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
+import type { ChatRequest, CompactionReason, MuseLlmTask } from '@muse-ai/shared'
+import { createBackendGetApiKeyAndHeaders, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
+import { runWithMuseProxyContext } from '../backend/muse-proxy-context.js'
+import { createMuseProxyModel } from '../backend/muse-proxy-model.js'
 import { resolveActiveTools } from '@/tools/index.js'
 import type { SessionEventHub } from './event-hub.js'
-import type { ModelStrategyProvider } from './model-strategy-provider.js'
 import type { SessionTitleService } from './session-title-service.js'
 
 const OVERFLOW_COMPACTED_HINT = '上下文已满，已自动压缩。请重新发送您的消息。'
@@ -53,7 +50,6 @@ export class ChatService {
     private readonly agentRegistry: MuseAgentRegistry,
     private readonly cwd: string,
     private readonly resolveBackendAuth: () => Promise<BackendLlmAuthConfig | undefined>,
-    private readonly modelStrategyProvider: ModelStrategyProvider,
   ) {}
 
   async enqueue(request: ChatRequest): Promise<{ accepted: true }> {
@@ -223,28 +219,29 @@ export class ChatService {
     this.activeTurns.set(sessionId, runtime)
 
     try {
-      const assistantMessage =
-        mode === 'prompt'
-          ? await this.promptWithModelFallback(runtime.harness, message, sessionId, agentId)
-          : await this.dispatchMessage(runtime.harness, message, mode)
-      if (assistantMessage && mode === 'prompt') {
-        const model = runtime.harness.getModel()
-        if (!overflowCompactAttempted && isAssistantContextOverflow(assistantMessage, model.contextWindow)) {
-          this.evictRuntime(sessionId)
-          const compacted = await this.runCompact(sessionId, agentId, piSession, backendAuth, { reason: 'overflow' })
-          if (compacted) {
-            await this.publishError(sessionId, OVERFLOW_COMPACTED_HINT)
-            return
+      await runWithMuseProxyContext({ sessionId, task: 'chat', eventHub: this.eventHub, sessionStore: this.sessionStore }, async () => {
+        const assistantMessage = mode === 'prompt' ? await runtime.harness.prompt(message) : undefined
+
+        if (assistantMessage && mode === 'prompt') {
+          const model = runtime.harness.getModel()
+          if (!overflowCompactAttempted && isAssistantContextOverflow(assistantMessage, model.contextWindow)) {
+            this.evictRuntime(sessionId)
+            const compacted = await this.runCompact(sessionId, agentId, piSession, backendAuth, { reason: 'overflow' })
+            if (compacted) {
+              await this.publishError(sessionId, OVERFLOW_COMPACTED_HINT)
+              return
+            }
           }
         }
-      }
 
-      if (assistantMessage) {
-        const turnError = extractAssistantTurnError(assistantMessage)
-        if (turnError) {
-          await this.eventHub.publish(sessionId, { type: 'error', message: turnError })
+        if (assistantMessage) {
+          const turnError = extractAssistantTurnError(assistantMessage)
+          if (turnError) {
+            await this.eventHub.publish(sessionId, { type: 'error', message: turnError })
+          }
         }
-      }
+      })
+
       await this.sessionStore.touch(sessionId)
       void this.sessionTitleService.maybeGenerateAfterTurn(sessionId).catch(() => {})
     } catch (error: unknown) {
@@ -270,7 +267,9 @@ export class ChatService {
     this.activeCompacts.set(sessionId, runtime)
 
     try {
-      const result = await runtime.harness.compact(options.customInstructions)
+      const result = await runWithMuseProxyContext({ sessionId, task: 'compaction', eventHub: this.eventHub, sessionStore: this.sessionStore }, () =>
+        runtime.harness.compact(options.customInstructions),
+      )
       const compactionCount = await this.countCompactionEntries(piSession)
       await this.publishCompactionEnd(sessionId, {
         reason: options.reason,
@@ -330,83 +329,22 @@ export class ChatService {
     return this.createHarnessWithEvents(sessionId, agentId, piSession, backendAuth, 'chat')
   }
 
-  private async resolveHarnessModelRef(sessionId: string, agentId: string, piSession: PiSession, task: 'chat' | 'compaction'): Promise<string> {
-    const strategy = await this.modelStrategyProvider.getStrategy()
-    const meta = await this.sessionStore.get(sessionId)
-    const context = await this.agentRegistry.resolveRuntimeContext(agentId)
-    const chatSelection = resolveEffectiveChatModelSelection(meta?.modelSelection, strategy, context.persona.definition.defaultModel)
-    const candidates = resolveTaskModelCandidates(task, strategy, chatSelection)
-    if (candidates[0]) return candidates[0]
-
-    const harnessOptions = await buildHarnessOptionsForSession(this.agentRegistry, agentId, piSession, this.cwd)
-    return `${harnessOptions.model.provider}/${harnessOptions.model.id}`
-  }
-
-  private async promptWithModelFallback(
-    harness: MuseHarness,
-    message: string,
-    sessionId: string,
-    agentId: string,
-  ): Promise<Awaited<ReturnType<MuseHarness['prompt']>> | undefined> {
-    const piSession = await this.sessionStore.openPiSession(sessionId)
-    if (!piSession) return undefined
-
-    const strategy = await this.modelStrategyProvider.getStrategy()
-    const meta = await this.sessionStore.get(sessionId)
-    const context = await this.agentRegistry.resolveRuntimeContext(agentId)
-    const chatSelection = resolveEffectiveChatModelSelection(meta?.modelSelection, strategy, context.persona.definition.defaultModel)
-    const candidates = resolveTaskModelCandidates('chat', strategy, chatSelection)
-    if (candidates.length === 0) {
-      return harness.prompt(message)
-    }
-
-    let lastResult: Awaited<ReturnType<MuseHarness['prompt']>> | undefined
-    for (let index = 0; index < candidates.length; index++) {
-      const modelRef = candidates[index]
-      if (!modelRef) continue
-      if (index > 0) {
-        console.warn(`[ChatService] model fallback → ${modelRef} (session=${sessionId})`)
-        await harness.setModel(parseModelRef(modelRef))
-      }
-
-      try {
-        lastResult = await harness.prompt(message)
-        const turnError = lastResult ? extractAssistantTurnError(lastResult) : null
-        if (!turnError) return lastResult
-        if (index < candidates.length - 1 && isRetryableModelError({ message: turnError })) {
-          continue
-        }
-        return lastResult
-      } catch (error: unknown) {
-        if (index < candidates.length - 1 && isRetryableModelError(error)) {
-          console.warn(`[ChatService] model fallback after error → next candidate (session=${sessionId})`)
-          continue
-        }
-        throw error
-      }
-    }
-
-    return lastResult
-  }
-
   private async createHarnessWithEvents(
     sessionId: string,
     agentId: string,
     piSession: PiSession,
     backendAuth: BackendLlmAuthConfig,
-    task: 'chat' | 'compaction',
+    task: MuseLlmTask,
   ): Promise<ActiveHarnessRuntime> {
-    const context = await this.agentRegistry.resolveRuntimeContext(agentId)
-    const harnessOptions = await buildHarnessOptionsForSession(this.agentRegistry, agentId, piSession, this.cwd)
-    const tools = resolveActiveTools(context.agent.activeToolNames, this.cwd)
-    const modelRef = await this.resolveHarnessModelRef(sessionId, agentId, piSession, task)
-    const model = withProxyBaseUrl(parseModelRef(modelRef), backendAuth.backendUrl)
-
+    const meta = await this.sessionStore.get(sessionId)
     const harness = new MuseHarness({
-      ...harnessOptions,
-      tools,
-      model,
-      getApiKeyAndHeaders: createBackendGetApiKeyAndHeaders(backendAuth),
+      ...(await buildHarnessOptionsForSession(this.agentRegistry, agentId, piSession, this.cwd)),
+      tools: resolveActiveTools((await this.agentRegistry.resolveRuntimeContext(agentId)).agent.activeToolNames, this.cwd),
+      model: createMuseProxyModel(backendAuth.backendUrl),
+      getApiKeyAndHeaders: createBackendGetApiKeyAndHeaders(backendAuth, {
+        task,
+        selection: meta?.modelSelection,
+      }),
     })
 
     const unsubscribeEvents = harness.subscribe(async event => {
@@ -417,24 +355,6 @@ export class ChatService {
     })
 
     return { harness, unsubscribeEvents }
-  }
-
-  private async dispatchMessage(
-    harness: MuseHarness,
-    message: string,
-    mode: ChatRequest['mode'],
-  ): Promise<Awaited<ReturnType<MuseHarness['prompt']>> | undefined> {
-    switch (mode) {
-      case 'steer':
-        await harness.steer(message)
-        return undefined
-      case 'follow_up':
-        await harness.followUp(message)
-        return undefined
-      case 'prompt':
-      default:
-        return harness.prompt(message)
-    }
   }
 
   private async publishError(sessionId: string, message: string): Promise<void> {

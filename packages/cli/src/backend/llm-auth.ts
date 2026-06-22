@@ -1,8 +1,15 @@
 import { DEFAULT_PORTS } from '@muse-ai/shared'
 
+import { encodeModelSelectionHeader, MUSE_PROXY_HEADERS, type ModelSelection, type MuseLlmTask } from '@muse-ai/shared'
+
 export interface BackendLlmAuthConfig {
   backendUrl: string
   deviceToken: string
+}
+
+export interface MuseProxyRequestContext {
+  task: MuseLlmTask
+  selection?: ModelSelection
 }
 
 function normalizeBackendUrl(url: string): string {
@@ -10,16 +17,20 @@ function normalizeBackendUrl(url: string): string {
 }
 
 /** 将 LLM 请求导向 Muse Server OpenAI 兼容代理；apiKey 使用 device token */
-export function createBackendGetApiKeyAndHeaders(config: BackendLlmAuthConfig) {
-  return async (model: { provider: string }): Promise<{ apiKey: string; headers?: Record<string, string> } | undefined> => {
+export function createBackendGetApiKeyAndHeaders(config: BackendLlmAuthConfig, context: MuseProxyRequestContext) {
+  return async (_model: { provider: string }): Promise<{ apiKey: string; headers?: Record<string, string> } | undefined> => {
     if (!config.deviceToken) {
       return undefined
     }
+    const headers: Record<string, string> = {
+      [MUSE_PROXY_HEADERS.TASK]: context.task,
+    }
+    if (context.selection) {
+      headers[MUSE_PROXY_HEADERS.SELECTION] = encodeModelSelectionHeader(context.selection)
+    }
     return {
       apiKey: config.deviceToken,
-      headers: {
-        'X-Muse-Provider': model.provider,
-      },
+      headers,
     }
   }
 }

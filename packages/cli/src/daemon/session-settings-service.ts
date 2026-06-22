@@ -3,25 +3,14 @@ import { modelRefToModelSelection } from '@muse-ai/shared'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import { sessionSettingsResponseSchema } from '@muse-ai/shared'
 import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
-import {
-  MuseHarness,
-  parseModelRef,
-  placeholderGetApiKeyAndHeaders,
-  readSessionRuntimeOverrides,
-  readSessionTokenUsage,
-  resolveEffectiveChatModelSelection,
-  resolveEffectiveHarnessConfig,
-  resolvePrimaryModelRef,
-} from '@muse-ai/core'
+import { MuseHarness, placeholderGetApiKeyAndHeaders, readSessionRuntimeOverrides, readSessionTokenUsage, resolveEffectiveHarnessConfig } from '@muse-ai/core'
 import { resolveActiveTools } from '@/tools/index.js'
-import type { ModelStrategyProvider } from './model-strategy-provider.js'
 
 export class SessionSettingsService {
   constructor(
     private readonly sessionStore: MuseSessionStore,
     private readonly agentRegistry: MuseAgentRegistry,
     private readonly cwd: string,
-    private readonly modelStrategyProvider: ModelStrategyProvider,
   ) {}
 
   async get(sessionId: string): Promise<SessionSettingsResponse> {
@@ -42,17 +31,14 @@ export class SessionSettingsService {
       context.persona.definition.thinkingLevel as ThinkingLevel | undefined,
       overrides,
     )
-    const strategy = await this.modelStrategyProvider.getStrategy()
     const storedSelection = meta.modelSelection
     const legacySelection = !storedSelection && overrides.hasModelOverride && overrides.modelRef ? modelRefToModelSelection(overrides.modelRef) : undefined
-    const chatSelection = resolveEffectiveChatModelSelection(storedSelection ?? legacySelection, strategy, context.persona.definition.defaultModel)
-    const effectiveModelRef = resolvePrimaryModelRef(chatSelection, strategy.pools, effectiveHarness.modelRef)
     const tokenUsage = await readSessionTokenUsage(piSession)
 
     return sessionSettingsResponseSchema.parse({
       sessionId,
       agentId: meta.agentId,
-      modelRef: effectiveModelRef,
+      modelRef: meta.lastResolvedModelRef ?? effectiveHarness.modelRef,
       modelSelection: storedSelection ?? legacySelection,
       thinkingLevel: effectiveHarness.thinkingLevel,
       tokenUsage,
@@ -99,12 +85,6 @@ export class SessionSettingsService {
         getApiKeyAndHeaders: placeholderGetApiKeyAndHeaders,
       })
 
-      if (nextSelection !== undefined) {
-        const strategy = await this.modelStrategyProvider.getStrategy()
-        const fallbackRef = `${harnessOptions.model.provider}/${harnessOptions.model.id}`
-        const modelRef = resolvePrimaryModelRef(nextSelection, strategy.pools, fallbackRef)
-        await harness.setModel(parseModelRef(modelRef))
-      }
       if (patch.thinkingLevel !== undefined) {
         await harness.setThinkingLevel(patch.thinkingLevel as ThinkingLevel)
       }
