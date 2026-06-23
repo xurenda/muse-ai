@@ -43,7 +43,8 @@ const INITIAL_CHAT_MODEL_DISPLAY: ChatModelResolvedDisplay = {
 
 interface UseChatSessionOptions {
   onSessionChange?: (sessionId: string) => void
-  userAccessToken?: string
+  /** 返回当前有效的 access token（必要时自动刷新） */
+  getValidAccessToken?: () => Promise<string>
 }
 
 function sessionStorageKey(deviceId: string): string {
@@ -109,7 +110,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const sessionAutoRetryRef = useRef(false)
   const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
   const modelCatalogRef = useRef<ModelCatalogItem[]>([])
-  const userAccessToken = options?.userAccessToken
+  const getValidAccessToken = options?.getValidAccessToken
 
   const resolveModelDisplayName = useCallback((modelRef: string): string => {
     return resolveModelLabel(modelRef, modelCatalogRef.current)
@@ -128,10 +129,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   )
 
   useEffect(() => {
-    if (!userAccessToken) return
+    if (!getValidAccessToken) return
 
     let cancelled = false
-    void fetchModelStrategy(userAccessToken)
+    void getValidAccessToken()
+      .then(token => fetchModelStrategy(token))
       .then(response => {
         if (cancelled) return
         const configured = response.options.filter(option => option.authStatus === 'configured')
@@ -148,7 +150,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     return () => {
       cancelled = true
     }
-  }, [userAccessToken])
+  }, [getValidAccessToken])
 
   useEffect(() => {
     onSessionChangeRef.current = options?.onSessionChange
@@ -595,12 +597,13 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       try {
         const settings = sessionSettings ?? (routeSessionId ? await loadSettings(routeSessionId) : null)
         let initialSelection: ModelSelection | undefined
-        if (userAccessToken) {
+        if (getValidAccessToken) {
           try {
-            const strategyResponse = await fetchModelStrategy(userAccessToken)
+            const token = await getValidAccessToken()
+            const strategyResponse = await fetchModelStrategy(token)
             initialSelection = strategyResponse.strategy.taskRouting.chat
           } catch {
-            // 无 user token 或拉取失败时仍创建 session，Server 会在缺 header 时用 taskRouting
+            // token 获取或拉取失败时仍创建 session，Server 会在缺 header 时用 taskRouting
           }
         }
         const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
@@ -616,7 +619,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         return null
       }
     },
-    [deviceSession, loadSettings, requestSessionListRefresh, routeSessionId, sessionSettings, userAccessToken],
+    [deviceSession, getValidAccessToken, loadSettings, requestSessionListRefresh, routeSessionId, sessionSettings],
   )
 
   const startNewSession = useCallback(async () => {

@@ -15,7 +15,7 @@ const POOLS_SAVE_DEBOUNCE_MS = 600
 
 export function ModelsSettingsPage() {
   const { t } = useTranslation('settings')
-  const { auth } = useAuth()
+  const { auth, getValidAccessToken } = useAuth()
   const [response, setResponse] = useState<ModelStrategyResponse | null>(null)
   const [draft, setDraft] = useState<ModelStrategyConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +39,8 @@ export function ModelsSettingsPage() {
       if (!auth) return
 
       try {
-        await updateModelStrategy(auth.accessToken, next)
+        const token = await getValidAccessToken()
+        await updateModelStrategy(token, next)
       } catch (error: unknown) {
         if (error instanceof BackendApiError) {
           toast.error(error.message || t('providers.failed'))
@@ -48,7 +49,7 @@ export function ModelsSettingsPage() {
         }
       }
     },
-    [auth, t],
+    [auth, getValidAccessToken, t],
   )
 
   const cancelPendingPoolsSave = useCallback(() => {
@@ -109,7 +110,8 @@ export function ModelsSettingsPage() {
     let cancelled = false
     void (async () => {
       try {
-        const next = await fetchModelStrategy(auth.accessToken)
+        const token = await getValidAccessToken()
+        const next = await fetchModelStrategy(token)
         if (!cancelled) {
           applyResponse(next)
         }
@@ -127,7 +129,7 @@ export function ModelsSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [applyResponse, auth, t])
+  }, [applyResponse, auth, getValidAccessToken, t])
 
   useEffect(() => {
     return () => {
@@ -135,14 +137,16 @@ export function ModelsSettingsPage() {
         clearTimeout(poolsSaveTimerRef.current)
         const latest = draftRef.current
         if (latest && auth) {
-          void updateModelStrategy(auth.accessToken, latest).catch(() => {
-            // 离开页面时静默失败，避免 unmount 后 toast
-          })
+          void getValidAccessToken()
+            .then(token => updateModelStrategy(token, latest))
+            .catch(() => {
+              // 离开页面时静默失败，避免 unmount 后 toast
+            })
         }
       }
       pendingPoolsSaveRef.current = null
     }
-  }, [auth])
+  }, [auth, getValidAccessToken])
 
   if (!auth) return null
 

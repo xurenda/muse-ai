@@ -3,6 +3,7 @@ export const SERVER_API_PATHS = {
   HEALTH: '/health',
   AUTH_LOGIN: '/auth/login',
   AUTH_REGISTER: '/auth/register',
+  AUTH_REFRESH: '/auth/refresh',
   DEVICES: '/devices',
   DEVICES_PAIR_INIT: '/devices/pair/init',
   DEVICES_PAIR: '/devices/pair',

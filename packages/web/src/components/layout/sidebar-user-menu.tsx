@@ -99,7 +99,7 @@ export function SidebarUserMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={logout}>
+          <DropdownMenuItem onSelect={() => logout()}>
             <LogOut className="size-3.5" strokeWidth={2} />
             {ta('logout')}
           </DropdownMenuItem>

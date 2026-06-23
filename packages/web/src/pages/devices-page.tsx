@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth'
 export function DevicesPage() {
   const { t } = useTranslation('device')
   const { t: tc } = useTranslation('common')
-  const { auth, setDeviceSession } = useAuth()
+  const { auth, setDeviceSession, getValidAccessToken } = useAuth()
   const navigate = useNavigate()
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,7 +24,8 @@ export function DevicesPage() {
   useEffect(() => {
     if (!auth) return
     let cancelled = false
-    void listDevices(auth.accessToken)
+    void getValidAccessToken()
+      .then(token => listDevices(token))
       .then(list => {
         if (!cancelled) setDevices(list)
       })
@@ -37,13 +38,14 @@ export function DevicesPage() {
     return () => {
       cancelled = true
     }
-  }, [auth, tc])
+  }, [auth, getValidAccessToken, tc])
 
   async function onGeneratePairCode() {
     if (!auth) return
     setPairLoading(true)
     try {
-      const result = await initDevicePair(auth.accessToken)
+      const token = await getValidAccessToken()
+      const result = await initDevicePair(token)
       setPairInfo(result)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : tc('error'))
@@ -57,7 +59,8 @@ export function DevicesPage() {
     setConnectingId(device.id)
     setError(null)
     try {
-      const credentials = await getDeviceCredentials(auth.accessToken, device.id)
+      const token = await getValidAccessToken()
+      const credentials = await getDeviceCredentials(token, device.id)
       const ok = await checkCliHealth(credentials.endpoint, credentials.accessToken)
       if (!ok) {
         throw new Error(t('connectFailed'))

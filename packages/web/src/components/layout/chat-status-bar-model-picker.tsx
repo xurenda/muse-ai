@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth'
 /** 对话详情页将模型选择器挂载到底部状态栏右侧 */
 export function ChatStatusBarModelPicker() {
   const { sessionId: routeSessionId } = useParams()
-  const { auth } = useAuth()
+  const { getValidAccessToken } = useAuth()
   const { status, sessionSettings, chatModelDisplay, canSend, updateSessionSettings } = useChatSessionContext()
 
   if (!routeSessionId || status !== 'ready') return null
@@ -19,7 +19,7 @@ export function ChatStatusBarModelPicker() {
   return createPortal(
     <ChatModelPicker
       statusBar
-      userToken={auth?.accessToken}
+      getValidAccessToken={getValidAccessToken}
       sessionSettings={sessionSettings}
       chatModelDisplay={chatModelDisplay}
       disabled={!canSend}

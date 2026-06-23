@@ -10,10 +10,10 @@ const ChatSessionContext = createContext<ChatSessionContextValue | null>(null)
 export function ChatSessionProvider({ children }: { children: ReactNode }) {
   const { sessionId: routeSessionId } = useParams()
   const navigate = useNavigate()
-  const { deviceSession, auth } = useAuth()
+  const { deviceSession, getValidAccessToken } = useAuth()
 
   const value = useChatSession(deviceSession, routeSessionId, {
-    userAccessToken: auth?.accessToken,
+    getValidAccessToken,
     onSessionChange: id => {
       navigate(`/chat/${id}`)
     },

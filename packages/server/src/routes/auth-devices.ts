@@ -1,5 +1,12 @@
 import type { Hono } from 'hono'
-import { SERVER_API_PATHS, deviceHeartbeatRequestSchema, devicePairRequestSchema, loginRequestSchema, registerRequestSchema } from '@muse-ai/shared'
+import {
+  SERVER_API_PATHS,
+  deviceHeartbeatRequestSchema,
+  devicePairRequestSchema,
+  loginRequestSchema,
+  refreshTokenRequestSchema,
+  registerRequestSchema,
+} from '@muse-ai/shared'
 import { AuthError, type AuthService } from '../services/auth-service.js'
 import { DeviceError, type DeviceService } from '../services/device-service.js'
 import type { ServerVariables } from '../types.js'
@@ -35,6 +42,23 @@ export function registerAuthRoutes(app: ServerApp, authService: AuthService): vo
       return c.json(result)
     } catch (error: unknown) {
       if (error instanceof AuthError && error.code === 'invalid_credentials') {
+        return c.json({ error: error.code, message: error.message }, 401)
+      }
+      throw error
+    }
+  })
+
+  app.post(SERVER_API_PATHS.AUTH_REFRESH, async c => {
+    const json: unknown = await c.req.json()
+    const parsed = refreshTokenRequestSchema.safeParse(json)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const result = await authService.refreshAccessToken(parsed.data.refreshToken)
+      return c.json(result)
+    } catch (error: unknown) {
+      if (error instanceof AuthError && error.code === 'invalid_token') {
         return c.json({ error: error.code, message: error.message }, 401)
       }
       throw error

@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -61,5 +61,20 @@ export const devices = pgTable('devices', {
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 })
 
+/** 用户 refresh token 表，支持 token 轮换与多设备会话 */
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** 存储 token 本身（足够随机，可安全存明文；如需更高安全可改为 hash） */
+  token: text('token').notNull().unique(),
+  /** 是否已被吊销（轮换后旧 token 立即标记） */
+  revoked: boolean('revoked').notNull().default(false),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+})
+
 export type UserProviderCredentialRow = typeof userProviderCredentials.$inferSelect
 export type UserProviderConfigRow = typeof userProviderConfig.$inferSelect
+export type RefreshTokenRow = typeof refreshTokens.$inferSelect

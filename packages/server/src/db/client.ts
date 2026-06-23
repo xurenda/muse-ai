@@ -64,6 +64,18 @@ ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS model_strategy_json TEXT;
 
 CREATE INDEX IF NOT EXISTS user_provider_credentials_user_id_idx ON user_provider_credentials(user_id);
 CREATE INDEX IF NOT EXISTS user_provider_config_user_id_idx ON user_provider_config(user_id);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  revoked BOOLEAN NOT NULL DEFAULT FALSE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_token_idx ON refresh_tokens(token);
 `
 
 export async function initDatabase(pool: pg.Pool): Promise<void> {

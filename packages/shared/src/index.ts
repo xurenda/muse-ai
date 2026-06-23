@@ -42,7 +42,18 @@ export {
   parseProviderIdFromModelRef,
   type MuseLlmTask,
 } from './constants/llm-proxy.js'
-export { loginRequestSchema, loginResponseSchema, registerRequestSchema, type LoginRequest, type LoginResponse, type RegisterRequest } from './types/auth.js'
+export {
+  loginRequestSchema,
+  loginResponseSchema,
+  registerRequestSchema,
+  refreshTokenRequestSchema,
+  refreshTokenResponseSchema,
+  type LoginRequest,
+  type LoginResponse,
+  type RegisterRequest,
+  type RefreshTokenRequest,
+  type RefreshTokenResponse,
+} from './types/auth.js'
 export type { ApiKeyCredential, AuthCredential, AuthStorageData, OAuthCredential } from './types/credential.js'
 export {
   agentDefinitionSchema,

@@ -1,13 +1,18 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import bcrypt from 'bcryptjs'
-import { eq } from 'drizzle-orm'
+import { and, eq, gt } from 'drizzle-orm'
 import { SignJWT, jwtVerify } from 'jose'
 import type { LoginResponse, RegisterRequest } from '@muse-ai/shared'
 import type { MuseDb } from '../db/client.js'
-import { users } from '../db/schema.js'
+import { refreshTokens, users } from '../db/schema.js'
 
 const BCRYPT_ROUNDS = 10
-const JWT_EXPIRY = '7d'
+/** access token 有效期：7 天 */
+const ACCESS_TOKEN_EXPIRY = '7d'
+/** access token 有效秒数（用于写入 expiresAt 时间戳） */
+const ACCESS_TOKEN_EXPIRY_SECONDS = 7 * 24 * 60 * 60
+/** refresh token 有效期：30 天 */
+const REFRESH_TOKEN_EXPIRY_DAYS = 30
 
 export interface AuthUser {
   id: string
@@ -67,15 +72,53 @@ export class AuthService {
     }
   }
 
+  /**
+   * 用 refresh token 换取新的 access token + 新的 refresh token（轮换策略）。
+   * 旧 refresh token 在返回新 token 后立即吊销，防止重放攻击。
+   */
+  async refreshAccessToken(oldRefreshToken: string): Promise<LoginResponse> {
+    const now = new Date()
+    const [row] = await this.db
+      .select()
+      .from(refreshTokens)
+      .where(and(eq(refreshTokens.token, oldRefreshToken), eq(refreshTokens.revoked, false), gt(refreshTokens.expiresAt, now)))
+      .limit(1)
+
+    if (!row) {
+      throw new AuthError('invalid_token', '无效或已过期的 refresh token')
+    }
+
+    // 先吊销旧 token，再签发新 token（原子性最佳实践）
+    await this.db.update(refreshTokens).set({ revoked: true }).where(eq(refreshTokens.id, row.id))
+
+    const [userRow] = await this.db.select().from(users).where(eq(users.id, row.userId)).limit(1)
+    if (!userRow) {
+      throw new AuthError('invalid_token', '用户不存在')
+    }
+
+    return this.issueToken({ id: userRow.id, email: userRow.email })
+  }
+
   private async issueToken(user: AuthUser): Promise<LoginResponse> {
+    const now = Math.floor(Date.now() / 1000)
+    const accessTokenExpiresAt = now + ACCESS_TOKEN_EXPIRY_SECONDS
+
     const accessToken = await new SignJWT({ email: user.email })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(user.id)
       .setIssuedAt()
-      .setExpirationTime(JWT_EXPIRY)
+      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
       .sign(this.secretKey())
+
+    // 生成随机 refresh token 并持久化
+    const refreshToken = randomBytes(40).toString('hex')
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+    await this.db.insert(refreshTokens).values({ userId: user.id, token: refreshToken, expiresAt })
+
     return {
       accessToken,
+      accessTokenExpiresAt,
+      refreshToken,
       user: { id: user.id, email: user.email },
     }
   }

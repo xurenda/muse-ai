@@ -8,6 +8,7 @@ import {
   type LoginResponse,
   type PairInitResponse,
   type RegisterRequest,
+  type RefreshTokenResponse,
 } from '@muse-ai/shared'
 import { backendBaseUrl } from '@/lib/config'
 
@@ -52,6 +53,15 @@ export async function register(request: RegisterRequest): Promise<LoginResponse>
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
+  })
+  return parseJsonResponse(res)
+}
+
+export async function refreshToken(token: string): Promise<RefreshTokenResponse> {
+  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.AUTH_REFRESH}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: token }),
   })
   return parseJsonResponse(res)
 }

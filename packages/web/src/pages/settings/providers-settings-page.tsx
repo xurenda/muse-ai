@@ -127,7 +127,7 @@ function SettingsListExpandToggle({ expanded, hiddenCount, showMoreLabel, showLe
 
 export function ProvidersSettingsPage() {
   const { t } = useTranslation('settings')
-  const { auth } = useAuth()
+  const { auth, getValidAccessToken } = useAuth()
   const [config, setConfig] = useState<ProvidersConfigResponse | null>(null)
   const [apiKeyDrafts, setApiKeyDrafts] = useState<Record<string, string>>({})
   const [advancedDrafts, setAdvancedDrafts] = useState<Record<string, ProviderAdvancedConfig>>({})
@@ -145,7 +145,8 @@ export function ProvidersSettingsPage() {
     let cancelled = false
     void (async () => {
       try {
-        const next = await fetchProvidersConfig(auth.accessToken)
+        const token = await getValidAccessToken()
+        const next = await fetchProvidersConfig(token)
         if (!cancelled) {
           setConfig(next)
         }
@@ -164,19 +165,20 @@ export function ProvidersSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [auth])
+  }, [auth, getValidAccessToken])
 
   const refreshConfig = useCallback(async () => {
     if (!auth) return
 
     try {
-      const next = await fetchProvidersConfig(auth.accessToken)
+      const token = await getValidAccessToken()
+      const next = await fetchProvidersConfig(token)
       setConfig(next)
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : String(loadError)
       toast.error(message)
     }
-  }, [auth])
+  }, [auth, getValidAccessToken])
 
   const handleSaveProvider = async (providerId: string) => {
     if (!auth) return
@@ -185,8 +187,9 @@ export function ProvidersSettingsPage() {
 
     setBusyKey(`provider:${providerId}`)
     try {
+      const token = await getValidAccessToken()
       if (apiKey) {
-        await saveProviderApiKey(auth.accessToken, providerId, { apiKey })
+        await saveProviderApiKey(token, providerId, { apiKey })
         setApiKeyDrafts(current => ({ ...current, [providerId]: '' }))
       }
 
@@ -198,7 +201,7 @@ export function ProvidersSettingsPage() {
         }))
         .filter(model => model.id)
 
-      await saveProviderAdvancedConfig(auth.accessToken, providerId, {
+      await saveProviderAdvancedConfig(token, providerId, {
         baseUrl: advanced.baseUrl?.trim() || undefined,
         headers: advanced.headers.filter(header => header.key.trim()),
         extraModels,
@@ -218,7 +221,8 @@ export function ProvidersSettingsPage() {
     if (!auth) return
     setBusyKey(`api-key-clear:${providerId}`)
     try {
-      await deleteProviderApiKey(auth.accessToken, providerId)
+      const token = await getValidAccessToken()
+      await deleteProviderApiKey(token, providerId)
       await refreshConfig()
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : String(deleteError)
@@ -288,7 +292,8 @@ export function ProvidersSettingsPage() {
 
     setBusyKey('custom-save')
     try {
-      await saveCustomProvider(auth.accessToken, providerId, {
+      const token = await getValidAccessToken()
+      await saveCustomProvider(token, providerId, {
         baseUrl: customForm.baseUrl.trim(),
         api: customForm.api,
         apiKey: customForm.apiKey.trim(),
@@ -309,7 +314,8 @@ export function ProvidersSettingsPage() {
     if (!auth) return
     setBusyKey(`custom-delete:${providerId}`)
     try {
-      await deleteCustomProvider(auth.accessToken, providerId)
+      const token = await getValidAccessToken()
+      await deleteCustomProvider(token, providerId)
       if (expandedCustomId === providerId) {
         resetCustomForm()
       }

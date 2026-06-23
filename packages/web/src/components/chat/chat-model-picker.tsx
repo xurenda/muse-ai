@@ -19,7 +19,8 @@ import {
 } from '@/utils/model-strategy-ui'
 
 interface ChatModelPickerProps {
-  userToken: string | undefined
+  /** 返回当前有效 access token（必要时自动刷新） */
+  getValidAccessToken: (() => Promise<string>) | undefined
   sessionSettings: SessionSettingsResponse | null
   chatModelDisplay?: ChatModelResolvedDisplay
   disabled: boolean
@@ -28,7 +29,7 @@ interface ChatModelPickerProps {
   statusBar?: boolean
 }
 
-export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, disabled, onUpdate, statusBar = false }: ChatModelPickerProps) {
+export function ChatModelPicker({ getValidAccessToken, sessionSettings, chatModelDisplay, disabled, onUpdate, statusBar = false }: ChatModelPickerProps) {
   const { t } = useTranslation('chat')
   const containerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -43,10 +44,11 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
   const effectiveModelSelection = sessionSettings?.modelSelection ?? defaultChatSelection
 
   useEffect(() => {
-    if (!userToken) return
+    if (!getValidAccessToken) return
 
     let cancelled = false
-    void fetchModelStrategy(userToken)
+    void getValidAccessToken()
+      .then(token => fetchModelStrategy(token))
       .then(response => {
         if (cancelled) return
         const configured = response.options.filter(option => option.authStatus === 'configured')
@@ -65,7 +67,7 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
     return () => {
       cancelled = true
     }
-  }, [userToken])
+  }, [getValidAccessToken])
 
   useEffect(() => {
     if (!open) return
@@ -177,7 +179,7 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
           else setOpen(true)
         }}
         className={cn(
-          'min-w-0 items-center transition-colors disabled:pointer-events-none disabled:opacity-50',
+          'min-w-0 cursor-pointer items-center transition-colors disabled:pointer-events-none disabled:opacity-50',
           statusBar
             ? cn(
                 'flex h-5 max-w-[min(100%,24rem)] gap-1.5 border-0 px-2 text-[11px] leading-none',
@@ -223,13 +225,7 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
                 type="button"
                 disabled={disabled || saving}
                 aria-expanded={otherModelsOpen}
-                onClick={event => {
-                  event.stopPropagation()
-                  setOtherModelsOpen(value => {
-                    if (value) setSearch('')
-                    return !value
-                  })
-                }}
+                onMouseEnter={() => setOtherModelsOpen(true)}
                 className={cn(
                   'ui-menu-item w-full rounded-control hover:bg-accent hover:text-accent-foreground',
                   otherModelsOpen && 'bg-accent text-foreground',
@@ -261,7 +257,11 @@ export function ChatModelPicker({ userToken, sessionSettings, chatModelDisplay, 
             <div
               role="menu"
               aria-label={t('modelPicker.otherModels')}
-              className={cn('absolute bottom-0 right-full z-50 mr-1', statusBar ? 'max-h-[min(20rem,calc(100vh-6rem))]' : 'max-h-80')}
+              className={cn('absolute bottom-0 right-full z-50', statusBar ? 'max-h-[min(20rem,calc(100vh-6rem))]' : 'max-h-80')}
+              onMouseLeave={() => {
+                setOtherModelsOpen(false)
+                setSearch('')
+              }}
             >
               <ModelPickerPanel
                 searchPlaceholder={t('modelPicker.searchPlaceholder')}
