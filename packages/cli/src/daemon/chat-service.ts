@@ -1,6 +1,7 @@
 import {
   MuseHarness,
   mapHarnessEventToSse,
+  readSessionContextUsage,
   buildHarnessOptionsForSession,
   extractAssistantTurnError,
   formatLlmErrorMessage,
@@ -349,7 +350,13 @@ export class ChatService {
     })
 
     const unsubscribeEvents = harness.subscribe(async event => {
-      const mapped = mapHarnessEventToSse(event)
+      let mapped = mapHarnessEventToSse(event)
+      if (mapped?.type === 'turn_end') {
+        const meta = await this.sessionStore.get(sessionId)
+        const contextWindow = meta?.lastResolvedContextWindow ?? null
+        const contextUsage = await readSessionContextUsage(piSession, contextWindow)
+        mapped = { ...mapped, contextUsage }
+      }
       if (mapped) {
         await this.eventHub.publish(sessionId, mapped)
       }

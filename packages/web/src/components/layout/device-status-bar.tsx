@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { resolveDeviceAggregateStatus, type DeviceAggregateStatus } from '@/lib/device-aggregate-status'
 import { formatConnectionErrorMessage } from '@/lib/connection-errors'
 import { cn } from '@/lib/utils'
-import { STATUS_BAR_TRAILING_SLOT_ID } from '@/constants/status-bar'
+import { STATUS_BAR_CONTEXT_SLOT_ID, STATUS_BAR_TRAILING_SLOT_ID } from '@/constants/status-bar'
 import { useDeviceStatusStore } from '@/stores/device-status-store'
 
 const STATUS_LABEL_KEYS: Record<DeviceAggregateStatus, string> = {
@@ -231,7 +231,10 @@ export function DeviceStatusBar() {
           </span>
         </button>
 
-        <div id={STATUS_BAR_TRAILING_SLOT_ID} className="contents" />
+        <div className="ml-auto flex h-5 min-w-0 items-stretch">
+          <div id={STATUS_BAR_CONTEXT_SLOT_ID} className="contents" />
+          <div id={STATUS_BAR_TRAILING_SLOT_ID} className="contents" />
+        </div>
       </div>
     </div>
   )

@@ -1,7 +1,9 @@
 import { MUSE_PROXY_HEADERS, parseMuseLlmTask, parseProviderIdFromModelRef, type MuseLlmTask } from '@muse-ai/shared'
+import type { MuseModelsConfig } from '@muse-ai/shared'
 import { isRetryableModelError, reorderCandidatesWithPreference } from '@muse-ai/core'
 import type { ModelResolutionService } from './model-resolution-service.js'
 import type { LlmProxyService } from './llm-proxy-service.js'
+import { resolveModelContextWindow } from './provider-catalog.js'
 import { isProviderAuthError, markProviderAuthFailure } from './provider-health.js'
 import type { ProviderResolver } from './provider-resolver.js'
 import { SettingsError } from './settings-service.js'
@@ -22,6 +24,7 @@ export interface LlmProxySuccessMeta {
   modelRef: string
   usedFallback: boolean
   attemptedModelRefs: readonly string[]
+  contextWindow?: number
 }
 
 function splitModelRef(modelRef: string): { providerId: string; modelId: string } | null {
@@ -52,6 +55,9 @@ function applyResolvedModelHeaders(headers: Headers, meta: LlmProxySuccessMeta):
   if (meta.attemptedModelRefs.length > 0) {
     headers.set(MUSE_PROXY_HEADERS.ATTEMPTED_MODELS, meta.attemptedModelRefs.join(','))
   }
+  if (meta.contextWindow !== undefined) {
+    headers.set(MUSE_PROXY_HEADERS.CONTEXT_WINDOW, String(meta.contextWindow))
+  }
 }
 
 /** Server LLM 代理：解析 model-strategy、顺序 fallback、回传 resolved 头 */
@@ -60,6 +66,7 @@ export class LlmProxyOrchestrator {
     private readonly modelResolution: ModelResolutionService,
     private readonly providerResolver: ProviderResolver,
     private readonly llmProxy: LlmProxyService,
+    private readonly loadModelsConfig: (userId: string) => Promise<MuseModelsConfig>,
   ) {}
 
   async handle(context: LlmProxyRequestContext): Promise<Response> {
@@ -89,6 +96,7 @@ export class LlmProxyOrchestrator {
     }
 
     const candidates = reorderCandidatesWithPreference(resolution.candidates, context.lastResolvedModelHeader)
+    const modelsConfig = await this.loadModelsConfig(context.userId)
 
     const attemptedModelRefs: string[] = []
     let lastResponse: Response | undefined
@@ -122,10 +130,12 @@ export class LlmProxyOrchestrator {
       if (upstream.ok) {
         const headers = new Headers()
         copyUpstreamHeaders(upstream, headers)
+        const contextWindow = resolveModelContextWindow(modelsConfig, modelRef)
         applyResolvedModelHeaders(headers, {
           modelRef,
           usedFallback: index > 0,
           attemptedModelRefs,
+          contextWindow,
         })
         return new Response(upstream.body, { status: upstream.status, headers })
       }

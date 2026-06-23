@@ -13,6 +13,8 @@ export interface SessionRegistryEntry {
   modelSelection?: ModelSelection
   /** Server 代理最近一次成功解析的 modelRef（chat task） */
   lastResolvedModelRef?: string
+  /** 与 lastResolvedModelRef 对应的 contextWindow（Server catalog 已知时） */
+  lastResolvedContextWindow?: number
   createdAt: string
   updatedAt: string
   cwd: string
@@ -32,6 +34,7 @@ export function toSessionMeta(entry: SessionRegistryEntry): SessionMeta {
     nameSource: entry.nameSource,
     modelSelection: entry.modelSelection,
     lastResolvedModelRef: entry.lastResolvedModelRef,
+    lastResolvedContextWindow: entry.lastResolvedContextWindow,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,
   }

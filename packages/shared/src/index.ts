@@ -161,4 +161,6 @@ export {
   type SessionTokenUsage,
   type TurnTokenUsage,
 } from './types/session-token-usage.js'
+export { EMPTY_CONTEXT_USAGE, computeContextUsagePercent, contextUsageSchema, type ContextUsage } from './types/context-usage.js'
+export { computeCacheHitRate, computeSessionCacheHitRate, hasSessionCacheUsage } from './utils/cache-hit-rate.js'
 export { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type I18nNamespace, type SupportedLocale } from './i18n/resources.js'

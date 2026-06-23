@@ -17,6 +17,8 @@ export const MUSE_PROXY_HEADERS = {
   ATTEMPTED_MODELS: 'X-Muse-Attempted-Models',
   /** 会话内上次 chat 成功解析的 modelRef；Server 优先尝试（仍在池内时） */
   LAST_RESOLVED_MODEL: 'X-Muse-Last-Resolved-Model',
+  /** 解析模型的 contextWindow（catalog 已知时） */
+  CONTEXT_WINDOW: 'X-Muse-Context-Window',
 } as const
 
 const MODEL_SELECTION_HEADER_PREFIX = {

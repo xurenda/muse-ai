@@ -44,7 +44,9 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
   const deviceService = new DeviceService(db, redis, config.encryptionKey)
   const llmProxyService = new LlmProxyService()
   const modelResolutionService = createModelResolutionService(settingsService)
-  const llmProxyOrchestrator = new LlmProxyOrchestrator(modelResolutionService, providerResolver, llmProxyService)
+  const llmProxyOrchestrator = new LlmProxyOrchestrator(modelResolutionService, providerResolver, llmProxyService, userId =>
+    settingsService.readModelsStore(userId),
+  )
 
   return {
     config,

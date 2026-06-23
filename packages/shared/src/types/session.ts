@@ -13,6 +13,7 @@ export const sessionMetaSchema = z.object({
   nameSource: sessionNameSourceSchema.optional(),
   modelSelection: modelSelectionSchema.optional(),
   lastResolvedModelRef: modelRefSchema.optional(),
+  lastResolvedContextWindow: z.number().positive().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

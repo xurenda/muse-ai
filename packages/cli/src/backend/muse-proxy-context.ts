@@ -60,16 +60,21 @@ async function publishModelResolvedFromHeaders(headers: Headers, context: MusePr
         .filter(ref => ref.length > 0)
     : undefined
 
+  const contextWindowHeader = headers.get(MUSE_PROXY_HEADERS.CONTEXT_WINDOW)
+  const parsedContextWindow = contextWindowHeader ? Number.parseInt(contextWindowHeader, 10) : Number.NaN
+  const contextWindow = Number.isFinite(parsedContextWindow) && parsedContextWindow > 0 ? parsedContextWindow : undefined
+
   await context.eventHub.publish(context.sessionId, {
     type: 'model_resolved',
     modelRef,
     task: context.task,
     usedFallback: usedFallback || undefined,
     attemptedModelRefs: attemptedModelRefs && attemptedModelRefs.length > 0 ? attemptedModelRefs : undefined,
+    contextWindow,
   })
 
   if (context.task === 'chat') {
-    await context.sessionStore.updateLastResolvedModelRef(context.sessionId, modelRef)
+    await context.sessionStore.updateLastResolvedModel(context.sessionId, { modelRef, contextWindow })
   }
 }
 

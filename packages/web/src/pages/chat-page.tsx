@@ -21,7 +21,6 @@ interface SessionChatFooterProps {
   stopping: boolean
   compacting: boolean
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
-  onCompact: () => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
   onStop: () => void
 }
@@ -35,7 +34,6 @@ function SessionChatFooter({
   stopping,
   compacting,
   onUpdate,
-  onCompact,
   onSend,
   onStop,
 }: SessionChatFooterProps) {
@@ -43,14 +41,7 @@ function SessionChatFooter({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-stack">
-      <ChatSessionBar
-        deviceSession={deviceSession}
-        sessionSettings={sessionSettings}
-        disabled={disabled}
-        compacting={compacting}
-        onUpdate={onUpdate}
-        onCompact={onCompact}
-      />
+      <ChatSessionBar deviceSession={deviceSession} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdate} />
       <ChatComposer
         value={composerText}
         onChange={setComposerText}
@@ -84,7 +75,6 @@ export function ChatPage() {
     compacting,
     sendMessage,
     stopGeneration,
-    compactContext,
     updateSessionSettings,
     startNewSession,
     messagesEndRef,
@@ -150,7 +140,6 @@ export function ChatPage() {
                 const result = await updateSessionSettings(patch)
                 return result !== null
               }}
-              onCompact={compactContext}
               onSend={(text, mode) => void sendMessage(text, mode)}
               onStop={() => void stopGeneration()}
             />

@@ -126,17 +126,23 @@ export class MuseSessionStore {
     if (!entry) return undefined
     entry.modelSelection = modelSelection
     delete entry.lastResolvedModelRef
+    delete entry.lastResolvedContextWindow
     entry.updatedAt = new Date().toISOString()
     await this.persistRegistry()
     return toSessionMeta(entry)
   }
 
   /** 记录 Server 代理最近一次 chat 解析结果 */
-  async updateLastResolvedModelRef(id: string, modelRef: string): Promise<SessionMeta | undefined> {
+  async updateLastResolvedModel(id: string, payload: { modelRef: string; contextWindow?: number }): Promise<SessionMeta | undefined> {
     await this.ensureRegistry()
     const entry = this.findEntry(id)
     if (!entry) return undefined
-    entry.lastResolvedModelRef = modelRef
+    entry.lastResolvedModelRef = payload.modelRef
+    if (payload.contextWindow !== undefined && payload.contextWindow > 0) {
+      entry.lastResolvedContextWindow = payload.contextWindow
+    } else {
+      delete entry.lastResolvedContextWindow
+    }
     entry.updatedAt = new Date().toISOString()
     await this.persistRegistry()
     return toSessionMeta(entry)

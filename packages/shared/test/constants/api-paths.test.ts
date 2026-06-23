@@ -85,12 +85,13 @@ describe('sse-events', () => {
     expect(parsed.success).toBe(true)
   })
 
-  it('museSseEventSchema 应支持 model_resolved', () => {
+  it('museSseEventSchema 应支持 model_resolved 与 contextWindow', () => {
     const parsed = museSseEventSchema.safeParse({
       type: 'model_resolved',
       modelRef: 'openai/gpt-4o-mini',
       task: 'chat',
       usedFallback: true,
+      contextWindow: 128_000,
     })
     expect(parsed.success).toBe(true)
   })
@@ -116,10 +117,11 @@ describe('sse-events', () => {
     ).toBe(true)
   })
 
-  it('museSseEventSchema 应支持带 usage 的 turn_end', () => {
+  it('museSseEventSchema 应支持带 usage 与 contextUsage 的 turn_end', () => {
     const parsed = museSseEventSchema.safeParse({
       type: 'turn_end',
       usage: { input: 100, output: 50, total: 150, costTotal: 0.01 },
+      contextUsage: { tokens: 1200, contextWindow: 128_000, percent: 0.9375, usageTokens: 1100, trailingTokens: 100, lastTurnCacheHitRate: 80 },
     })
     expect(parsed.success).toBe(true)
   })

@@ -7,6 +7,7 @@ export interface ModelCatalogItem {
   providerName: string
   modelId: string
   modelName: string
+  contextWindow?: number
 }
 
 export const MODEL_TIERS: ModelTier[] = ['high', 'medium', 'low']
@@ -105,8 +106,15 @@ export function buildModelCatalog(options: ModelsConfigProviderOption[]): ModelC
       providerName: provider.name,
       modelId: model.id,
       modelName: model.name,
+      contextWindow: model.contextWindow,
     })),
   )
+}
+
+export function resolveModelContextWindow(modelRef: string, catalog: ModelCatalogItem[]): number | null {
+  const item = catalog.find(entry => entry.modelRef === modelRef)
+  if (!item?.contextWindow || item.contextWindow <= 0) return null
+  return item.contextWindow
 }
 
 export function filterModelCatalog(catalog: ModelCatalogItem[], search: string): ModelCatalogItem[] {

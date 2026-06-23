@@ -53,7 +53,8 @@ describe('SessionSettingsService modelSelection', () => {
     })
 
     expect(patched.modelSelection).toEqual({ type: 'tier', tier: 'high' })
-    expect(patched.modelRef).toContain('/')
+    expect(patched.contextUsage.tokens).toBe(0)
+    expect(patched.modelRef).toBeUndefined()
   })
 })
 

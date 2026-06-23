@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { MUSE_LLM_TASKS } from '../constants/llm-proxy.js'
 import { compactionReasonSchema } from './session-compact.js'
 import { sessionNameSourceSchema } from './session.js'
+import { contextUsageSchema } from './context-usage.js'
 import { turnTokenUsageSchema } from './session-token-usage.js'
 import { modelRefSchema } from './agent.js'
 
@@ -31,6 +32,7 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('turn_end'),
     usage: turnTokenUsageSchema.optional(),
+    contextUsage: contextUsageSchema.optional(),
   }),
   z.object({ type: z.literal('agent_end') }),
   z.object({
@@ -63,6 +65,7 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
     usedFallback: z.boolean().optional(),
     /** 按尝试顺序排列的 modelRef；fallback 时首项为失败模型 */
     attemptedModelRefs: z.array(modelRefSchema).optional(),
+    contextWindow: z.number().positive().optional(),
   }),
 ])
 

@@ -3,7 +3,14 @@ import { modelRefToModelSelection } from '@muse-ai/shared'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import { sessionSettingsResponseSchema } from '@muse-ai/shared'
 import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
-import { MuseHarness, placeholderGetApiKeyAndHeaders, readSessionRuntimeOverrides, readSessionTokenUsage, resolveEffectiveHarnessConfig } from '@muse-ai/core'
+import {
+  MuseHarness,
+  placeholderGetApiKeyAndHeaders,
+  readSessionRuntimeOverrides,
+  readSessionContextUsage,
+  readSessionTokenUsage,
+  resolveEffectiveHarnessConfig,
+} from '@muse-ai/core'
 import { resolveActiveTools } from '@/tools/index.js'
 
 /** settings 响应中的 modelRef：仅回显 chat 粘性解析或显式 model 选择 */
@@ -41,6 +48,8 @@ export class SessionSettingsService {
     const storedSelection = meta.modelSelection
     const legacySelection = !storedSelection && overrides.hasModelOverride && overrides.modelRef ? modelRefToModelSelection(overrides.modelRef) : undefined
     const tokenUsage = await readSessionTokenUsage(piSession)
+    const contextWindow = meta.lastResolvedContextWindow ?? null
+    const contextUsage = await readSessionContextUsage(piSession, contextWindow)
 
     return sessionSettingsResponseSchema.parse({
       sessionId,
@@ -49,6 +58,7 @@ export class SessionSettingsService {
       modelSelection: storedSelection ?? legacySelection,
       thinkingLevel: effectiveHarness.thinkingLevel,
       tokenUsage,
+      contextUsage,
     })
   }
 

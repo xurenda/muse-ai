@@ -47,7 +47,9 @@ describe('LlmProxyOrchestrator', () => {
     } satisfies Pick<ProviderResolver, 'resolve'>
     const llmProxy = { forward } satisfies Pick<LlmProxyService, 'forward'>
     return {
-      orchestrator: new LlmProxyOrchestrator(modelResolution, providerResolver as ProviderResolver, llmProxy as LlmProxyService),
+      orchestrator: new LlmProxyOrchestrator(modelResolution, providerResolver as ProviderResolver, llmProxy as LlmProxyService, async () => ({
+        providers: {},
+      })),
       providerResolver,
     }
   }
@@ -170,7 +172,9 @@ describe('LlmProxyOrchestrator', () => {
       loadStrategy: async () => createStrategy(),
       isProviderConfigured: async () => true,
     })
-    const orchestrator = new LlmProxyOrchestrator(modelResolution, providerResolver as ProviderResolver, { forward } as LlmProxyService)
+    const orchestrator = new LlmProxyOrchestrator(modelResolution, providerResolver as ProviderResolver, { forward } as LlmProxyService, async () => ({
+      providers: {},
+    }))
 
     const response = await orchestrator.handle({
       userId,

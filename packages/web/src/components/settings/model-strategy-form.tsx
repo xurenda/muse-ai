@@ -7,7 +7,7 @@ import type {
   ModelTier,
   TaskModelSelection,
 } from '@muse-ai/shared'
-import { ChevronDown, ChevronRight, CircleHelp } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModelPickerMenu, type ModelPickerQuickOption } from '@/components/model-picker/model-picker-menu'
@@ -15,7 +15,8 @@ import { ModelPoolAddPicker } from '@/components/settings/model-pool-add-picker'
 import { ModelPoolDraggableList } from '@/components/settings/model-pool-draggable-list'
 import { SettingsRow } from '@/components/settings/settings-row'
 import { SettingsSection } from '@/components/settings/settings-section'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { HelpTooltip } from '@/components/ui/help-tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
   MODEL_TIERS,
@@ -190,29 +191,22 @@ export function ModelStrategyForm({ strategy, options, onPoolsChange, onTaskRout
         <SettingsSection
           title={t('models.strategy.poolsTitle')}
           titleHint={
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
-                  aria-label={t('models.strategy.poolsDescription')}
-                >
-                  <CircleHelp className="size-3.5" strokeWidth={2} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-sm">
-                <p className="text-sm">{t('models.strategy.poolsDescription')}</p>
-                <ul className="mt-2 space-y-1.5 border-t border-border/60 pt-2 text-sm text-muted-foreground">
-                  {MODEL_TIERS.map(tier => (
-                    <li key={tier}>
-                      <span className="font-medium text-foreground">{t(`models.strategy.${tierLabelKey(tier)}`)}</span>
-                      <span aria-hidden>：</span>
-                      {t(`models.strategy.${tierDescKey(tier)}`)}
-                    </li>
-                  ))}
-                </ul>
-              </TooltipContent>
-            </Tooltip>
+            <HelpTooltip
+              content={
+                <>
+                  <p className="text-sm">{t('models.strategy.poolsDescription')}</p>
+                  <ul className="mt-2 space-y-1.5 border-t border-border/60 pt-2 text-sm text-muted-foreground">
+                    {MODEL_TIERS.map(tier => (
+                      <li key={tier}>
+                        <span className="font-medium text-foreground">{t(`models.strategy.${tierLabelKey(tier)}`)}</span>
+                        <span aria-hidden>：</span>
+                        {t(`models.strategy.${tierDescKey(tier)}`)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              }
+            />
           }
         >
           {MODEL_TIERS.map(tier => (
@@ -228,25 +222,7 @@ export function ModelStrategyForm({ strategy, options, onPoolsChange, onTaskRout
           ))}
         </SettingsSection>
 
-        <SettingsSection
-          title={t('models.strategy.routingTitle')}
-          titleHint={
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
-                  aria-label={t('models.strategy.routingTitleHint')}
-                >
-                  <CircleHelp className="size-3.5" strokeWidth={2} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-sm">
-                <p className="text-sm">{t('models.strategy.routingTitleHint')}</p>
-              </TooltipContent>
-            </Tooltip>
-          }
-        >
+        <SettingsSection title={t('models.strategy.routingTitle')} titleHint={<HelpTooltip content={t('models.strategy.routingTitleHint')} />}>
           <TaskRoutingRow
             label={t('models.strategy.taskChat')}
             value={encodeModelSelection(strategy.taskRouting.chat)}

@@ -18,7 +18,7 @@ import {
 } from '@/api/cli-client'
 import { fetchModelStrategy } from '@/api/settings-api'
 import type { ModelSelection } from '@muse-ai/shared'
-import { buildModelCatalog, resolveModelLabel, type ModelCatalogItem } from '@/utils/model-strategy-ui'
+import { buildModelCatalog, resolveModelLabel, resolveModelContextWindow, resolveOptimisticModelRef, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { hasRunningTool } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
@@ -65,6 +65,7 @@ function resetChatState(setters: {
   setTreeError: (value: string | null) => void
   setSseStatus: (value: SseConnectionStatus) => void
   setChatModelDisplay: (value: ChatModelResolvedDisplay) => void
+  setChatContextWindow: (value: number | null) => void
 }) {
   setters.setSessionId(null)
   setters.setSessionTree(null)
@@ -76,6 +77,7 @@ function resetChatState(setters: {
   setters.setTreeError(null)
   setters.setSseStatus('idle')
   setters.setChatModelDisplay(INITIAL_CHAT_MODEL_DISPLAY)
+  setters.setChatContextWindow(null)
 }
 
 export function useChatSession(deviceSession: StoredDeviceSession | null, routeSessionId: string | undefined, options?: UseChatSessionOptions) {
@@ -94,6 +96,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [compacting, setCompacting] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [chatModelDisplay, setChatModelDisplay] = useState<ChatModelResolvedDisplay>(INITIAL_CHAT_MODEL_DISPLAY)
+  const [chatContextWindow, setChatContextWindow] = useState<number | null>(null)
+  const modelStrategyPoolsRef = useRef<{ high: string[]; medium: string[]; low: string[] } | null>(null)
   const lastModelResolvedDedupRef = useRef<string | null>(null)
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
@@ -132,9 +136,13 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         if (cancelled) return
         const configured = response.options.filter(option => option.authStatus === 'configured')
         modelCatalogRef.current = buildModelCatalog(configured)
+        modelStrategyPoolsRef.current = response.strategy.pools
       })
       .catch(() => {
-        if (!cancelled) modelCatalogRef.current = []
+        if (!cancelled) {
+          modelCatalogRef.current = []
+          modelStrategyPoolsRef.current = null
+        }
       })
 
     return () => {
@@ -191,14 +199,39 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const syncChatContextWindow = useCallback((settings: SessionSettingsResponse | null, resolvedModelRef?: string | null) => {
+    const fromSettings = settings?.contextUsage?.contextWindow
+    if (fromSettings !== null && fromSettings !== undefined && fromSettings > 0) {
+      setChatContextWindow(fromSettings)
+      return
+    }
+    const modelRef = resolvedModelRef ?? settings?.modelRef
+    if (modelRef) {
+      const fromCatalog = resolveModelContextWindow(modelRef, modelCatalogRef.current)
+      if (fromCatalog !== null) {
+        setChatContextWindow(fromCatalog)
+        return
+      }
+    }
+    const pools = modelStrategyPoolsRef.current
+    const optimisticRef = resolveOptimisticModelRef(settings?.modelSelection, pools ?? { high: [], medium: [], low: [] }, modelCatalogRef.current)
+    if (optimisticRef) {
+      const fromOptimistic = resolveModelContextWindow(optimisticRef, modelCatalogRef.current)
+      setChatContextWindow(fromOptimistic)
+      return
+    }
+    setChatContextWindow(null)
+  }, [])
+
   const loadSettings = useCallback(
     async (id: string) => {
       if (!deviceSession) return null
       const settings = await getSessionSettings(deviceSession.endpoint, deviceSession.accessToken, id)
       setSessionSettings(settings)
+      syncChatContextWindow(settings, settings?.modelRef)
       return settings
     },
-    [deviceSession],
+    [deviceSession, syncChatContextWindow],
   )
 
   const refreshTree = useCallback(
@@ -239,6 +272,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       setConnectionError(null)
       setSendError(null)
       setChatModelDisplay(INITIAL_CHAT_MODEL_DISPLAY)
+      setChatContextWindow(null)
       lastModelResolvedDedupRef.current = null
       if (connectOptions?.resetMessages) {
         setMessages([])
@@ -250,6 +284,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       if (settings?.modelRef) {
         setChatModelDisplay({ resolvedModelRef: settings.modelRef })
       }
+      syncChatContextWindow(settings, settings?.modelRef)
       await refreshTree(id, true)
 
       const abort = new AbortController()
@@ -274,6 +309,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                 setChatModelDisplay({
                   resolvedModelRef: event.modelRef,
                 })
+                if (event.contextWindow !== undefined && event.contextWindow > 0) {
+                  setChatContextWindow(event.contextWindow)
+                }
                 if (event.usedFallback === true) {
                   const failedModelRef = event.attemptedModelRefs?.[0]
                   if (failedModelRef && failedModelRef !== event.modelRef) {
@@ -306,16 +344,24 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                 }
                 return
               }
-              if (event.type === 'turn_end' && event.usage) {
-                const turnUsage = event.usage
-                setSessionSettings(prev =>
-                  prev
-                    ? {
-                        ...prev,
-                        tokenUsage: addTurnToSessionUsage(prev.tokenUsage, turnUsage),
-                      }
-                    : prev,
-                )
+              if (event.type === 'turn_end') {
+                if (event.usage) {
+                  const turnUsage = event.usage
+                  setSessionSettings(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          tokenUsage: addTurnToSessionUsage(prev.tokenUsage, turnUsage),
+                        }
+                      : prev,
+                  )
+                }
+                if (event.contextUsage) {
+                  setSessionSettings(prev => (prev ? { ...prev, contextUsage: event.contextUsage! } : prev))
+                  if (event.contextUsage.contextWindow !== null && event.contextUsage.contextWindow !== undefined) {
+                    setChatContextWindow(event.contextUsage.contextWindow)
+                  }
+                }
               }
               setMessages(prev => applySseEvent(prev, event, sseEventOptions))
               if (event.type === 'agent_end') {
@@ -348,7 +394,17 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
 
       setStatus('ready')
     },
-    [deviceSession, loadSettings, refreshTree, showModelFallbackToast, sseEventOptions, t, shouldFinalizeStaleTail, clearDeviceUnreachableFlag],
+    [
+      deviceSession,
+      loadSettings,
+      refreshTree,
+      showModelFallbackToast,
+      sseEventOptions,
+      syncChatContextWindow,
+      t,
+      shouldFinalizeStaleTail,
+      clearDeviceUnreachableFlag,
+    ],
   )
 
   const retryConnection = useCallback(async () => {
@@ -423,6 +479,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setTreeError,
         setSseStatus,
         setChatModelDisplay,
+        setChatContextWindow,
       })
     }
 
@@ -629,6 +686,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     treeError,
     compacting,
     chatModelDisplay,
+    chatContextWindow,
     sendMessage,
     stopGeneration,
     compactContext,

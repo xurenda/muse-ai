@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { modelRefSchema, thinkingLevelSchema } from './agent.js'
 import { modelSelectionSchema } from './model-strategy.js'
+import { contextUsageSchema } from './context-usage.js'
 import { sessionTokenUsageSchema } from './session-token-usage.js'
 
 export const createAgentRequestSchema = z.object({
@@ -40,6 +41,7 @@ export const sessionSettingsResponseSchema = z.object({
   modelSelection: modelSelectionSchema.optional(),
   thinkingLevel: thinkingLevelSchema,
   tokenUsage: sessionTokenUsageSchema,
+  contextUsage: contextUsageSchema,
 })
 
 export type SessionSettingsResponse = z.infer<typeof sessionSettingsResponseSchema>

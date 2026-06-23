@@ -313,4 +313,4 @@ pnpm test:run
 
 ## 下一阶段
 
-phase-2 完成后，v0.1.1 模型相关能力闭环；后续见 [roadmap.md](../roadmap.md)。
+[phase-3.md](./phase-3.md) — 上下文状态栏与用量面板（方案 B：点击展开）；完成后 v0.1.1 模型 + 对话 UX 闭环；更远期见 [roadmap.md](../roadmap.md)。

@@ -77,6 +77,24 @@ export function findCatalogModel(config: MuseModelsConfig, provider: string, mod
   return listBuiltInModels(config).find(model => model.provider === provider && model.id === modelId)
 }
 
+/** 解析 modelRef 的 contextWindow；仅内置 pi catalog 返回真实值，自定义模型返回 undefined */
+export function resolveModelContextWindow(config: MuseModelsConfig, modelRef: string): number | undefined {
+  const slash = modelRef.indexOf('/')
+  if (slash <= 0) return undefined
+  const providerId = modelRef.slice(0, slash)
+  const modelId = modelRef.slice(slash + 1)
+  if (!modelId) return undefined
+
+  if (!isBuiltInProvider(providerId)) {
+    return undefined
+  }
+
+  const builtIn = getModels(providerId as KnownProvider) as Model<Api>[]
+  const model = builtIn.find(item => item.id === modelId)
+  if (!model?.contextWindow || model.contextWindow <= 0) return undefined
+  return model.contextWindow
+}
+
 export function isBuiltInProvider(providerId: string): boolean {
   return getProviders().includes(providerId as KnownProvider)
 }
@@ -107,11 +125,12 @@ export function resolveProviderApi(providerId: string, override?: MuseProviderDe
   return DEFAULT_PROVIDER_API
 }
 
-export function listProviderModelOptions(providerId: string, config: MuseModelsConfig): Array<{ id: string; name: string }> {
+export function listProviderModelOptions(providerId: string, config: MuseModelsConfig): Array<{ id: string; name: string; contextWindow?: number }> {
   const builtIn = isBuiltInProvider(providerId)
-    ? (getModels(providerId as KnownProvider) as Array<{ id: string; name?: string }>).map(model => ({
+    ? (getModels(providerId as KnownProvider) as Model<Api>[]).map(model => ({
         id: model.id,
         name: model.name ?? model.id,
+        contextWindow: model.contextWindow > 0 ? model.contextWindow : undefined,
       }))
     : []
 
@@ -120,9 +139,9 @@ export function listProviderModelOptions(providerId: string, config: MuseModelsC
     name: model.name ?? model.id,
   }))
 
-  const byId = new Map<string, { id: string; name: string }>()
+  const byId = new Map<string, { id: string; name: string; contextWindow?: number }>()
   for (const model of [...builtIn, ...custom]) {
-    byId.set(model.id, { id: model.id, name: model.name })
+    byId.set(model.id, model)
   }
   return [...byId.values()]
 }

@@ -9,6 +9,8 @@ export type ProviderHealthStatus = 'missing' | 'ready' | 'broken'
 export interface ProviderModelOption {
   id: string
   name: string
+  /** 内置模型 catalog 已知时提供；自定义模型省略 */
+  contextWindow?: number
 }
 
 /** GET /settings/models-config */
