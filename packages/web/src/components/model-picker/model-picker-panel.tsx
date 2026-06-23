@@ -68,7 +68,7 @@ export function ModelPickerPanel({
     <div
       className={cn(
         'flex flex-col overflow-hidden bg-popover text-popover-foreground',
-        variant === 'embedded' ? 'rounded-none border-0 shadow-none' : 'ui-popover-panel',
+        variant === 'embedded' ? 'rounded-none border border-popover-border shadow-popover' : 'ui-popover-panel',
         widthClassName ?? 'w-72',
         maxHeightClassName ?? 'max-h-80',
         className,

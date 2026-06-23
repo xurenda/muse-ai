@@ -1,4 +1,5 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
+import { Check } from 'lucide-react'
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -32,24 +33,15 @@ DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayNam
 const DropdownMenuSubContent = forwardRef<
   ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubContent
-    ref={ref}
-    className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-popover text-foreground shadow-md', className)}
-    {...props}
-  />
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubContent ref={ref} sideOffset={sideOffset} className={cn('z-50 min-w-[10rem] ui-popover-panel p-popover', className)} {...props} />
 ))
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName
 
 const DropdownMenuContent = forwardRef<ElementRef<typeof DropdownMenuPrimitive.Content>, ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>>(
   ({ className, sideOffset = 4, ...props }, ref) => (
     <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Content
-        ref={ref}
-        sideOffset={sideOffset}
-        className={cn('z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border/60 bg-background p-popover text-foreground shadow-md', className)}
-        {...props}
-      />
+      <DropdownMenuPrimitive.Content ref={ref} sideOffset={sideOffset} className={cn('z-50 min-w-[10rem] ui-popover-panel p-popover', className)} {...props} />
     </DropdownMenuPrimitive.Portal>
   ),
 )
@@ -83,17 +75,15 @@ const DropdownMenuRadioItem = forwardRef<ElementRef<typeof DropdownMenuPrimitive
     <DropdownMenuPrimitive.RadioItem
       ref={ref}
       className={cn(
-        'ui-menu-item relative cursor-pointer select-none whitespace-nowrap rounded-control px-0 pl-7 pr-3 outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'ui-menu-item cursor-pointer select-none rounded-control outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
     >
-      <span className="absolute left-2 flex size-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <span className="size-3.5 text-foreground">✓</span>
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
       {children}
+      <DropdownMenuPrimitive.ItemIndicator className="ml-auto">
+        <Check className="size-3.5 text-foreground" strokeWidth={2} />
+      </DropdownMenuPrimitive.ItemIndicator>
     </DropdownMenuPrimitive.RadioItem>
   ),
 )

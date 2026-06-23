@@ -128,6 +128,34 @@ TypeScript：
 
 定义见 `packages/web/src/styles/index.css`。颜色、字号等用 token + 语义类名（如 `bg-background`、`text-sm`），不要硬编码色值或魔术数字。间距直接用 Tailwind scale（如 `px-3`）。
 
+#### 浮窗 / 弹窗样式规范
+
+所有浮动面板、下拉菜单、对话框，**必须**使用以下 CSS utility，**不要**手写 `rounded-lg border bg-* shadow-*` 等等效 class：
+
+| Utility            | 用途                                                            |
+| ------------------ | --------------------------------------------------------------- |
+| `ui-popover-panel` | 浮窗外壳：圆角 + 边框 + 背景色 + 阴影，所有下拉/菜单/面板均使用 |
+| `ui-popover-list`  | 浮窗内部菜单列表区域（含内边距、gap）                           |
+| `ui-popover-label` | 列表分组标题（小字、muted）                                     |
+| `ui-dialog`        | 居中固定对话框外壳（含 fixed + translate 居中 + backdrop��      |
+| `ui-menu-item`     | 菜单/列表单项（含 flex、padding、圆角、过渡）                   |
+
+使用示例：
+
+```tsx
+// 自定义浮窗
+<div className="absolute z-50 w-48 ui-popover-panel">
+  <div className="ui-popover-list">
+    <button className="ui-menu-item w-full hover:bg-accent">选项</button>
+  </div>
+</div>
+
+// 居中对话框
+<dialog className="w-[min(24rem,calc(100vw-2rem))] ui-dialog">…</dialog>
+```
+
+`DropdownMenu`（`components/ui/dropdown-menu.tsx`）内部已内置 `ui-popover-panel`，用 Radix DropdownMenu 时无需重复添加。
+
 ### 已有 UI 基元（复用优先）
 
 **新增可复用基元时，在本节补一行说明**。

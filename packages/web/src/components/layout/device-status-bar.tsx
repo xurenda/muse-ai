@@ -105,7 +105,7 @@ function DeviceStatusPanel({ onClose }: { onClose: () => void }) {
   return (
     <div
       ref={panelRef}
-      className="absolute bottom-full left-2 z-50 mb-1 w-[min(20rem,calc(100vw-1rem))] rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+      className="absolute bottom-full left-2 z-50 mb-1 w-[min(20rem,calc(100vw-1rem))] ui-popover-panel"
       role="dialog"
       aria-label={t('statusBar.panel.title')}
     >
@@ -216,7 +216,7 @@ export function DeviceStatusBar() {
           type="button"
           data-device-status-trigger
           className={cn(
-            'inline-flex h-full max-w-full items-center gap-1.5 px-2 text-left text-[11px] leading-none transition-colors',
+            'inline-flex h-full max-w-full cursor-pointer items-center gap-1.5 px-2 text-left text-[11px] leading-none transition-colors',
             panelOpen ? 'bg-foreground/6 text-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
           )}
           aria-expanded={panelOpen}

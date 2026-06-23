@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
-import { ChatSessionBar } from '@/components/chat/chat-session-bar'
 import { NoDeviceGuide } from '@/components/chat/no-device-guide'
 import { Button } from '@/components/ui/button'
 import { useChatSessionContext } from '@/context/chat-session-context'
@@ -41,7 +40,6 @@ function SessionChatFooter({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-stack">
-      <ChatSessionBar deviceSession={deviceSession} sessionSettings={sessionSettings} disabled={disabled} onUpdate={onUpdate} />
       <ChatComposer
         value={composerText}
         onChange={setComposerText}
@@ -50,6 +48,9 @@ function SessionChatFooter({
         disabled={disabled}
         canStop={canStop}
         stopping={stopping}
+        deviceSession={deviceSession}
+        sessionSettings={sessionSettings}
+        onUpdateSession={onUpdate}
         onSend={onSend}
         onStop={onStop}
       />

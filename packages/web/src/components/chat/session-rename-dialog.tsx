@@ -53,11 +53,7 @@ export function SessionRenameDialog({ open, initialName, onOpenChange, onConfirm
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="fixed top-1/2 left-1/2 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border/60 bg-background p-4 text-foreground shadow-md backdrop:bg-black/40"
-      onClose={handleClose}
-    >
+    <dialog ref={dialogRef} className="w-[min(24rem,calc(100vw-2rem))] ui-dialog" onClose={handleClose}>
       <form onSubmit={event => void handleSubmit(event)}>
         <h2 id="session-rename-title" className="text-sm font-semibold">
           {t('sidebar.renameSessionTitle')}

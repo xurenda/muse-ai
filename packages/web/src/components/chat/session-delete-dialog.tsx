@@ -42,11 +42,7 @@ export function SessionDeleteDialog({ open, sessionName, onOpenChange, onConfirm
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="fixed top-1/2 left-1/2 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border/60 bg-background p-4 text-foreground shadow-md backdrop:bg-black/40"
-      onClose={handleClose}
-    >
+    <dialog ref={dialogRef} className="w-[min(24rem,calc(100vw-2rem))] ui-dialog" onClose={handleClose}>
       <h2 className="text-sm font-semibold">{t('sidebar.deleteSessionTitle')}</h2>
       <p className="mt-2 text-sm text-muted-foreground">{t('sidebar.deleteSessionDescription', { name: sessionName })}</p>
       <div className="mt-4 flex justify-end gap-2">

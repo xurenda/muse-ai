@@ -82,11 +82,7 @@ export function ContextUsagePanel({ sessionSettings, compacting, disabled, onCom
   }, [onClose])
 
   return (
-    <div
-      ref={panelRef}
-      className="absolute bottom-full right-2 z-50 mb-1 w-[min(17rem,calc(100vw-1rem))] rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
-      role="dialog"
-    >
+    <div ref={panelRef} className="absolute bottom-full right-2 z-50 mb-1 w-[min(17rem,calc(100vw-1rem))] ui-popover-panel" role="dialog">
       <div className="space-y-2 px-3 pt-3 pb-2 text-xs">
         <div className="space-y-2">
           <div>
@@ -198,7 +194,7 @@ export function ContextUsageTrigger({ parts, open, onToggle }: ContextUsageTrigg
       aria-label={t('contextPanel.triggerAriaLabel')}
       onClick={onToggle}
       className={cn(
-        'inline-flex h-5 max-w-[min(100%,14rem)] items-center gap-1 border-0 px-1.5 text-[11px] leading-none transition-colors',
+        'inline-flex h-5 max-w-[min(100%,14rem)] cursor-pointer items-center gap-1 border-0 px-1.5 text-[11px] leading-none transition-colors',
         open ? 'bg-foreground/6 text-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
         toneClass,
       )}
