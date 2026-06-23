@@ -84,6 +84,8 @@ export function ProviderAdvancedForm({ value, onChange, actions }: ProviderAdvan
                   />
                   <IconButton
                     type="button"
+                    aria-label={t('providers.advanced.removeModel')}
+                    tooltip={t('providers.advanced.removeModel')}
                     disabled={extraModels.length <= 1}
                     onClick={() =>
                       onChange({

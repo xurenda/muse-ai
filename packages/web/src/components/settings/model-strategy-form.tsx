@@ -186,7 +186,7 @@ export function ModelStrategyForm({ strategy, options, onPoolsChange, onTaskRout
   }
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider>
       <div className="flex max-w-2xl flex-col gap-6 px-1">
         <SettingsSection
           title={t('models.strategy.poolsTitle')}

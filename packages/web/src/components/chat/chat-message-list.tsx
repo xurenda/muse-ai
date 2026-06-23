@@ -6,9 +6,12 @@ import { ChatMessageItem, shouldShowPlanning } from '@/components/chat/chat-mess
 interface ChatMessageListProps {
   messages: ChatMessage[]
   messagesEndRef: RefObject<HTMLDivElement | null>
+  streaming: boolean
+  onRetry: (userMessageId: string, text: string) => void
+  onEdit: (userMessageId: string, text: string) => void
 }
 
-export function ChatMessageList({ messages, messagesEndRef }: ChatMessageListProps) {
+export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry, onEdit }: ChatMessageListProps) {
   const { t } = useTranslation('chat')
 
   if (messages.length === 0) {
@@ -23,13 +26,29 @@ export function ChatMessageList({ messages, messagesEndRef }: ChatMessageListPro
 
   return (
     <div className="flex flex-col gap-6">
-      {messages.map((message, index) => (
-        <ChatMessageItem
-          key={message.id}
-          message={message}
-          showPlanning={index === messages.length - 1 && lastMessage !== undefined && shouldShowPlanning(message)}
-        />
-      ))}
+      {messages.map((message, index) => {
+        // 找这条 assistant 消息对应的上一条 user 消息
+        const prevUserMessage =
+          message.role === 'assistant'
+            ? messages
+                .slice(0, index)
+                .reverse()
+                .find(m => m.role === 'user')
+            : undefined
+
+        return (
+          <ChatMessageItem
+            key={message.id}
+            message={message}
+            showPlanning={index === messages.length - 1 && lastMessage !== undefined && shouldShowPlanning(message)}
+            streaming={streaming}
+            prevUserMessageId={prevUserMessage?.id}
+            prevUserContent={prevUserMessage?.content}
+            onRetry={onRetry}
+            onEdit={onEdit}
+          />
+        )
+      })}
       <div ref={messagesEndRef} aria-hidden />
     </div>
   )

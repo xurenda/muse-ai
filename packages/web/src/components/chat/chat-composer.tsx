@@ -204,7 +204,7 @@ export function ChatComposer({
 
         <div className="flex items-center gap-inline-sm">
           {showStop ? (
-            <TooltipProvider delayDuration={300}>
+            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button type="button" variant="outline" size="icon" disabled={!canStop} onClick={onStop} aria-label={t('input.stop')}>
@@ -216,7 +216,7 @@ export function ChatComposer({
             </TooltipProvider>
           ) : null}
 
-          <TooltipProvider delayDuration={300}>
+          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

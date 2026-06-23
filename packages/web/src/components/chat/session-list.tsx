@@ -93,6 +93,7 @@ export function SessionList({ sessions, isLoading, error, onRefresh }: SessionLi
                     type="button"
                     className={cn('mr-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-100', openMenuId === session.id && 'opacity-100')}
                     aria-label={t('sidebar.sessionActions')}
+                    tooltip={t('sidebar.sessionActions')}
                     onClick={event => event.preventDefault()}
                   >
                     <MoreHorizontal className="size-3.5" strokeWidth={2} />

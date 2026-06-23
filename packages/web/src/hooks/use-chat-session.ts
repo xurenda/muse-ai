@@ -103,6 +103,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const sseAbortRef = useRef<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
+  const sessionTreeRef = useRef<SessionTreeResponse | null>(null)
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
   const onSessionChangeRef = useRef(options?.onSessionChange)
   const prevDeviceReachableRef = useRef<boolean | null>(null)
@@ -243,6 +244,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setTreeError(null)
         const tree = await getSessionTree(deviceSession.endpoint, deviceSession.accessToken, id)
         setSessionTree(tree)
+        sessionTreeRef.current = tree
         if (replaceMessages) {
           setMessages(prev =>
             mergeBranchWithEphemeralTail(prev, tree.branch, {
@@ -553,6 +555,73 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     [canSend, deviceSession, sessionId],
   )
 
+  /**
+   * 重新生成：navigate 到该 user 消息所在轮次之前（即前一条 assistant 的 entryId），
+   * 然后直接 postChat 重发。
+   * 编辑：同样 navigate，但不发送（由调用方在回填输入框后手动发送）。
+   *
+   * navigateEntryId：该 user 消息节点的 parentId（在 sessionTree.entries 里查），
+   * 即前一条 assistant 节点 id，或 null（第一条消息）。
+   */
+  const retryFromMessage = useCallback(
+    async (userMessageId: string, sendAfter?: string) => {
+      if (!deviceSession || !sessionId) return
+
+      // 从 sessionTree.entries 找到该 user 消息的 parentId
+      // 如果 sessionTree 中没有（刚发的还未写入树），先刷新
+      let entries = sessionTreeRef.current?.entries ?? []
+      let userEntry = entries.find(e => e.id === userMessageId && e.type === 'message' && e.role === 'user')
+
+      if (!userEntry) {
+        // 尝试刷新树
+        try {
+          const latestTree = await getSessionTree(deviceSession.endpoint, deviceSession.accessToken, sessionId)
+          setSessionTree(latestTree)
+          sessionTreeRef.current = latestTree
+          entries = latestTree.entries
+          userEntry = entries.find(e => e.id === userMessageId && e.type === 'message' && e.role === 'user')
+        } catch {
+          // 忽略，继续尝试
+        }
+      }
+
+      // parentId 是该 user 消息在树里的父节点（前一条 assistant）
+      const parentEntryId = userEntry?.parentId ?? null
+
+      // 内联 navigate 逻辑（与 navigateToEntry 一致），避免声明顺序依赖
+      try {
+        setTreeError(null)
+        const tree = await navigateSession(deviceSession.endpoint, deviceSession.accessToken, sessionId, { entryId: parentEntryId })
+        setSessionTree(tree)
+        sessionTreeRef.current = tree
+        setMessages(branchMessagesToChat(tree.branch))
+      } catch (navError: unknown) {
+        setSendError(navError instanceof Error ? navError.message : String(navError))
+        return
+      }
+
+      if (sendAfter !== undefined) {
+        // 重新生成：直接发送
+        const text = sendAfter.trim()
+        if (!text || !sessionId) return
+        setSendError(null)
+        setMessages(prev => [...prev, createUserMessage(text, 'prompt')])
+        try {
+          const request: ChatRequest = { sessionId, message: text, mode: 'prompt' }
+          await postChat(deviceSession.endpoint, deviceSession.accessToken, request)
+        } catch (error: unknown) {
+          setSendError(error instanceof Error ? error.message : String(error))
+        }
+      }
+    },
+    [deviceSession, sessionId],
+  )
+
+  // 保持 messagesRef 与 messages 同步，以便在 callback 中读取最新值
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
   const stopGeneration = useCallback(async () => {
     if (!deviceSession || !sessionId || !canStop) return
     setSendError(null)
@@ -650,6 +719,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
         setTreeError(null)
         const tree = await navigateSession(deviceSession.endpoint, deviceSession.accessToken, sessionId, { entryId })
         setSessionTree(tree)
+        sessionTreeRef.current = tree
         setMessages(branchMessagesToChat(tree.branch))
       } catch (error: unknown) {
         setTreeError(error instanceof Error ? error.message : String(error))
@@ -691,6 +761,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     chatModelDisplay,
     chatContextWindow,
     sendMessage,
+    retryFromMessage,
     stopGeneration,
     compactContext,
     updateSessionSettings,

@@ -6,7 +6,9 @@ import { createAssistantMessage, createUserMessage, type ChatMessage } from '@/l
 export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMessage[] {
   return messages.map(message => {
     if (message.role === 'user') {
-      return createUserMessage(message.text, 'prompt')
+      // 保留 CLI 侧的 message id，确保 retryFromMessage 等操作能稳定索引
+      const userMsg = createUserMessage(message.text, 'prompt')
+      return { ...userMsg, id: message.id }
     }
     const assistant = createAssistantMessage()
     return {

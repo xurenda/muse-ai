@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { IconButton } from '@/components/ui/icon-button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { SessionTurnFlowNodeData } from '@/lib/session-tree-utils'
 import { cn } from '@/lib/utils'
 import { GitBranchPlus } from 'lucide-react'
@@ -46,27 +45,19 @@ export const SessionTreeTurnNode = memo(function SessionTreeTurnNode({ data }: N
         )}
       </button>
 
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <IconButton
-              type="button"
-              className="absolute -right-1 -top-1 size-6 rounded-full border border-border bg-background opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-              disabled={disabled}
-              aria-label={t('fork')}
-              onClick={event => {
-                event.stopPropagation()
-                onFork(turn.entryId)
-              }}
-            >
-              <GitBranchPlus className="size-3.5" strokeWidth={2} />
-            </IconButton>
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={4} className="px-1.5 py-0.5 text-xs">
-            {t('fork')}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <IconButton
+        type="button"
+        tooltip={t('fork')}
+        className="absolute -right-1 -top-1 size-6 rounded-full border border-border bg-background opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        disabled={disabled}
+        aria-label={t('fork')}
+        onClick={event => {
+          event.stopPropagation()
+          onFork(turn.entryId)
+        }}
+      >
+        <GitBranchPlus className="size-3.5" strokeWidth={2} />
+      </IconButton>
 
       <Handle
         type="source"

@@ -18,9 +18,7 @@ function ControlTooltip({ label, children }: { label: string; children: ReactEle
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="right" sideOffset={6} className="px-1.5 py-0.5 text-xs">
-        {label}
-      </TooltipContent>
+      <TooltipContent side="right">{label}</TooltipContent>
     </Tooltip>
   )
 }
@@ -36,7 +34,7 @@ export function SessionTreeFlowControls({ containerRef }: SessionTreeFlowControl
       position="bottom-left"
       className="!m-3 flex flex-col overflow-hidden rounded-md border border-border bg-card shadow-sm [&_.react-flow__controls-button]:border-0 [&_.react-flow__controls-button]:bg-transparent"
     >
-      <TooltipProvider delayDuration={300}>
+      <TooltipProvider>
         <ControlTooltip label={t('sessionTreeZoomIn')}>
           <button
             type="button"

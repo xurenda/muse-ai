@@ -82,6 +82,7 @@
   "settingsFailed": "更新会话设置失败",
   "manageAgents": "管理 Agent",
   "manageProviders": "Provider 设置",
+  "copy": "复制",
   "compactContext": "压缩上下文",
   "compactingContext": "压缩中…",
   "compactSuccess": "已压缩上下文（共 {{count}} 次）",

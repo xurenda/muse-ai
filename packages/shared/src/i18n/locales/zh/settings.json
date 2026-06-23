@@ -78,9 +78,11 @@
       "headerKey": "Header 名",
       "headerValue": "Header 值",
       "addHeader": "添加 Header",
+      "removeHeader": "删除 Header",
       "extraModels": "额外模型",
       "modelHeaders": "模型 Headers",
-      "addModel": "添加模型"
+      "addModel": "添加模型",
+      "removeModel": "删除模型"
     },
     "custom": {
       "empty": "暂无自定义供应方",
@@ -100,7 +102,8 @@
       "modelId": "模型 ID",
       "modelName": "显示名称（可选）",
       "modelsRequired": "至少添加一个模型",
-      "addModel": "添加模型"
+      "addModel": "添加模型",
+      "removeModel": "删除模型"
     }
   }
 }

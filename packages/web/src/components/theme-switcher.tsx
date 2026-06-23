@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import type { ColorMode } from '@/constants/theme'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { IconButton } from '@/components/ui/icon-button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useThemeStore } from '@/stores/theme'
 
 const MODE_OPTIONS: { value: ColorMode; icon: typeof Sun; labelKey: 'themeLight' | 'themeDark' | 'themeSystem' }[] = [
@@ -24,32 +23,25 @@ export function ThemeSwitcher() {
   const ActiveIcon = activeOption.icon
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <IconButton type="button" aria-label={t('theme')}>
-                <ActiveIcon className="size-3.5" strokeWidth={2} />
-              </IconButton>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>{t('theme')}</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent align="end">
-          <DropdownMenuRadioGroup value={colorMode} onValueChange={value => setColorMode(value as ColorMode)}>
-            {MODE_OPTIONS.map(option => {
-              const Icon = option.icon
-              return (
-                <DropdownMenuRadioItem key={option.value} value={option.value}>
-                  <Icon className="size-3.5" strokeWidth={2} />
-                  {t(option.labelKey)}
-                </DropdownMenuRadioItem>
-              )
-            })}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipProvider>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <IconButton type="button" aria-label={t('theme')} tooltip={t('theme')}>
+          <ActiveIcon className="size-3.5" strokeWidth={2} />
+        </IconButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuRadioGroup value={colorMode} onValueChange={value => setColorMode(value as ColorMode)}>
+          {MODE_OPTIONS.map(option => {
+            const Icon = option.icon
+            return (
+              <DropdownMenuRadioItem key={option.value} value={option.value}>
+                <Icon className="size-3.5" strokeWidth={2} />
+                {t(option.labelKey)}
+              </DropdownMenuRadioItem>
+            )
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

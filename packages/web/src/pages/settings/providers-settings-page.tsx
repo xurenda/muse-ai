@@ -449,6 +449,8 @@ export function ProvidersSettingsPage() {
               />
               <IconButton
                 type="button"
+                aria-label={t('providers.custom.removeModel')}
+                tooltip={t('providers.custom.removeModel')}
                 disabled={customForm.models.length <= 1}
                 onClick={() =>
                   setCustomForm(current => ({
@@ -516,7 +518,7 @@ export function ProvidersSettingsPage() {
             />
           }
         >
-          <TooltipProvider delayDuration={200}>
+          <TooltipProvider>
             {visibleApiKeyProviders.map(provider => {
               const isExpanded = expandedProviderId === provider.id
               const isConfigured = provider.authStatus !== 'missing'

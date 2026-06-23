@@ -15,7 +15,13 @@ export function RightPanelAddMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton type="button" aria-label={t('rightPanel.addTab')} disabled={addableTypes.length === 0} className="shrink-0">
+        <IconButton
+          type="button"
+          aria-label={t('rightPanel.addTab')}
+          disabled={addableTypes.length === 0}
+          className="shrink-0"
+          tooltip={t('rightPanel.addTab')}
+        >
           <Plus className="size-4" strokeWidth={1.75} />
         </IconButton>
       </DropdownMenuTrigger>

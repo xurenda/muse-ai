@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import type { ProviderHeaderEntry } from '@muse-ai/shared'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,7 @@ interface HeadersEditorProps {
 }
 
 export function HeadersEditor({ label, headers, keyPlaceholder, valuePlaceholder, addLabel, onChange }: HeadersEditorProps) {
+  const { t } = useTranslation('settings')
   const rows = headers.length > 0 ? headers : [{ key: '', value: '' }]
 
   return (
@@ -35,6 +37,8 @@ export function HeadersEditor({ label, headers, keyPlaceholder, valuePlaceholder
           />
           <IconButton
             type="button"
+            aria-label={t('providers.advanced.removeHeader')}
+            tooltip={t('providers.advanced.removeHeader')}
             disabled={rows.length <= 1 && !header.key && !header.value}
             onClick={() => onChange(rows.filter((_, itemIndex) => itemIndex !== index))}
           >

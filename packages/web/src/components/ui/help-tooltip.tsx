@@ -13,7 +13,7 @@ interface HelpTooltipProps {
 /** 通用帮助问号图标 + Tooltip */
 export function HelpTooltip({ content, ariaLabel = '帮助', side = 'top' }: HelpTooltipProps) {
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -25,7 +25,7 @@ export function HelpTooltip({ content, ariaLabel = '帮助', side = 'top' }: Hel
           </button>
         </TooltipTrigger>
         <TooltipContent side={side} className="max-w-xs">
-          {typeof content === 'string' ? <p className="text-sm">{content}</p> : content}
+          {content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

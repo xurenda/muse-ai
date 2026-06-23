@@ -89,14 +89,12 @@ export function SessionTreeMiniMap({ nodeCount, ...props }: SessionTreeMiniMapPr
         className="session-tree-minimap"
       />
 
-      <TooltipProvider delayDuration={300}>
+      <TooltipProvider>
         <Tooltip open={open} onOpenChange={setOpen}>
           <TooltipTrigger asChild>
             <div style={anchorStyle} aria-hidden tabIndex={-1} />
           </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={6} className="px-1.5 py-0.5 text-xs">
-            {t('sessionTreeMinimap')}
-          </TooltipContent>
+          <TooltipContent side="top">{t('sessionTreeMinimap')}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </>

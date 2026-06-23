@@ -12,7 +12,14 @@ export function RightPanelToggle({ open, onToggle, className }: RightPanelToggle
   const { t } = useTranslation('layout')
 
   return (
-    <IconButton type="button" onClick={onToggle} className={className} aria-label={t('header.rightPanelToggle')} aria-pressed={open}>
+    <IconButton
+      type="button"
+      onClick={onToggle}
+      className={className}
+      aria-label={open ? t('header.rightPanelHide') : t('header.rightPanelShow')}
+      aria-pressed={open}
+      tooltip={open ? t('header.rightPanelHide') : t('header.rightPanelShow')}
+    >
       <PanelRight className="size-4" strokeWidth={1.75} />
     </IconButton>
   )

@@ -60,6 +60,7 @@ export function ModelPoolDraggableList({ droppableId, pool, catalog, onChange }:
                         type="button"
                         {...draggableProvided.dragHandleProps}
                         aria-label={t('models.strategy.dragHandle')}
+                        tooltip={t('models.strategy.dragHandle')}
                         className="cursor-grab active:cursor-grabbing"
                       >
                         <GripVertical className="size-3.5" strokeWidth={2} />
@@ -71,6 +72,7 @@ export function ModelPoolDraggableList({ droppableId, pool, catalog, onChange }:
                       <IconButton
                         type="button"
                         aria-label={t('models.strategy.removeModel')}
+                        tooltip={t('models.strategy.removeModel')}
                         className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                         onClick={() => onChange(removePoolItem(pool, index))}
                       >

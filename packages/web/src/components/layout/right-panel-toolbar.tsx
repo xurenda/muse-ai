@@ -18,10 +18,11 @@ export function RightPanelToolbar({ fullscreen, onToggleFullscreen, onCollapse }
         onClick={onToggleFullscreen}
         aria-label={fullscreen ? t('header.rightPanelExitFullscreen') : t('header.rightPanelFullscreen')}
         aria-pressed={fullscreen}
+        tooltip={fullscreen ? t('header.rightPanelExitFullscreen') : t('header.rightPanelFullscreen')}
       >
         {fullscreen ? <Minimize2 className="size-4" strokeWidth={1.75} /> : <Maximize2 className="size-4" strokeWidth={1.75} />}
       </IconButton>
-      <IconButton type="button" onClick={onCollapse} aria-label={t('header.rightPanelToggle')} aria-pressed>
+      <IconButton type="button" onClick={onCollapse} aria-label={t('header.rightPanelHide')} aria-pressed tooltip={t('header.rightPanelHide')}>
         <PanelRight className="size-4" strokeWidth={1.75} />
       </IconButton>
     </div>

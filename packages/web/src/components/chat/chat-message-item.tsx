@@ -1,12 +1,15 @@
+import { Check, Copy } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AssistantChatMessage, ChatMessage } from '@/lib/chat-types'
 import { isAssistantMessage } from '@/lib/chat-types'
-import { hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
+import { getAssistantText, hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
 import { groupAssistantBlocks } from '@/lib/group-assistant-blocks'
 import { AssistantProcessRun } from '@/components/chat/assistant-process-run'
 import { MarkdownContent } from '@/components/chat/markdown-content'
 import { PlanningIndicator } from '@/components/chat/planning-indicator'
 import { UserMessage } from '@/components/chat/user-message'
+import { IconButton } from '@/components/ui/icon-button'
 
 interface ChatMessageItemProps {
   message: ChatMessage
@@ -30,12 +33,37 @@ function AssistantContentBlocks({ blocks, streaming }: { blocks: AssistantChatMe
   )
 }
 
+function CopyButton({ text }: { text: string }) {
+  const { t } = useTranslation('chat')
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <IconButton type="button" tooltip={t('copy')} onClick={() => void handleCopy()} aria-label={t('copy')}>
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </IconButton>
+  )
+}
+
 function AssistantMessageItem({ message, showPlanning }: { message: AssistantChatMessage; showPlanning?: boolean }) {
+  const text = getAssistantText(message)
+  const showCopy = !message.streaming && text.trim().length > 0
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       <AssistantContentBlocks blocks={message.blocks} streaming={message.streaming} />
       {showPlanning ? <PlanningIndicator /> : null}
       {message.error ? <p className="text-sm text-destructive">{message.error}</p> : null}
+      {showCopy ? (
+        <div className="flex items-center -mt-3">
+          <CopyButton text={text} />
+        </div>
+      ) : null}
     </div>
   )
 }

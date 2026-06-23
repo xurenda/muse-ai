@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth'
 import type { StoredDeviceSession } from '@/lib/config'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import type { ChatInputMode } from '@/lib/chat-types'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 interface SessionChatFooterProps {
   deviceSession: StoredDeviceSession
@@ -19,6 +19,7 @@ interface SessionChatFooterProps {
   canStop: boolean
   stopping: boolean
   compacting: boolean
+  initialText?: string
   onUpdate: (patch: SessionSettingsPatch) => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
   onStop: () => void
@@ -32,11 +33,12 @@ function SessionChatFooter({
   canStop,
   stopping,
   compacting,
+  initialText,
   onUpdate,
   onSend,
   onStop,
 }: SessionChatFooterProps) {
-  const [composerText, setComposerText] = useState('')
+  const [composerText, setComposerText] = useState(initialText ?? '')
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-stack">
@@ -75,11 +77,34 @@ export function ChatPage() {
     treeError,
     compacting,
     sendMessage,
+    retryFromMessage,
     stopGeneration,
     updateSessionSettings,
     startNewSession,
     messagesEndRef,
   } = useChatSessionContext()
+
+  // 编辑或重新生成时用于重置输入框初始内容（必须在所有条件 return 之前）
+  const [footerKey, setFooterKey] = useState(0)
+  const [footerInitialText, setFooterInitialText] = useState<string | undefined>(undefined)
+
+  const handleRetry = useCallback(
+    (userMessageId: string, text: string) => {
+      // 重新生成：navigate 到前一个节点，然后发送原文本
+      void retryFromMessage(userMessageId, text)
+    },
+    [retryFromMessage],
+  )
+
+  const handleEdit = useCallback(
+    (userMessageId: string, currentText: string) => {
+      // 编辑：只 navigate（不传 sendAfter），回填输入框
+      void retryFromMessage(userMessageId)
+      setFooterInitialText(currentText)
+      setFooterKey(k => k + 1)
+    },
+    [retryFromMessage],
+  )
 
   if (!deviceSession) {
     return <NoDeviceGuide />
@@ -123,13 +148,13 @@ export function ChatPage() {
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
             <div className="mx-auto flex w-full max-w-3xl flex-col">
-              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} />
+              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} streaming={streaming} onRetry={handleRetry} onEdit={handleEdit} />
             </div>
           </div>
 
           <div className="shrink-0 px-page-x pb-panel-y pt-stack">
             <SessionChatFooter
-              key={routeSessionId}
+              key={`${routeSessionId}-${footerKey}`}
               deviceSession={deviceSession}
               sessionSettings={sessionSettings}
               streaming={streaming}
@@ -137,6 +162,7 @@ export function ChatPage() {
               canStop={canStop}
               stopping={stopping}
               compacting={compacting}
+              initialText={footerInitialText}
               onUpdate={async patch => {
                 const result = await updateSessionSettings(patch)
                 return result !== null

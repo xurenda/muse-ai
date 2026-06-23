@@ -149,10 +149,10 @@ export function ContextUsagePanel({ sessionSettings, compacting, disabled, onCom
         </div>
       )}
 
-      <div className="border-t border-border px-3 py-2.5">
+      <div className="border-t border-border px-3 py-2">
         <button
           type="button"
-          className="cursor-pointer text-sm font-medium text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cursor-pointer text-xs text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={disabled || compacting}
           onClick={() => void onCompact()}
         >
