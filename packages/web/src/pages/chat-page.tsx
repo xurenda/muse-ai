@@ -151,7 +151,7 @@ export function ChatPage() {
 
       {showChatContent ? (
         <>
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-x-clip">
+          <div className="relative flex min-h-0 flex-1 flex-col">
             <div ref={scrollContainerRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
               <div className="mx-auto flex w-full max-w-3xl flex-col">
                 <ChatMessageList messages={messages} bottomSentinelRef={bottomSentinelRef} streaming={streaming} onRetry={handleRetry} />

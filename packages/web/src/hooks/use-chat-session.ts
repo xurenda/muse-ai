@@ -24,6 +24,7 @@ import { hasRunningTool } from '@/lib/assistant-message-helpers'
 import { mergeBranchWithEphemeralTail, type MergeBranchOptions } from '@/lib/merge-branch-messages'
 import { applySseEvent, finalizeStoppedAssistantTail, isStreaming as checkStreaming, type ApplySseEventOptions } from '@/lib/chat-reducer'
 import { createUserMessage, isAssistantMessage, type ChatInputMode, type ChatMessage } from '@/lib/chat-types'
+import { computeStreamingTurnTokenDisplay, estimateAssistantContentChars, mergeTurnUsageWithContentEstimate } from '@/lib/estimate-streaming-turn-tokens'
 import { parseConnectionError, type ParsedConnectionError } from '@/lib/connection-errors'
 import type { StoredDeviceSession } from '@/lib/config'
 import { useDeviceHealth } from '@/hooks/use-device-health'
@@ -101,6 +102,13 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   // streaming 期间累计的真实 token 用量（turn_end 逐轮累加）
   const [streamingTurnUsage, setStreamingTurnUsage] = useState<TurnTokenUsage | null>(null)
   const streamingTurnUsageRef = useRef<TurnTokenUsage | null>(null)
+  /** 上一次 turn_end 时 assistant 内容字符数，用于估算当前 turn 增量 */
+  const [lastTurnEndContentChars, setLastTurnEndContentChars] = useState(0)
+  const lastTurnEndContentCharsRef = useRef(0)
+  const syncLastTurnEndContentChars = useCallback((chars: number) => {
+    lastTurnEndContentCharsRef.current = chars
+    setLastTurnEndContentChars(chars)
+  }, [])
   // agent 开始时间戳（用于实时计算 elapsed）
   const agentStartedAtRef = useRef<number | null>(null)
   const [agentStartedAt, setAgentStartedAt] = useState<number | null>(null)
@@ -163,6 +171,13 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   }, [options?.onSessionChange])
 
   const streaming = checkStreaming(messages)
+  const streamingTurnTokenDisplay = useMemo(() => {
+    if (!streaming) return null
+    const last = messages.at(-1)
+    const currentChars = last && isAssistantMessage(last) ? estimateAssistantContentChars(last.blocks) : 0
+    const confirmed = streamingTurnUsage?.total ?? 0
+    return computeStreamingTurnTokenDisplay(confirmed, currentChars, lastTurnEndContentChars)
+  }, [streaming, streamingTurnUsage, messages, lastTurnEndContentChars])
   const deviceUnreachable = reachable === false
   const sessionReady = status === 'ready' && sseStatus === 'connected' && !deviceUnreachable
   const canSend = sessionReady && !compacting
@@ -308,6 +323,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                 setAgentStartedAt(now)
                 setStreamingTurnUsage(null)
                 streamingTurnUsageRef.current = null
+                syncLastTurnEndContentChars(0)
                 setMessages(prev => applySseEvent(prev, event, sseEventOptions))
                 return
               }
@@ -391,13 +407,20 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                     setChatContextWindow(event.contextUsage.contextWindow)
                   }
                 }
+                const lastAssistant = messagesRef.current.at(-1)
+                if (lastAssistant && isAssistantMessage(lastAssistant)) {
+                  syncLastTurnEndContentChars(estimateAssistantContentChars(lastAssistant.blocks))
+                }
               }
               if (event.type === 'agent_end') {
                 const durationMs = agentStartedAtRef.current !== null ? Date.now() - agentStartedAtRef.current : undefined
-                const finalUsage = streamingTurnUsageRef.current ?? undefined
+                const lastAssistant = messagesRef.current.at(-1)
+                const currentChars = lastAssistant && isAssistantMessage(lastAssistant) ? estimateAssistantContentChars(lastAssistant.blocks) : 0
+                const finalUsage = mergeTurnUsageWithContentEstimate(streamingTurnUsageRef.current, currentChars, lastTurnEndContentCharsRef.current)
                 setMessages(prev => applySseEvent(prev, event, { ...sseEventOptions, turnUsage: finalUsage, durationMs }))
                 setStreamingTurnUsage(null)
                 streamingTurnUsageRef.current = null
+                syncLastTurnEndContentChars(0)
                 agentStartedAtRef.current = null
                 setAgentStartedAt(null)
                 setStopping(false)
@@ -660,7 +683,11 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     setSendError(null)
     setStopping(true)
     if (streaming) {
-      setMessages(prev => finalizeStoppedAssistantTail(prev, t('toolStopped')))
+      const durationMs = agentStartedAtRef.current !== null ? Date.now() - agentStartedAtRef.current : undefined
+      const lastAssistant = messagesRef.current.at(-1)
+      const currentChars = lastAssistant && isAssistantMessage(lastAssistant) ? estimateAssistantContentChars(lastAssistant.blocks) : 0
+      const turnUsage = mergeTurnUsageWithContentEstimate(streamingTurnUsageRef.current, currentChars, lastTurnEndContentCharsRef.current)
+      setMessages(prev => finalizeStoppedAssistantTail(prev, t('toolStopped'), { turnUsage, durationMs }))
     }
     try {
       const result = await abortSession(deviceSession.endpoint, deviceSession.accessToken, sessionId)
@@ -784,6 +811,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     streaming,
     canSend,
     streamingTurnUsage,
+    streamingTurnTokenDisplay,
     agentStartedAt,
     canStop,
     stopping,

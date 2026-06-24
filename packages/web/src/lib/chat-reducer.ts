@@ -38,11 +38,19 @@ export interface ApplySseEventOptions {
   durationMs?: number
 }
 
+export interface FinalizeStoppedAssistantTailOptions {
+  turnUsage?: TurnTokenUsage
+  durationMs?: number
+}
+
 /** 用户停止或 turn 结束时收尾最后一条 assistant（streaming + running tools） */
-export function finalizeStoppedAssistantTail(messages: ChatMessage[], stoppedToolMessage: string): ChatMessage[] {
+export function finalizeStoppedAssistantTail(messages: ChatMessage[], stoppedToolMessage: string, stats?: FinalizeStoppedAssistantTailOptions): ChatMessage[] {
   return updateLastAssistant(messages, m => ({
     ...m,
     streaming: false,
+    timestamp: m.timestamp ?? new Date().toISOString(),
+    turnUsage: stats?.turnUsage ?? m.turnUsage,
+    durationMs: stats?.durationMs ?? m.durationMs,
     blocks: finalizeAssistantTurnBlocks(m.blocks, stoppedToolMessage),
   }))
 }
@@ -84,10 +92,11 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent, opti
       return updateLastAssistant(messages, m => ({
         ...m,
         streaming: false,
-        timestamp: new Date().toISOString(),
-        turnUsage: options?.turnUsage,
-        // 优先使用 CLI 通过 SSE 下发的精确耗时，回退到 Web 侧计算值
-        durationMs: event.durationMs ?? options?.durationMs,
+        timestamp: m.timestamp ?? new Date().toISOString(),
+        // 保留停止时已写入的用量；agent_end 无 usage 时不覆盖
+        turnUsage: options?.turnUsage ?? m.turnUsage,
+        // 优先使用 CLI 通过 SSE 下发的精确耗时，回退到 Web 侧计算值或停止时已写入的值
+        durationMs: event.durationMs ?? options?.durationMs ?? m.durationMs,
         blocks: options?.stoppedToolMessage ? finalizeAssistantTurnBlocks(m.blocks, options.stoppedToolMessage) : finalizeOpenThinkingBlocks(m.blocks),
       }))
 

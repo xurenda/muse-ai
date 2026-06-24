@@ -7,7 +7,7 @@ import { getChatMessageAnchorId } from '@/lib/chat-question-nav'
 import { getAssistantText, hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
 import { groupAssistantBlocks } from '@/lib/group-assistant-blocks'
 import { formatMessageTime } from '@/lib/format-message-time'
-import { formatTurnStats } from '@/lib/format-turn-stats'
+import { formatDuration, formatTurnStats } from '@/lib/format-turn-stats'
 import { AssistantProcessRun } from '@/components/chat/assistant-process-run'
 import { MarkdownContent } from '@/components/chat/markdown-content'
 import { PlanningIndicator } from '@/components/chat/planning-indicator'
@@ -69,8 +69,10 @@ function AssistantMessageItem({ message, showPlanning }: { message: AssistantCha
       {showCopy ? (
         <div className="group/actions flex items-center gap-1.5">
           <CopyButton text={text} />
-          {message.turnUsage && message.durationMs !== undefined ? (
-            <span className="text-xs text-muted-foreground tabular-nums">{formatTurnStats(message.turnUsage.total, message.durationMs, false)}</span>
+          {message.durationMs !== undefined ? (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {message.turnUsage ? formatTurnStats(message.turnUsage.total, message.durationMs, false) : formatDuration(message.durationMs)}
+            </span>
           ) : null}
           {message.timestamp ? (
             <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">

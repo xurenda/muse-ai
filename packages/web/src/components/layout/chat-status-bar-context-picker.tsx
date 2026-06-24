@@ -11,7 +11,7 @@ import { useDeviceStatusStore } from '@/stores/device-status-store'
 /** 对话详情页将上下文面板挂载到底部状态栏（模型 Picker 左侧） */
 export function ChatStatusBarContextPanel() {
   const { sessionId: routeSessionId } = useParams()
-  const { status, sessionSettings, chatContextWindow, canSend, compacting, compactContext, streaming, streamingTurnUsage, agentStartedAt } =
+  const { status, sessionSettings, chatContextWindow, canSend, compacting, compactContext, streaming, streamingTurnTokenDisplay, agentStartedAt } =
     useChatSessionContext()
   const [open, setOpen] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -41,10 +41,9 @@ export function ChatStatusBarContextPanel() {
   )
 
   const streamingStatsText = useMemo(() => {
-    if (!streaming || elapsed === 0) return null
-    const tokens = streamingTurnUsage?.total ?? 0
-    return formatTurnStats(tokens, elapsed, true)
-  }, [streaming, streamingTurnUsage, elapsed])
+    if (!streaming || elapsed === 0 || streamingTurnTokenDisplay === null) return null
+    return formatTurnStats(streamingTurnTokenDisplay, elapsed, true)
+  }, [streaming, streamingTurnTokenDisplay, elapsed])
 
   const handleToggle = useCallback(() => {
     setOpen(value => {

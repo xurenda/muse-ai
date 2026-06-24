@@ -113,20 +113,20 @@ export function ContextUsagePanel({ sessionSettings, compacting, disabled, onCom
           {hasSessionUsage ? (
             <div className="space-y-1.5">
               <MetricRow label={t('contextPanel.inputLabel')} value={formatTokenCount(tokenUsage.input)} tooltip={t('contextPanel.inputTooltip')} />
+              {showCache ? (
+                <MetricRow
+                  label={t('contextPanel.cacheReadLabel')}
+                  value={formatTokenCount(tokenUsage.cacheRead)}
+                  tooltip={t('contextPanel.cacheReadTooltip')}
+                />
+              ) : null}
               <MetricRow label={t('contextPanel.outputLabel')} value={formatTokenCount(tokenUsage.output)} tooltip={t('contextPanel.outputTooltip')} />
               {showCache ? (
-                <>
-                  <MetricRow
-                    label={t('contextPanel.cacheReadLabel')}
-                    value={formatTokenCount(tokenUsage.cacheRead)}
-                    tooltip={t('contextPanel.cacheReadTooltip')}
-                  />
-                  <MetricRow
-                    label={t('contextPanel.cacheWriteLabel')}
-                    value={formatTokenCount(tokenUsage.cacheWrite)}
-                    tooltip={t('contextPanel.cacheWriteTooltip')}
-                  />
-                </>
+                <MetricRow
+                  label={t('contextPanel.cacheWriteLabel')}
+                  value={formatTokenCount(tokenUsage.cacheWrite)}
+                  tooltip={t('contextPanel.cacheWriteTooltip')}
+                />
               ) : null}
               <MetricRow label={t('contextPanel.totalLabel')} value={formatTokenCount(tokenUsage.total)} tooltip={t('contextPanel.totalTooltip')} />
               {showCache && lastTurnHitRate ? (

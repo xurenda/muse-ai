@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { finalizeOpenThinkingBlock, getAssistantThinking, getAssistantText } from '@/lib/assistant-message-helpers'
-import { applySseEvent } from '@/lib/chat-reducer'
+import { applySseEvent, finalizeStoppedAssistantTail } from '@/lib/chat-reducer'
 import { createUserMessage } from '@/lib/chat-types'
 
 describe('applySseEvent', () => {
@@ -124,6 +124,37 @@ describe('applySseEvent', () => {
         expect(tools.tools[0]?.isError).toBe(true)
         expect(tools.tools[0]?.result).toBe('已停止')
       }
+    }
+  })
+
+  it('agent_end 无 usage 时不应覆盖停止时已写入的 turnUsage 与 durationMs', () => {
+    let messages = applySseEvent([], { type: 'agent_start' })
+    messages = applySseEvent(messages, { type: 'text_delta', delta: '部分内容' })
+    messages = finalizeStoppedAssistantTail(messages, '已停止', {
+      turnUsage: { input: 100, output: 200, total: 300 },
+      durationMs: 12_000,
+    })
+    messages = applySseEvent(messages, { type: 'agent_end', durationMs: 12_500 })
+    const assistant = messages.at(-1)
+    if (assistant?.role === 'assistant') {
+      expect(assistant.turnUsage?.total).toBe(300)
+      expect(assistant.durationMs).toBe(12_500)
+    }
+  })
+
+  it('finalizeStoppedAssistantTail 应写入 turnUsage 与 durationMs', () => {
+    let messages = applySseEvent([], { type: 'agent_start' })
+    messages = applySseEvent(messages, { type: 'text_delta', delta: 'hello' })
+    messages = finalizeStoppedAssistantTail(messages, '已停止', {
+      turnUsage: { input: 10, output: 20, total: 30 },
+      durationMs: 5_000,
+    })
+    const assistant = messages.at(-1)
+    if (assistant?.role === 'assistant') {
+      expect(assistant.streaming).toBe(false)
+      expect(assistant.turnUsage?.total).toBe(30)
+      expect(assistant.durationMs).toBe(5_000)
+      expect(assistant.timestamp).toBeTypeOf('string')
     }
   })
 })

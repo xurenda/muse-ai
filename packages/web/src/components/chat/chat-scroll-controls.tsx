@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { VerticalControlButton, VerticalControlPanelWithTooltips, verticalControlButtonClassName } from '@/components/ui/vertical-control-panel'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useChatQuestionNav } from '@/hooks/use-chat-question-nav'
-import { useChatScrollControlsPlacement } from '@/hooks/use-chat-scroll-controls-placement'
+import { useChatScrollControlsContainerWide } from '@/hooks/use-chat-scroll-controls-container-wide'
 import type { ChatMessage } from '@/lib/chat-types'
 import { extractUserQuestions } from '@/lib/chat-question-nav'
 import { cn } from '@/lib/utils'
@@ -59,13 +59,14 @@ function OutlineControlButton({
 export function ChatScrollControls({ messages, scrollContainerRef, isAtBottom, resetKey, onScrollToBottom, onScrollToMessage }: ChatScrollControlsProps) {
   const { t } = useTranslation('chat')
   const [outlineOpen, setOutlineOpen] = useState(false)
-  const anchorRef = useRef<HTMLDivElement>(null)
-  const toolbarRef = useRef<HTMLDivElement>(null)
-  const placeOutside = useChatScrollControlsPlacement({ anchorRef, toolbarRef })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const placeOutside = useChatScrollControlsContainerWide(containerRef, resetKey)
 
   const userQuestions = useMemo(() => extractUserQuestions(messages), [messages])
   const showNavigation = userQuestions.length >= 2
-  const showScrollOnly = !showNavigation && !isAtBottom
+  const showScrollButton = !isAtBottom
+  const shouldMount = showNavigation || userQuestions.length >= 1
+  const toolbarVisible = showNavigation || showScrollButton
 
   const { currentIndex, canGoPrev, canGoNext, goToPrev, goToNext, goToQuestion } = useChatQuestionNav({
     scrollContainerRef,
@@ -77,12 +78,18 @@ export function ChatScrollControls({ messages, scrollContainerRef, isAtBottom, r
   const tooltipSide = 'right'
   const outlineMenuSide = placeOutside ? 'right' : 'left'
 
-  if (!showNavigation && !showScrollOnly) return null
+  if (!shouldMount) return null
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-4 px-4">
-      <div ref={anchorRef} className="relative mx-auto w-full max-w-3xl">
-        <div ref={toolbarRef} className={cn('pointer-events-auto absolute bottom-0', placeOutside ? 'left-full ml-3' : 'right-0')}>
+    <div ref={containerRef} className="@container/chat-scroll-controls pointer-events-none absolute inset-x-0 bottom-4 px-4">
+      <div className="relative mx-auto w-full max-w-3xl">
+        <div
+          className={cn(
+            'absolute bottom-0 right-0',
+            '@min-[55rem]/chat-scroll-controls:left-full @min-[55rem]/chat-scroll-controls:ml-3 @min-[55rem]/chat-scroll-controls:right-auto',
+            toolbarVisible ? 'pointer-events-auto' : 'pointer-events-none invisible',
+          )}
+        >
           <VerticalControlPanelWithTooltips>
             {showNavigation ? (
               <DropdownMenu modal={false} open={outlineOpen} onOpenChange={setOutlineOpen}>
