@@ -8,10 +8,9 @@ interface ChatMessageListProps {
   messagesEndRef: RefObject<HTMLDivElement | null>
   streaming: boolean
   onRetry: (userMessageId: string, text: string) => void
-  onEdit: (userMessageId: string, text: string) => void
 }
 
-export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry, onEdit }: ChatMessageListProps) {
+export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry }: ChatMessageListProps) {
   const { t } = useTranslation('chat')
 
   if (messages.length === 0) {
@@ -31,9 +30,9 @@ export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry, 
         const prevUserMessage =
           message.role === 'assistant'
             ? messages
-                .slice(0, index)
-                .reverse()
-                .find(m => m.role === 'user')
+              .slice(0, index)
+              .reverse()
+              .find(m => m.role === 'user')
             : undefined
 
         return (
@@ -45,7 +44,6 @@ export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry, 
             prevUserMessageId={prevUserMessage?.id}
             prevUserContent={prevUserMessage?.content}
             onRetry={onRetry}
-            onEdit={onEdit}
           />
         )
       })}

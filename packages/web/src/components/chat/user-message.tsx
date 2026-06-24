@@ -1,4 +1,4 @@
-import { Copy, Check, Pencil } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '@/components/ui/icon-button'
@@ -8,10 +8,9 @@ interface UserMessageProps {
   content: string
   modeLabel?: string
   timestamp?: string
-  onEdit?: (text: string) => void
 }
 
-export function UserMessage({ content, modeLabel, timestamp, onEdit }: UserMessageProps) {
+export function UserMessage({ content, modeLabel, timestamp }: UserMessageProps) {
   const { t } = useTranslation('chat')
   const [copied, setCopied] = useState(false)
 
@@ -32,11 +31,6 @@ export function UserMessage({ content, modeLabel, timestamp, onEdit }: UserMessa
         <IconButton type="button" tooltip={t('copy')} aria-label={t('copy')} onClick={() => void handleCopy()}>
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </IconButton>
-        {onEdit ? (
-          <IconButton type="button" tooltip={t('edit')} aria-label={t('edit')} onClick={() => onEdit(content)}>
-            <Pencil className="size-3.5" />
-          </IconButton>
-        ) : null}
       </div>
     </div>
   )

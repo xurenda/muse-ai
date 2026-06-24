@@ -20,7 +20,6 @@ interface ChatMessageItemProps {
   prevUserMessageId?: string
   prevUserContent?: string
   onRetry?: (userMessageId: string, text: string) => void
-  onEdit?: (userMessageId: string, text: string) => void
 }
 
 function AssistantContentBlocks({ blocks, streaming }: { blocks: AssistantChatMessage['blocks']; streaming: boolean }) {
@@ -69,14 +68,14 @@ function AssistantMessageItem({ message, showPlanning }: { message: AssistantCha
       {showCopy ? (
         <div className="group/actions flex items-center gap-1.5">
           <CopyButton text={text} />
+          {message.turnUsage && message.durationMs !== undefined ? (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {formatTurnStats(message.turnUsage.total, message.durationMs, false)}
+            </span>
+          ) : null}
           {message.timestamp ? (
             <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">
               {formatMessageTime(message.timestamp)}
-            </span>
-          ) : null}
-          {message.turnUsage && message.durationMs !== undefined ? (
-            <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">
-              {formatTurnStats(message.turnUsage.total, message.durationMs, false)}
             </span>
           ) : null}
         </div>
@@ -85,7 +84,7 @@ function AssistantMessageItem({ message, showPlanning }: { message: AssistantCha
   )
 }
 
-export function ChatMessageItem({ message, showPlanning, onEdit }: ChatMessageItemProps) {
+export function ChatMessageItem({ message, showPlanning }: ChatMessageItemProps) {
   const { t } = useTranslation('chat')
 
   if (message.role === 'user') {
@@ -95,7 +94,6 @@ export function ChatMessageItem({ message, showPlanning, onEdit }: ChatMessageIt
         content={message.content}
         modeLabel={modeLabel}
         timestamp={message.timestamp}
-        onEdit={onEdit ? text => onEdit(message.id, text) : undefined}
       />
     )
   }

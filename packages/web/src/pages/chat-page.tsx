@@ -84,24 +84,13 @@ export function ChatPage() {
     messagesEndRef,
   } = useChatSessionContext()
 
-  // 编辑或重新生成时用于重置输入框初始内容（必须在所有条件 return 之前）
-  const [footerKey, setFooterKey] = useState(0)
-  const [footerInitialText, setFooterInitialText] = useState<string | undefined>(undefined)
+  const footerKey = 0
+  const footerInitialText = undefined
 
   const handleRetry = useCallback(
     (userMessageId: string, text: string) => {
       // 重新生成：navigate 到前一个节点，然后发送原文本
       void retryFromMessage(userMessageId, text)
-    },
-    [retryFromMessage],
-  )
-
-  const handleEdit = useCallback(
-    (userMessageId: string, currentText: string) => {
-      // 编辑：只 navigate（不传 sendAfter），回填输入框
-      void retryFromMessage(userMessageId)
-      setFooterInitialText(currentText)
-      setFooterKey(k => k + 1)
     },
     [retryFromMessage],
   )
@@ -148,7 +137,7 @@ export function ChatPage() {
         <>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
             <div className="mx-auto flex w-full max-w-3xl flex-col">
-              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} streaming={streaming} onRetry={handleRetry} onEdit={handleEdit} />
+              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} streaming={streaming} onRetry={handleRetry} />
             </div>
           </div>
 

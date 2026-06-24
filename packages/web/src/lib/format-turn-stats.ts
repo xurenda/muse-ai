@@ -11,7 +11,7 @@ export function formatDuration(ms: number): string {
 
 /** 格式化 turn 统计（底部状态栏 / 消息元信息） */
 export function formatTurnStats(tokens: number, durationMs: number, approximate: boolean): string {
-  const tokenStr = `${approximate ? '~\u202f' : ''}${formatTokenCount(tokens)} tokens`
+  const tokenStr = `${approximate ? '~\u202f' : ''}${formatTokenCount(tokens)} Tokens`
   const timeStr = formatDuration(durationMs)
   return `${tokenStr} · ${timeStr}`
 }
