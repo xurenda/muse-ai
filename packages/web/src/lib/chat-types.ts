@@ -1,4 +1,4 @@
-import type { ChatRequest } from '@muse-ai/shared'
+import type { ChatRequest, TurnTokenUsage } from '@muse-ai/shared'
 
 export type ChatInputMode = ChatRequest['mode']
 
@@ -7,6 +7,8 @@ export interface UserChatMessage {
   role: 'user'
   content: string
   mode: ChatInputMode
+  /** 消息完成时间（ISO 字符串） */
+  timestamp?: string
 }
 
 export interface ToolCallItem {
@@ -29,6 +31,12 @@ export interface AssistantChatMessage {
   blocks: AssistantContentBlock[]
   streaming: boolean
   error?: string
+  /** 消息完成时间（ISO 字符串） */
+  timestamp?: string
+  /** 本次 agent 回复累计的真实 token 用量 */
+  turnUsage?: TurnTokenUsage
+  /** 本次 agent 回复总用时（ms） */
+  durationMs?: number
 }
 
 export type ChatMessage = UserChatMessage | AssistantChatMessage
@@ -43,6 +51,7 @@ export function createUserMessage(content: string, mode: ChatInputMode): UserCha
     role: 'user',
     content,
     mode,
+    timestamp: new Date().toISOString(),
   }
 }
 

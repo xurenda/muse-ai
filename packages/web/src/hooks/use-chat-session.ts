@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse } from '@muse-ai/shared'
+import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse, TurnTokenUsage } from '@muse-ai/shared'
 import { addTurnToSessionUsage } from '@muse-ai/shared'
 import { checkCliHealth } from '@/api/backend-client'
 import {
@@ -98,6 +98,12 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const [stopping, setStopping] = useState(false)
   const [chatModelDisplay, setChatModelDisplay] = useState<ChatModelResolvedDisplay>(INITIAL_CHAT_MODEL_DISPLAY)
   const [chatContextWindow, setChatContextWindow] = useState<number | null>(null)
+  // streaming 期间累计的真实 token 用量（turn_end 逐轮累加）
+  const [streamingTurnUsage, setStreamingTurnUsage] = useState<TurnTokenUsage | null>(null)
+  const streamingTurnUsageRef = useRef<TurnTokenUsage | null>(null)
+  // agent 开始时间戳（用于实时计算 elapsed）
+  const agentStartedAtRef = useRef<number | null>(null)
+  const [agentStartedAt, setAgentStartedAt] = useState<number | null>(null)
   const modelStrategyPoolsRef = useRef<{ high: string[]; medium: string[]; low: string[] } | null>(null)
   const lastModelResolvedDedupRef = useRef<string | null>(null)
   const sseAbortRef = useRef<AbortController | null>(null)
@@ -301,6 +307,15 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
           id,
           {
             onEvent: event => {
+              if (event.type === 'agent_start') {
+                const now = Date.now()
+                agentStartedAtRef.current = now
+                setAgentStartedAt(now)
+                setStreamingTurnUsage(null)
+                streamingTurnUsageRef.current = null
+                setMessages(prev => applySseEvent(prev, event, sseEventOptions))
+                return
+              }
               if (event.type === 'turn_start') {
                 lastModelResolvedDedupRef.current = null
                 return
@@ -359,6 +374,21 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                         }
                       : prev,
                   )
+                  // 累加到 streaming 实时用量
+                  setStreamingTurnUsage(prev => {
+                    const next = prev
+                      ? {
+                          ...prev,
+                          input: prev.input + turnUsage.input,
+                          output: prev.output + turnUsage.output,
+                          total: prev.total + turnUsage.total,
+                          cacheRead: (prev.cacheRead ?? 0) + (turnUsage.cacheRead ?? 0),
+                          cacheWrite: (prev.cacheWrite ?? 0) + (turnUsage.cacheWrite ?? 0),
+                        }
+                      : turnUsage
+                    streamingTurnUsageRef.current = next
+                    return next
+                  })
                 }
                 if (event.contextUsage) {
                   setSessionSettings(prev => (prev ? { ...prev, contextUsage: event.contextUsage! } : prev))
@@ -367,12 +397,20 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
                   }
                 }
               }
-              setMessages(prev => applySseEvent(prev, event, sseEventOptions))
               if (event.type === 'agent_end') {
+                const durationMs = agentStartedAtRef.current !== null ? Date.now() - agentStartedAtRef.current : undefined
+                const finalUsage = streamingTurnUsageRef.current ?? undefined
+                setMessages(prev => applySseEvent(prev, event, { ...sseEventOptions, turnUsage: finalUsage, durationMs }))
+                setStreamingTurnUsage(null)
+                streamingTurnUsageRef.current = null
+                agentStartedAtRef.current = null
+                setAgentStartedAt(null)
                 setStopping(false)
                 void refreshTreeRef.current(id)
                 void loadSettings(id)
+                return
               }
+              setMessages(prev => applySseEvent(prev, event, sseEventOptions))
             },
             onConnected: () => {
               setSseStatus('connected')
@@ -750,6 +788,8 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     messages,
     streaming,
     canSend,
+    streamingTurnUsage,
+    agentStartedAt,
     canStop,
     stopping,
     deviceUnreachable,

@@ -8,7 +8,7 @@ export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMess
     if (message.role === 'user') {
       // 保留 CLI 侧的 message id，确保 retryFromMessage 等操作能稳定索引
       const userMsg = createUserMessage(message.text, 'prompt')
-      return { ...userMsg, id: message.id }
+      return { ...userMsg, id: message.id, timestamp: message.timestamp }
     }
     const assistant = createAssistantMessage()
     return {
@@ -17,6 +17,9 @@ export function branchMessagesToChat(messages: SessionBranchMessage[]): ChatMess
       blocks: branchBlocksToChatBlocks(message.blocks, message.thinking ?? '', message.text, message.toolCalls),
       error: message.error,
       streaming: false,
+      timestamp: message.timestamp,
+      turnUsage: message.turnUsage,
+      durationMs: message.durationMs,
     }
   })
 }

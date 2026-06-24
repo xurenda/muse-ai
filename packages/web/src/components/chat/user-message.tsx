@@ -2,14 +2,16 @@ import { Copy, Check, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '@/components/ui/icon-button'
+import { formatMessageTime } from '@/lib/format-message-time'
 
 interface UserMessageProps {
   content: string
   modeLabel?: string
+  timestamp?: string
   onEdit?: (text: string) => void
 }
 
-export function UserMessage({ content, modeLabel, onEdit }: UserMessageProps) {
+export function UserMessage({ content, modeLabel, timestamp, onEdit }: UserMessageProps) {
   const { t } = useTranslation('chat')
   const [copied, setCopied] = useState(false)
 
@@ -25,7 +27,8 @@ export function UserMessage({ content, modeLabel, onEdit }: UserMessageProps) {
         {modeLabel ? <p className="mb-1 text-[10px] uppercase tracking-wide opacity-80">{modeLabel}</p> : null}
         <p className="whitespace-pre-wrap break-words">{content}</p>
       </div>
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {timestamp ? <span className="text-xs text-muted-foreground tabular-nums">{formatMessageTime(timestamp)}</span> : null}
         <IconButton type="button" tooltip={t('copy')} aria-label={t('copy')} onClick={() => void handleCopy()}>
           {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         </IconButton>

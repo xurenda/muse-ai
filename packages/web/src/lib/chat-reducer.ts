@@ -1,4 +1,4 @@
-import type { MuseSseEvent } from '@muse-ai/shared'
+import type { MuseSseEvent, TurnTokenUsage } from '@muse-ai/shared'
 import {
   appendTextDelta,
   appendThinkingDelta,
@@ -32,6 +32,10 @@ function findLastAssistantIndex(messages: ChatMessage[]): number {
 export interface ApplySseEventOptions {
   /** agent_end 时收尾仍 running 的 tool */
   stoppedToolMessage?: string
+  /** agent_end 时嵌入的真实 token 用量 */
+  turnUsage?: TurnTokenUsage
+  /** agent_end 时嵌入的用时 ms */
+  durationMs?: number
 }
 
 /** 用户停止或 turn 结束时收尾最后一条 assistant（streaming + running tools） */
@@ -80,6 +84,10 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent, opti
       return updateLastAssistant(messages, m => ({
         ...m,
         streaming: false,
+        timestamp: new Date().toISOString(),
+        turnUsage: options?.turnUsage,
+        // 优先使用 CLI 通过 SSE 下发的精确耗时，回退到 Web 侧计算值
+        durationMs: event.durationMs ?? options?.durationMs,
         blocks: options?.stoppedToolMessage ? finalizeAssistantTurnBlocks(m.blocks, options.stoppedToolMessage) : finalizeOpenThinkingBlocks(m.blocks),
       }))
 
@@ -87,6 +95,7 @@ export function applySseEvent(messages: ChatMessage[], event: MuseSseEvent, opti
       return updateLastAssistant(messages, m => ({
         ...m,
         streaming: false,
+        timestamp: new Date().toISOString(),
         error: event.message,
       }))
 

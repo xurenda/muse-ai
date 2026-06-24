@@ -34,7 +34,7 @@ export const museSseEventSchema = z.discriminatedUnion('type', [
     usage: turnTokenUsageSchema.optional(),
     contextUsage: contextUsageSchema.optional(),
   }),
-  z.object({ type: z.literal('agent_end') }),
+  z.object({ type: z.literal('agent_end'), durationMs: z.number().nonnegative().optional() }),
   z.object({
     type: z.literal('compaction_start'),
     reason: compactionReasonSchema,

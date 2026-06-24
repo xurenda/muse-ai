@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { turnTokenUsageSchema } from './session-token-usage.js'
 
 const sessionTreeNodeBaseSchema = z.object({
   id: z.string(),
@@ -69,6 +70,10 @@ export const sessionBranchMessageSchema = z.object({
   /** LLM / 工具层失败时的可读错误（持久化自 session 树） */
   error: z.string().optional(),
   timestamp: z.string().optional(),
+  /** 本次 agent 回复累计的真实 token 用量 */
+  turnUsage: turnTokenUsageSchema.optional(),
+  /** 本次 agent 回复总用时（ms） */
+  durationMs: z.number().nonnegative().int().optional(),
 })
 
 export type SessionBranchMessage = z.infer<typeof sessionBranchMessageSchema>

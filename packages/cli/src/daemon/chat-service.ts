@@ -349,13 +349,31 @@ export class ChatService {
       }),
     })
 
+    // 记录 agent 开始时间，用于计算用户感知的总耗时
+    let agentStartedAt: number | null = null
+
     const unsubscribeEvents = harness.subscribe(async event => {
       let mapped = mapHarnessEventToSse(event)
-      if (mapped?.type === 'turn_end') {
+      if (mapped?.type === 'agent_start') {
+        agentStartedAt = Date.now()
+      } else if (mapped?.type === 'turn_end') {
         const meta = await this.sessionStore.get(sessionId)
         const contextWindow = meta?.lastResolvedContextWindow ?? null
         const contextUsage = await readSessionContextUsage(piSession, contextWindow)
         mapped = { ...mapped, contextUsage }
+      } else if (mapped?.type === 'agent_end') {
+        // 计算 agent 总耗时，写入 SSE 以供 Web 实时展示
+        const durationMs = agentStartedAt !== null ? Date.now() - agentStartedAt : undefined
+        mapped = { ...mapped, durationMs }
+        // 将耗时持久化到 pi session，供历史记录读取
+        if (durationMs !== undefined) {
+          try {
+            await piSession.appendCustomEntry('muse_turn_stats', { durationMs })
+          } catch {
+            // 持久化失败不影响主流程
+          }
+        }
+        agentStartedAt = null
       }
       if (mapped) {
         await this.eventHub.publish(sessionId, mapped)

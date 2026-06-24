@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { buildSessionContext } from '@earendil-works/pi-agent-core'
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
-import type { SessionBranchBlock, SessionBranchMessage, SessionBranchToolCall, SessionTreeNode } from '@muse-ai/shared'
+import type { SessionBranchBlock, SessionBranchMessage, SessionBranchToolCall, SessionTreeNode, TurnTokenUsage } from '@muse-ai/shared'
 import { extractBranchMessageError } from './assistant-turn-error.js'
+import { extractTurnUsageFromMessage, normalizeTurnTokenUsage } from './session-token-usage.js'
 
 function extractTextContent(content: unknown): string {
   if (typeof content === 'string') return content
@@ -65,6 +66,12 @@ interface AssistantTurnAccum {
   openThinkingBlockIndex: number | null
   openThinkingStartedAtMs: number | null
   lastMessageAtMs: number | null
+  /** turn 开始时间（第一条 assistant message 的时间戳） */
+  firstMessageAtMs: number | null
+  /** 最后一条 assistant entry 的 entry.id（用于查找 muse_turn_stats 自定义 entry） */
+  lastAssistantEntryId: string | null
+  /** 累计的 token 用量 */
+  turnUsage: TurnTokenUsage | undefined
   error?: string
   timestamp?: string
 }
@@ -178,7 +185,8 @@ function touchTurnMessageTime(turn: AssistantTurnAccum, message: AgentMessage): 
   }
 }
 
-function createAssistantTurn(message: Extract<AgentMessage, { role: 'assistant' }>): AssistantTurnAccum {
+function createAssistantTurn(message: Extract<AgentMessage, { role: 'assistant' }>, entryId?: string): AssistantTurnAccum {
+  const messageMs = messageTimestampMs(message)
   const turn: AssistantTurnAccum = {
     id: 'id' in message && typeof message.id === 'string' ? message.id : randomUUID(),
     text: '',
@@ -188,25 +196,47 @@ function createAssistantTurn(message: Extract<AgentMessage, { role: 'assistant' 
     openThinkingBlockIndex: null,
     openThinkingStartedAtMs: null,
     lastMessageAtMs: null,
+    firstMessageAtMs: messageMs ?? null,
+    lastAssistantEntryId: entryId ?? null,
+    turnUsage: extractTurnUsageFromMessage(message),
     error: extractBranchMessageError(message) ?? undefined,
     timestamp: messageTimestamp(message),
   }
   touchTurnMessageTime(turn, message)
-  appendAssistantContent(turn, message.content, messageTimestampMs(message))
+  appendAssistantContent(turn, message.content, messageMs)
   return turn
 }
 
-function mergeAssistantTurn(turn: AssistantTurnAccum, message: Extract<AgentMessage, { role: 'assistant' }>): void {
+function mergeAssistantTurn(turn: AssistantTurnAccum, message: Extract<AgentMessage, { role: 'assistant' }>, entryId?: string): void {
   const messageMs = messageTimestampMs(message)
   if (!assistantMessageStartsWithThinking(message)) {
     finalizeOpenThinkingInTurn(turn, messageMs)
   }
   turn.id = 'id' in message && typeof message.id === 'string' ? message.id : turn.id
+  // 更新最后一条 assistant entry 的 id（用于关联 muse_turn_stats 自定义 entry）
+  if (entryId !== undefined) {
+    turn.lastAssistantEntryId = entryId
+  }
   touchTurnMessageTime(turn, message)
   appendAssistantContent(turn, message.content, messageMs)
   const error = extractBranchMessageError(message)
   if (error) turn.error = error
   turn.timestamp = messageTimestamp(message) ?? turn.timestamp
+  // 累加 token 用量
+  const usage = extractTurnUsageFromMessage(message)
+  if (usage) {
+    const prev = turn.turnUsage
+    turn.turnUsage = prev
+      ? normalizeTurnTokenUsage({
+          input: prev.input + usage.input,
+          output: prev.output + usage.output,
+          cacheRead: (prev.cacheRead ?? 0) + (usage.cacheRead ?? 0),
+          cacheWrite: (prev.cacheWrite ?? 0) + (usage.cacheWrite ?? 0),
+          total: prev.total + usage.total,
+          cost: { total: (prev.costTotal ?? 0) + (usage.costTotal ?? 0) },
+        })
+      : usage
+  }
 }
 
 function applyToolResultToTurn(turn: AssistantTurnAccum, toolCallId: string, result: unknown, isError?: boolean): void {
@@ -235,13 +265,16 @@ function extractThinkingFromBlocks(blocks: SessionBranchBlock[]): string {
     .join('')
 }
 
-function flushAssistantTurn(turn: AssistantTurnAccum | null, result: SessionBranchMessage[]): void {
+function flushAssistantTurn(turn: AssistantTurnAccum | null, result: SessionBranchMessage[], durationMsByLastAssistantEntryId?: Map<string, number>): void {
   if (!turn) return
   finalizeOpenThinkingInTurn(turn, turn.lastMessageAtMs ?? undefined)
   const toolCalls = [...turn.toolCalls.values()]
   const thinking = extractThinkingFromBlocks(turn.blocks)
   const hasContent = turn.text.trim().length > 0 || thinking.trim().length > 0 || toolCalls.length > 0 || turn.error !== undefined
   if (!hasContent) return
+  // 使用 CLI 写入的 muse_turn_stats 精确耗时（agent 全程墙钟）
+  // 通过 lastAssistantEntryId（entry 层 id）查找对应 durationMs
+  const durationMs = turn.lastAssistantEntryId !== null ? durationMsByLastAssistantEntryId?.get(turn.lastAssistantEntryId) : undefined
   result.push({
     id: turn.id,
     role: 'assistant',
@@ -251,6 +284,8 @@ function flushAssistantTurn(turn: AssistantTurnAccum | null, result: SessionBran
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     error: turn.error,
     timestamp: turn.timestamp,
+    turnUsage: turn.turnUsage,
+    durationMs,
   })
 }
 
@@ -543,13 +578,46 @@ function messageText(message: AgentMessage): string {
 }
 
 /** 从 pi buildContext 结果提取当前分支的可展示消息（按 user 轮次合并 assistant + toolResult） */
-export function mapBranchMessages(messages: AgentMessage[]): SessionBranchMessage[] {
+export function mapBranchMessages(messages: AgentMessage[], branchEntries?: SessionTreeEntry[], allEntries?: SessionTreeEntry[]): SessionBranchMessage[] {
+  // 构建 entry.id → durationMs 映射：muse_turn_stats 自定义 entry 记录了 CLI 测量的准确耗时
+  // 其 parentId 指向该轮次最后一条 assistant entry（entry 层 id，非 message.id）
+  const durationMsByLastAssistantEntryId = new Map<string, number>()
+  // entries 中 assistant message 的 entry.id 列表（按出现顺序），用于按位置关联分支内的 assistant message
+  const assistantEntryIds: string[] = []
+
+  // 从 branchEntries 中收集 assistant entry id（位置关联）
+  for (const entry of branchEntries ?? []) {
+    if (entry.type === 'message' && entry.message.role === 'assistant') {
+      assistantEntryIds.push(entry.id)
+    }
+  }
+  // 从全量 entries 中查找 muse_turn_stats（它不在分支路径上，是最后 assistant entry 的子节点）
+  const sourceEntries = allEntries ?? branchEntries ?? []
+  for (const entry of sourceEntries) {
+    if (
+      entry.type === 'custom' &&
+      'customType' in entry &&
+      entry.customType === 'muse_turn_stats' &&
+      entry.parentId !== null &&
+      typeof (entry as { data?: unknown }).data === 'object' &&
+      (entry as { data?: unknown }).data !== null
+    ) {
+      const data = (entry as { data?: Record<string, unknown> }).data
+      const dur = data?.durationMs
+      if (typeof dur === 'number' && dur >= 0) {
+        durationMsByLastAssistantEntryId.set(entry.parentId, dur)
+      }
+    }
+  }
+
   const result: SessionBranchMessage[] = []
   let turn: AssistantTurnAccum | null = null
+  // 跟踪 messages 中 assistant 的出现次数，与 assistantEntryIds 对齐
+  let assistantMessageIdx = 0
 
   for (const message of messages) {
     if (message.role === 'user') {
-      flushAssistantTurn(turn, result)
+      flushAssistantTurn(turn, result, durationMsByLastAssistantEntryId)
       turn = null
       const text = messageText(message)
       if (!text.trim()) continue
@@ -569,15 +637,18 @@ export function mapBranchMessages(messages: AgentMessage[]): SessionBranchMessag
     }
 
     if (message.role === 'assistant') {
+      // 通过 entries 中 assistant 的顺序位置关联 entry.id
+      const entryId = assistantEntryIds[assistantMessageIdx]
+      assistantMessageIdx += 1
       if (!turn) {
-        turn = createAssistantTurn(message)
+        turn = createAssistantTurn(message, entryId)
       } else {
-        mergeAssistantTurn(turn, message)
+        mergeAssistantTurn(turn, message, entryId)
       }
     }
   }
 
-  flushAssistantTurn(turn, result)
+  flushAssistantTurn(turn, result, durationMsByLastAssistantEntryId)
   return result
 }
 
@@ -594,5 +665,8 @@ export async function buildBranchFromSession(
   const branchLeafId = leafId === undefined ? await resolveBranchLeafId(session) : leafId
   const branchEntries = branchLeafId ? await session.getBranch(branchLeafId) : await session.getBranch()
   const context = buildSessionContext(branchEntries)
-  return mapBranchMessages(context.messages)
+  // getBranch 只返回从 leaf 到 root 的路径，muse_turn_stats custom entry 是 leaf 的子节点，
+  // 不在路径上。需要用全量 entries 来查找 custom entries
+  const allEntries = await session.getEntries()
+  return mapBranchMessages(context.messages, branchEntries, allEntries)
 }

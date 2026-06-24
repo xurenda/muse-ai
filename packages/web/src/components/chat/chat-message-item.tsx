@@ -5,6 +5,8 @@ import type { AssistantChatMessage, ChatMessage } from '@/lib/chat-types'
 import { isAssistantMessage } from '@/lib/chat-types'
 import { getAssistantText, hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
 import { groupAssistantBlocks } from '@/lib/group-assistant-blocks'
+import { formatMessageTime } from '@/lib/format-message-time'
+import { formatTurnStats } from '@/lib/format-turn-stats'
 import { AssistantProcessRun } from '@/components/chat/assistant-process-run'
 import { MarkdownContent } from '@/components/chat/markdown-content'
 import { PlanningIndicator } from '@/components/chat/planning-indicator'
@@ -14,6 +16,11 @@ import { IconButton } from '@/components/ui/icon-button'
 interface ChatMessageItemProps {
   message: ChatMessage
   showPlanning?: boolean
+  streaming?: boolean
+  prevUserMessageId?: string
+  prevUserContent?: string
+  onRetry?: (userMessageId: string, text: string) => void
+  onEdit?: (userMessageId: string, text: string) => void
 }
 
 function AssistantContentBlocks({ blocks, streaming }: { blocks: AssistantChatMessage['blocks']; streaming: boolean }) {
@@ -55,25 +62,42 @@ function AssistantMessageItem({ message, showPlanning }: { message: AssistantCha
   const showCopy = !message.streaming && text.trim().length > 0
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-3">
       <AssistantContentBlocks blocks={message.blocks} streaming={message.streaming} />
       {showPlanning ? <PlanningIndicator /> : null}
       {message.error ? <p className="text-sm text-destructive">{message.error}</p> : null}
       {showCopy ? (
-        <div className="flex items-center -mt-3">
+        <div className="group/actions flex items-center gap-1.5">
           <CopyButton text={text} />
+          {message.timestamp ? (
+            <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">
+              {formatMessageTime(message.timestamp)}
+            </span>
+          ) : null}
+          {message.turnUsage && message.durationMs !== undefined ? (
+            <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">
+              {formatTurnStats(message.turnUsage.total, message.durationMs, false)}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>
   )
 }
 
-export function ChatMessageItem({ message, showPlanning }: ChatMessageItemProps) {
+export function ChatMessageItem({ message, showPlanning, onEdit }: ChatMessageItemProps) {
   const { t } = useTranslation('chat')
 
   if (message.role === 'user') {
     const modeLabel = message.mode !== 'prompt' ? t(`mode.${message.mode}`) : undefined
-    return <UserMessage content={message.content} modeLabel={modeLabel} />
+    return (
+      <UserMessage
+        content={message.content}
+        modeLabel={modeLabel}
+        timestamp={message.timestamp}
+        onEdit={onEdit ? text => onEdit(message.id, text) : undefined}
+      />
+    )
   }
 
   return <AssistantMessageItem message={message} showPlanning={showPlanning} />
