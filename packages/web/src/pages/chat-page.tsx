@@ -2,10 +2,12 @@ import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
+import { ChatScrollControls } from '@/components/chat/chat-scroll-controls'
 import { NoDeviceGuide } from '@/components/chat/no-device-guide'
 import { Button } from '@/components/ui/button'
 import { useChatSessionContext } from '@/context/chat-session-context'
 import { useAuth } from '@/hooks/use-auth'
+import { useChatAutoScroll } from '@/hooks/use-chat-auto-scroll'
 import type { StoredDeviceSession } from '@/lib/config'
 import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
 import type { ChatInputMode } from '@/lib/chat-types'
@@ -81,18 +83,32 @@ export function ChatPage() {
     stopGeneration,
     updateSessionSettings,
     startNewSession,
-    messagesEndRef,
   } = useChatSessionContext()
+
+  const { scrollContainerRef, bottomSentinelRef, footerResizeTargetRef, isAtBottom, scrollToBottom, resumeFollowing, scrollToMessage } = useChatAutoScroll({
+    contentDeps: [messages, streaming],
+    resetKey: routeSessionId,
+    streaming,
+  })
 
   const footerKey = 0
   const footerInitialText = undefined
 
   const handleRetry = useCallback(
     (userMessageId: string, text: string) => {
+      resumeFollowing()
       // 重新生成：navigate 到前一个节点，然后发送原文本
       void retryFromMessage(userMessageId, text)
     },
-    [retryFromMessage],
+    [retryFromMessage, resumeFollowing],
+  )
+
+  const handleSend = useCallback(
+    (text: string, mode: ChatInputMode) => {
+      resumeFollowing()
+      void sendMessage(text, mode)
+    },
+    [sendMessage, resumeFollowing],
   )
 
   if (!deviceSession) {
@@ -114,7 +130,7 @@ export function ChatPage() {
   const composerDisabled = !canSend
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-x-clip">
       {status === 'connecting' ? <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">{t('connecting')}</div> : null}
 
       {sendError ? (
@@ -135,13 +151,24 @@ export function ChatPage() {
 
       {showChatContent ? (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
-            <div className="mx-auto flex w-full max-w-3xl flex-col">
-              <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} streaming={streaming} onRetry={handleRetry} />
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-x-clip">
+            <div ref={scrollContainerRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
+              <div className="mx-auto flex w-full max-w-3xl flex-col">
+                <ChatMessageList messages={messages} bottomSentinelRef={bottomSentinelRef} streaming={streaming} onRetry={handleRetry} />
+              </div>
             </div>
+
+            <ChatScrollControls
+              messages={messages}
+              scrollContainerRef={scrollContainerRef}
+              isAtBottom={isAtBottom}
+              resetKey={routeSessionId}
+              onScrollToBottom={scrollToBottom}
+              onScrollToMessage={scrollToMessage}
+            />
           </div>
 
-          <div className="shrink-0 px-page-x pb-panel-y pt-stack">
+          <div ref={footerResizeTargetRef} className="shrink-0 px-page-x pb-panel-y pt-stack">
             <SessionChatFooter
               key={`${routeSessionId}-${footerKey}`}
               deviceSession={deviceSession}
@@ -156,7 +183,7 @@ export function ChatPage() {
                 const result = await updateSessionSettings(patch)
                 return result !== null
               }}
-              onSend={(text, mode) => void sendMessage(text, mode)}
+              onSend={handleSend}
               onStop={() => void stopGeneration()}
             />
           </div>

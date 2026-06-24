@@ -1,16 +1,16 @@
-import { type RefObject } from 'react'
+import { type Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChatMessage } from '@/lib/chat-types'
 import { ChatMessageItem, shouldShowPlanning } from '@/components/chat/chat-message-item'
 
 interface ChatMessageListProps {
   messages: ChatMessage[]
-  messagesEndRef: RefObject<HTMLDivElement | null>
+  bottomSentinelRef: Ref<HTMLDivElement | null>
   streaming: boolean
   onRetry: (userMessageId: string, text: string) => void
 }
 
-export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry }: ChatMessageListProps) {
+export function ChatMessageList({ messages, bottomSentinelRef, streaming, onRetry }: ChatMessageListProps) {
   const { t } = useTranslation('chat')
 
   if (messages.length === 0) {
@@ -30,9 +30,9 @@ export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry }
         const prevUserMessage =
           message.role === 'assistant'
             ? messages
-              .slice(0, index)
-              .reverse()
-              .find(m => m.role === 'user')
+                .slice(0, index)
+                .reverse()
+                .find(m => m.role === 'user')
             : undefined
 
         return (
@@ -47,7 +47,7 @@ export function ChatMessageList({ messages, messagesEndRef, streaming, onRetry }
           />
         )
       })}
-      <div ref={messagesEndRef} aria-hidden />
+      <div ref={bottomSentinelRef} aria-hidden />
     </div>
   )
 }

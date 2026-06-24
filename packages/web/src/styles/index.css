@@ -535,11 +535,17 @@
   box-shadow:
     0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent),
     0 4px 12px color-mix(in oklch, var(--foreground) 4%, transparent);
+  cursor: grab;
+}
+
+.session-tree-flow .react-flow__minimap.session-tree-minimap:active {
+  cursor: grabbing;
 }
 
 .session-tree-flow .session-tree-minimap .react-flow__minimap-svg {
   display: block;
   background: transparent;
+  cursor: inherit;
 }
 
 .session-tree-flow .session-tree-minimap .react-flow__minimap-node {

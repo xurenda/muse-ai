@@ -107,7 +107,6 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const modelStrategyPoolsRef = useRef<{ high: string[]; medium: string[]; low: string[] } | null>(null)
   const lastModelResolvedDedupRef = useRef<string | null>(null)
   const sseAbortRef = useRef<AbortController | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
   const sessionTreeRef = useRef<SessionTreeResponse | null>(null)
   const refreshTreeRef = useRef<(id: string) => Promise<void>>(async () => {})
@@ -203,10 +202,6 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const clearDeviceUnreachableFlag = useCallback(() => {
     deviceWasUnreachableRef.current = false
   }, [])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   const syncChatContextWindow = useCallback((settings: SessionSettingsResponse | null, resolvedModelRef?: string | null) => {
     const fromSettings = settings?.contextUsage?.contextWindow
@@ -809,6 +804,5 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     navigateToEntry,
     forkFromEntry,
     retryConnection,
-    messagesEndRef,
   }
 }

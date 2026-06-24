@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AssistantChatMessage, ChatMessage } from '@/lib/chat-types'
 import { isAssistantMessage } from '@/lib/chat-types'
+import { getChatMessageAnchorId } from '@/lib/chat-question-nav'
 import { getAssistantText, hasAssistantAnswer, hasAssistantThinking, hasAssistantToolCalls } from '@/lib/assistant-message-helpers'
 import { groupAssistantBlocks } from '@/lib/group-assistant-blocks'
 import { formatMessageTime } from '@/lib/format-message-time'
@@ -69,9 +70,7 @@ function AssistantMessageItem({ message, showPlanning }: { message: AssistantCha
         <div className="group/actions flex items-center gap-1.5">
           <CopyButton text={text} />
           {message.turnUsage && message.durationMs !== undefined ? (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {formatTurnStats(message.turnUsage.total, message.durationMs, false)}
-            </span>
+            <span className="text-xs text-muted-foreground tabular-nums">{formatTurnStats(message.turnUsage.total, message.durationMs, false)}</span>
           ) : null}
           {message.timestamp ? (
             <span className="text-xs text-muted-foreground tabular-nums opacity-0 group-hover/actions:opacity-100 transition-opacity">
@@ -90,11 +89,9 @@ export function ChatMessageItem({ message, showPlanning }: ChatMessageItemProps)
   if (message.role === 'user') {
     const modeLabel = message.mode !== 'prompt' ? t(`mode.${message.mode}`) : undefined
     return (
-      <UserMessage
-        content={message.content}
-        modeLabel={modeLabel}
-        timestamp={message.timestamp}
-      />
+      <div id={getChatMessageAnchorId(message.id)} className="scroll-mt-4">
+        <UserMessage content={message.content} modeLabel={modeLabel} timestamp={message.timestamp} />
+      </div>
     )
   }
 
