@@ -1,39 +1,62 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { RightPanelTabType } from '@/constants/right-panel-tabs'
-
-export interface RightPanelTab {
-  id: string
-  type: RightPanelTabType
-}
+import {
+  getAvailableTabTypesForPath,
+  getDefaultTabTypeForPath,
+  getRightPanelRouteKey,
+  type RightPanelRouteKey,
+  type RightPanelTabType,
+} from '@/constants/right-panel-tabs'
+import { clampRightPanelWidth, RIGHT_PANEL_DEFAULT_WIDTH } from '@/constants/sidebar-layout'
 
 interface RightPanelState {
   open: boolean
   fullscreen: boolean
-  tabs: RightPanelTab[]
-  activeTabId: string | null
+  width: number
+  routeKey: RightPanelRouteKey | null
   availableTabTypes: RightPanelTabType[]
+  activeTab: RightPanelTabType | null
+  activeTabByRoute: Partial<Record<RightPanelRouteKey, RightPanelTabType>>
   setOpen: (open: boolean) => void
   setFullscreen: (fullscreen: boolean) => void
   toggleFullscreen: () => void
-  syncRoute: (availableTypes: RightPanelTabType[], defaultTypes: RightPanelTabType[]) => void
-  addTab: (type: RightPanelTabType) => void
-  removeTab: (id: string) => void
-  setActiveTab: (id: string) => void
+  setWidth: (width: number) => void
+  setActiveTab: (type: RightPanelTabType) => void
+  syncRoute: (pathname: string) => void
 }
 
-function createTabId(type: RightPanelTabType): string {
-  return `${type}-${crypto.randomUUID()}`
+function resolveActiveTab(
+  availableTypes: RightPanelTabType[],
+  routeKey: RightPanelRouteKey | null,
+  activeTabByRoute: Partial<Record<RightPanelRouteKey, RightPanelTabType>>,
+  defaultTab: RightPanelTabType | null,
+): RightPanelTabType | null {
+  if (availableTypes.length === 0 || !routeKey) {
+    return null
+  }
+
+  const saved = activeTabByRoute[routeKey]
+  if (saved && availableTypes.includes(saved)) {
+    return saved
+  }
+
+  if (defaultTab && availableTypes.includes(defaultTab)) {
+    return defaultTab
+  }
+
+  return availableTypes[0] ?? null
 }
 
 export const useRightPanelStore = create<RightPanelState>()(
   persist(
     set => ({
-      open: true,
+      open: false,
       fullscreen: false,
-      tabs: [],
-      activeTabId: null,
+      width: RIGHT_PANEL_DEFAULT_WIDTH,
+      routeKey: null,
       availableTabTypes: [],
+      activeTab: null,
+      activeTabByRoute: {},
       setOpen: open =>
         set(state => ({
           open,
@@ -41,50 +64,65 @@ export const useRightPanelStore = create<RightPanelState>()(
         })),
       setFullscreen: fullscreen => set({ fullscreen }),
       toggleFullscreen: () => set(state => ({ fullscreen: !state.fullscreen })),
-      syncRoute: (availableTypes, defaultTypes) => {
+      setWidth: width => set({ width: clampRightPanelWidth(width) }),
+      setActiveTab: type =>
         set(state => {
-          const tabs = state.tabs.filter(tab => availableTypes.includes(tab.type))
-          for (const type of defaultTypes) {
-            if (!tabs.some(tab => tab.type === type)) {
-              tabs.push({ id: createTabId(type), type })
-            }
+          if (!state.routeKey || !state.availableTabTypes.includes(type)) {
+            return state
           }
-          const activeTabId = state.activeTabId && tabs.some(tab => tab.id === state.activeTabId) ? state.activeTabId : (tabs[0]?.id ?? null)
-          return { availableTabTypes: availableTypes, tabs, activeTabId }
-        })
-      },
-      addTab: type => {
-        set(state => {
-          if (!state.availableTabTypes.includes(type)) return state
-          if (state.tabs.some(tab => tab.type === type)) {
-            const existing = state.tabs.find(tab => tab.type === type)
-            return existing ? { activeTabId: existing.id } : state
-          }
-          const tab: RightPanelTab = { id: createTabId(type), type }
+
           return {
-            tabs: [...state.tabs, tab],
-            activeTabId: tab.id,
+            activeTab: type,
+            activeTabByRoute: {
+              ...state.activeTabByRoute,
+              [state.routeKey]: type,
+            },
           }
-        })
-      },
-      removeTab: id => {
+        }),
+      syncRoute: pathname =>
         set(state => {
-          const index = state.tabs.findIndex(tab => tab.id === id)
-          if (index === -1) return state
-          const tabs = state.tabs.filter(tab => tab.id !== id)
-          let activeTabId = state.activeTabId
-          if (activeTabId === id) {
-            const nextTab = tabs[index] ?? tabs[index - 1] ?? null
-            activeTabId = nextTab?.id ?? null
+          const availableTabTypes = getAvailableTabTypesForPath(pathname)
+          const routeKey = getRightPanelRouteKey(pathname)
+          const defaultTab = getDefaultTabTypeForPath(pathname)
+          const hasTabs = availableTabTypes.length > 0
+
+          const activeTab = resolveActiveTab(availableTabTypes, routeKey, state.activeTabByRoute, defaultTab)
+
+          let open = state.open
+          if (!hasTabs) {
+            open = false
           }
-          return { tabs, activeTabId }
-        })
-      },
-      setActiveTab: id => set({ activeTabId: id }),
+
+          const activeTabByRoute =
+            activeTab && routeKey
+              ? {
+                  ...state.activeTabByRoute,
+                  [routeKey]: activeTab,
+                }
+              : state.activeTabByRoute
+
+          return {
+            routeKey,
+            availableTabTypes,
+            activeTab,
+            activeTabByRoute,
+            open,
+            fullscreen: open ? state.fullscreen : false,
+          }
+        }),
     }),
     {
-      name: 'muse-ai:right-panel',
-      partialize: state => ({ open: state.open }),
+      name: 'muse.rightPanel',
+      partialize: state => ({
+        open: state.open,
+        width: state.width,
+        activeTabByRoute: state.activeTabByRoute,
+      }),
+      onRehydrateStorage: () => state => {
+        if (state) {
+          state.width = clampRightPanelWidth(state.width)
+        }
+      },
     },
   ),
 )

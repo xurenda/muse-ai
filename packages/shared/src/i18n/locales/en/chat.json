@@ -178,7 +178,7 @@
   "llmInspect": {
     "loading": "Loading…",
     "empty": "No LLM calls captured yet",
-    "requestTitle": "Request ({{task}})",
+    "requestTitle": "Request",
     "responseTitle": "Response"
   }
 }

@@ -40,13 +40,10 @@
     "logout": "Log out"
   },
   "rightPanel": {
-    "empty": "Click + to add a panel",
-    "addTab": "Add panel",
-    "closeTab": "Close panel",
-    "noAddableTabs": "No panels available on this page",
+    "loading": "Loading…",
     "tabs": {
       "sessionTree": "Session tree",
-      "llmInspect": "Inspect"
+      "llmInspect": "LLM review"
     }
   },
   "statusBar": {

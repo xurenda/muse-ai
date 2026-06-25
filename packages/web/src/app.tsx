@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/use-auth'
 import { AppLayout } from '@/layouts/app-layout'
+import { ChatLayout } from '@/layouts/chat-layout'
 import { SettingsLayout } from '@/layouts/settings-layout'
 import { AgentsPage } from '@/pages/agents-page'
 import { ChatPage } from '@/pages/chat-page'
@@ -23,8 +24,10 @@ export function App() {
 
         <Route element={<ProtectedLayout />}>
           <Route element={<AppLayout />}>
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:sessionId" element={<ChatPage />} />
+            <Route element={<ChatLayout />}>
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/chat/:sessionId" element={<ChatPage />} />
+            </Route>
             <Route path="/devices" element={<DevicesPage />} />
             <Route path="/agents" element={<AgentsPage />} />
             <Route path="/settings" element={<SettingsLayout />}>

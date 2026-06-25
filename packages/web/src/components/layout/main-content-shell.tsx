@@ -1,18 +1,12 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Group, Panel, usePanelRef, type PanelImperativeHandle } from 'react-resizable-panels'
 import { Outlet } from 'react-router-dom'
 import { MainHeader } from '@/components/layout/main-header'
 import { RightPanel } from '@/components/layout/right-panel/right-panel'
 import { SidebarResizeHandle } from '@/components/layout/sidebar-resize-handle'
-import {
-  MAIN_CONTENT_PANEL_ID,
-  MAIN_MIN_WIDTH,
-  RIGHT_PANEL_DEFAULT_WIDTH,
-  RIGHT_PANEL_ID,
-  RIGHT_PANEL_MAX_WIDTH,
-  RIGHT_PANEL_MIN_WIDTH,
-} from '@/constants/sidebar-layout'
+import { MAIN_CONTENT_PANEL_ID, MAIN_MIN_WIDTH, RIGHT_PANEL_ID, RIGHT_PANEL_MAX_WIDTH, RIGHT_PANEL_MIN_WIDTH } from '@/constants/sidebar-layout'
 import { useRightPanelRoute } from '@/hooks/use-right-panel-route'
+import { persistPanelLayout } from '@/lib/panel-resize'
 import { useRightPanelStore } from '@/stores/right-panel'
 
 interface MainContentShellProps {
@@ -24,19 +18,23 @@ interface PanelLike {
   collapse: () => void
   expand: () => void
   isCollapsed: () => boolean
+  resize: (size: number) => void
 }
 
-function setPanelCollapsed(panel: PanelLike | null, collapsed: boolean): boolean {
-  if (!panel) return false
+function syncPanelOpen(panel: PanelLike | null, open: boolean, width: number): void {
+  if (!panel) return
   try {
-    if (collapsed) {
+    if (!open) {
       if (!panel.isCollapsed()) panel.collapse()
-    } else if (panel.isCollapsed()) {
-      panel.expand()
+      return
     }
-    return true
+
+    if (panel.isCollapsed()) {
+      panel.expand()
+      panel.resize(width)
+    }
   } catch {
-    return false
+    // Panel 尚未就绪时忽略
   }
 }
 
@@ -44,36 +42,37 @@ export function MainContentShell({ sidebarOpen, onSidebarToggle }: MainContentSh
   useRightPanelRoute()
 
   const rightPanelRef = usePanelRef()
+  const skipRightPanelLayoutPersistRef = useRef(true)
+  const [rightPanelDefaultWidth] = useState(() => useRightPanelStore.getState().width)
   const rightPanelOpen = useRightPanelStore(state => state.open)
   const rightPanelFullscreen = useRightPanelStore(state => state.fullscreen)
   const setRightPanelOpen = useRightPanelStore(state => state.setOpen)
+  const setRightPanelWidth = useRightPanelStore(state => state.setWidth)
+  const skipInitialOpenSyncRef = useRef(true)
 
   useEffect(() => {
-    const panel = rightPanelRef.current as PanelImperativeHandle | null
-    const targetCollapsed = !rightPanelOpen
+    if (skipInitialOpenSyncRef.current) {
+      skipInitialOpenSyncRef.current = false
+      return
+    }
 
-    if (setPanelCollapsed(panel, targetCollapsed)) return
+    syncPanelOpen(rightPanelRef.current as PanelImperativeHandle | null, rightPanelOpen && !rightPanelFullscreen, useRightPanelStore.getState().width)
+  }, [rightPanelOpen, rightPanelFullscreen, rightPanelRef])
 
-    const frameId = requestAnimationFrame(() => {
-      setPanelCollapsed(rightPanelRef.current as PanelImperativeHandle | null, targetCollapsed)
+  const handleRightPanelLayoutChanged = useCallback(() => {
+    persistPanelLayout(skipRightPanelLayoutPersistRef, rightPanelRef.current, {
+      setOpen: setRightPanelOpen,
+      setWidth: setRightPanelWidth,
+      shouldSkip: () => useRightPanelStore.getState().fullscreen,
     })
-
-    return () => cancelAnimationFrame(frameId)
-  }, [rightPanelOpen, rightPanelRef])
-
-  const handleRightPanelResize = useCallback(
-    (size: { inPixels: number }) => {
-      if (useRightPanelStore.getState().fullscreen) return
-      setRightPanelOpen(size.inPixels > 0)
-    },
-    [setRightPanelOpen],
-  )
+  }, [rightPanelRef, setRightPanelOpen, setRightPanelWidth])
 
   const showRightPanelOverlay = rightPanelOpen && rightPanelFullscreen
+  const showRightPanel = rightPanelOpen && !rightPanelFullscreen
 
   return (
     <div className="relative h-full min-h-0">
-      <Group orientation="horizontal" className="h-full min-h-0">
+      <Group orientation="horizontal" className="h-full min-h-0" onLayoutChanged={handleRightPanelLayoutChanged}>
         <Panel id={MAIN_CONTENT_PANEL_ID} minSize={MAIN_MIN_WIDTH} className="flex min-h-0 min-w-0 flex-col">
           <div className="relative flex min-h-0 flex-1 flex-col">
             <MainHeader sidebarOpen={sidebarOpen} onSidebarToggle={onSidebarToggle} />
@@ -83,19 +82,18 @@ export function MainContentShell({ sidebarOpen, onSidebarToggle }: MainContentSh
           </div>
         </Panel>
 
-        <SidebarResizeHandle disabled={!rightPanelOpen || rightPanelFullscreen} />
+        <SidebarResizeHandle disabled={!showRightPanel} />
         <Panel
           id={RIGHT_PANEL_ID}
           panelRef={rightPanelRef}
-          defaultSize={rightPanelOpen ? RIGHT_PANEL_DEFAULT_WIDTH : 0}
+          defaultSize={showRightPanel ? rightPanelDefaultWidth : 0}
           minSize={RIGHT_PANEL_MIN_WIDTH}
           maxSize={RIGHT_PANEL_MAX_WIDTH}
           collapsible
           collapsedSize={0}
           className="flex min-h-0 flex-col bg-background"
-          onResize={handleRightPanelResize}
         >
-          {rightPanelOpen && !rightPanelFullscreen ? <RightPanel /> : null}
+          {showRightPanel ? <RightPanel /> : null}
         </Panel>
       </Group>
 

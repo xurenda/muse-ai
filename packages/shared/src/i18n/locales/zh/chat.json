@@ -129,7 +129,7 @@
   },
   "sessionListTitle": "会话",
   "sessionListEmpty": "暂无会话",
-  "sessionTreeTitle": "Session 树",
+  "sessionTreeTitle": "会话树",
   "sessionTreeHint": "点击轮次节点切换分支；悬停节点可 Fork",
   "sessionTreeEmpty": "暂无树节点",
   "sessionTreeZoomIn": "放大",
@@ -178,7 +178,7 @@
   "llmInspect": {
     "loading": "加载中…",
     "empty": "尚无 LLM 调用记录",
-    "requestTitle": "请求（{{task}}）",
+    "requestTitle": "请求",
     "responseTitle": "响应"
   }
 }

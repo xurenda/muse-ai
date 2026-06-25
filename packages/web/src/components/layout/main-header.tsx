@@ -10,6 +10,7 @@ interface MainHeaderProps {
 
 export function MainHeader({ sidebarOpen, onSidebarToggle }: MainHeaderProps) {
   const rightPanelOpen = useRightPanelStore(state => state.open)
+  const hasRightPanelTabs = useRightPanelStore(state => state.availableTabTypes.length > 0)
   const setRightPanelOpen = useRightPanelStore(state => state.setOpen)
 
   return (
@@ -18,7 +19,7 @@ export function MainHeader({ sidebarOpen, onSidebarToggle }: MainHeaderProps) {
         {!sidebarOpen ? <SidebarToggle open={false} onToggle={onSidebarToggle} /> : null}
       </div>
 
-      {!rightPanelOpen ? (
+      {!rightPanelOpen && hasRightPanelTabs ? (
         <div className="app-region-no-drag pointer-events-auto">
           <RightPanelToggle open={false} onToggle={() => setRightPanelOpen(true)} />
         </div>

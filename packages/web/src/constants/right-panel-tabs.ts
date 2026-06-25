@@ -1,7 +1,9 @@
-import { GitBranch, ScanSearch, type LucideIcon } from 'lucide-react'
+import { Braces, GitBranch, type LucideIcon } from 'lucide-react'
 import { matchPath } from 'react-router-dom'
 
 export type RightPanelTabType = 'session-tree' | 'llm-inspect'
+
+export type RightPanelRouteKey = 'chat'
 
 export interface RightPanelTabDefinition {
   type: RightPanelTabType
@@ -18,8 +20,15 @@ export const RIGHT_PANEL_TAB_DEFINITIONS: Record<RightPanelTabType, RightPanelTa
   'llm-inspect': {
     type: 'llm-inspect',
     labelKey: 'rightPanel.tabs.llmInspect',
-    icon: ScanSearch,
+    icon: Braces,
   },
+}
+
+export function getRightPanelRouteKey(pathname: string): RightPanelRouteKey | null {
+  if (matchPath('/chat/:sessionId', pathname)) {
+    return 'chat'
+  }
+  return null
 }
 
 export function getAvailableTabTypesForPath(pathname: string): RightPanelTabType[] {
@@ -29,9 +38,9 @@ export function getAvailableTabTypesForPath(pathname: string): RightPanelTabType
   return []
 }
 
-export function getDefaultTabTypesForPath(pathname: string): RightPanelTabType[] {
+export function getDefaultTabTypeForPath(pathname: string): RightPanelTabType | null {
   if (matchPath('/chat/:sessionId', pathname)) {
-    return ['session-tree']
+    return 'session-tree'
   }
-  return []
+  return null
 }

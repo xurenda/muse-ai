@@ -29,8 +29,8 @@
     "sidebarToggle": "显示/隐藏边栏",
     "sidebarShow": "显示边栏",
     "sidebarHide": "隐藏边栏",
-    "sessionTreeToggle": "切换 Session 树",
-    "sessionTreeFullscreen": "全屏展开 Session 树",
+    "sessionTreeToggle": "切换会话树",
+    "sessionTreeFullscreen": "全屏展开会话树",
     "sessionTreeExitFullscreen": "退出全屏",
     "rightPanelToggle": "显示/隐藏面板",
     "rightPanelShow": "显示面板",
@@ -44,13 +44,10 @@
     "logout": "退出登录"
   },
   "rightPanel": {
-    "empty": "点击 + 添加面板",
-    "addTab": "添加面板",
-    "closeTab": "关闭面板",
-    "noAddableTabs": "当前页面暂无可添加的面板",
+    "loading": "加载中…",
     "tabs": {
-      "sessionTree": "Session 树",
-      "llmInspect": "检查"
+      "sessionTree": "会话树",
+      "llmInspect": "LLM 审查"
     }
   },
   "statusBar": {
