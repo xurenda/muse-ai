@@ -416,11 +416,11 @@ _（阶段 7 全部子阶段完成后，在文首填完成日期与 Commit。）
 | 7.2 | Agent 回复中 **Enter**                                      | steer 打断/改道生效                                                          | ✅   |
 | 7.2 | Agent 回复中 **Shift+Enter**                                | follow_up 排队生效                                                           | ✅   |
 | 7.2 | idle 时 Enter                                               | 正常 prompt，不误 steer                                                      | ✅   |
-| 7.3 | Session 栏「压缩上下文」                                    | compact 中 disabled；完成后消息变短 + toast                                  | ⬜   |
-| 7.3 | 长对话 / 真实 overflow                                      | 自动 compact + 提示（或 SSE error）                                          | ⬜   |
-| 7.4 | 多轮对话                                                    | ChatSessionBar footer token 累计随轮次增加                                   | ⬜   |
-| 7.4 | 刷新页 / 重启 CLI                                           | footer 与 JSONL 汇总一致                                                     | ⬜   |
-| 7.5 | 按 [development-guide.md](../development-guide.md) 从零启动 | 新 clone 可跟文档跑通三进程                                                  | ⬜   |
+| 7.3 | Session 栏「压缩上下文」                                    | compact 中 disabled；完成后消息变短 + toast                                  | ✅   |
+| 7.3 | 长对话 / 真实 overflow                                      | 自动 compact + 提示（或 SSE error）                                          | ✅   |
+| 7.4 | 多轮对话                                                    | ChatSessionBar footer token 累计随轮次增加                                   | ✅   |
+| 7.4 | 刷新页 / 重启 CLI                                           | footer 与 JSONL 汇总一致                                                     | ✅   |
+| 7.5 | 按 [development-guide.md](../development-guide.md) 从零启动 | 新 clone 可跟文档跑通三进程                                                  | ✅   |
 | 7.5 | LAN IP + CORS（可选）                                       | endpoint 为 LAN IP 非 `127.0.0.1`；Web 可聊天                                | ⬜   |
 
 ### C. 连续自用（阶段总目标）
@@ -458,8 +458,8 @@ _（阶段 7 全部子阶段完成后，在文首填完成日期与 Commit。）
 
 - [x] 7.1–7.5 子阶段任务清单完成
 - [x] **A** 自动化验收通过
-- [ ] **B** 手动联调关键路径通过（至少 7.1 + 7.2 + 7.3 + 7.4 同机；7.5 文档可走通）
-- [ ] **C** 连续自用 3–5 天无 P0 blocker
+- [x] **B** 手动联调关键路径通过（至少 7.1 + 7.2 + 7.3 + 7.4 同机；7.5 文档可走通）
+- [x] **C** 连续自用 3–5 天无 P0 blocker
 - [ ] **E** 文档与 Git 归档完成
 
 **关闭阶段 7 后**：进入 [v0.2](../roadmap.md#v02第二期) 规划（市场、附件、记忆 v1 等）。

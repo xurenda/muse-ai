@@ -4,7 +4,7 @@
 
 产品背景与架构见 [`docs/`](./docs/README.md)。
 
-当前阶段进度见 [`docs/current-phase.md`](./docs/current-phase.md)。**进行任一阶段时，在此期间有什么问题，我们都可以进行讨论**——实现前优先阅读对应 `docs/v0.1/phase-N.md`。
+当前阶段进度见 [`docs/current-phase.md`](./docs/current-phase.md)。**进行新版本开发时**，实现前优先阅读 [`docs/releases/v0.1.md`](./docs/releases/v0.1.md)（已交付基线）、[`docs/architecture.md`](./docs/architecture.md) 与 [`docs/roadmap.md`](./docs/roadmap.md) 对应章节。
 
 ---
 

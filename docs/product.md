@@ -103,10 +103,12 @@ Agent（运行实例）
 | [SkillOpt](https://github.com/microsoft/SkillOpt)           | Skill 文档验证门控式优化                                 | 第一期不做                    |
 | [Thought-Retriever](https://arxiv.org/abs/2604.12231)       | 跨会话检索推理摘要                                       | 第一期不做                    |
 
-## 第一期成功标准
+## 第一期成功标准（v0.1 已达成）
 
-1. `npm i -g @muse-ai/cli && muse login && muse start` 能跑起来
+1. `muse login && muse start` 能跑起来（CLI 本地开发或全局安装）
 2. Web 直连 CLI（SSE）完成对话，流式体验流畅
 3. 可组装 Agent（选 Persona + Skills），切换后行为明显不同
 4. Session 可分叉，重启 CLI 后会话仍在
 5. API Key 只配在 Backend Web 设置页，CLI 本地无 Key
+
+交付详情见 [releases/v0.1.md](./releases/v0.1.md)。

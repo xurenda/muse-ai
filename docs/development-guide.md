@@ -1,6 +1,6 @@
 # 开发指南
 
-面向在本仓库联调 MuseAI v0.1 的贡献者与自用场景。架构背景见 [architecture.md](./architecture.md)；阶段交付见 [v0.1/](./v0.1/README.md)。
+面向在本仓库联调 MuseAI 的贡献者与自用场景。架构背景见 [architecture.md](./architecture.md)；v0.1 已交付能力见 [releases/v0.1.md](./releases/v0.1.md)。
 
 ## 环境要求
 
@@ -251,7 +251,7 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 | 发消息 401                        | 未 pair 或 device token 失效                  | `pnpm muse pair <码>`；Web 重新选设备                   |
 | Provider 报错                     | Server 未配置 API Key                         | Web「Provider 设置」                                    |
 
-断线重连、Steer、Compact、Token 统计等行为见 [phase-7.md](./v0.1/phase-7.md)。
+断线重连、Steer、Compact、用量面板等行为见 [releases/v0.1.md](./releases/v0.1.md) 与 [architecture.md](./architecture.md)。
 
 ## 测试与质量
 
@@ -270,10 +270,10 @@ pnpm --filter @muse-ai/cli build
 
 ## 相关文档
 
-| 文档                                   | 说明                       |
-| -------------------------------------- | -------------------------- |
-| [README.md](../README.md)              | 快速开始                   |
-| [architecture.md](./architecture.md)   | 三层架构与存储             |
-| [protocols.md](./protocols.md)         | REST / SSE 契约            |
-| [current-phase.md](./current-phase.md) | 当前阶段进度               |
-| [v0.1 阶段文档](./v0.1/README.md)      | phase-0 ~ phase-7 交付记录 |
+| 文档                                   | 说明                |
+| -------------------------------------- | ------------------- |
+| [README.md](../README.md)              | 快速开始            |
+| [architecture.md](./architecture.md)   | 三层架构与存储      |
+| [protocols.md](./protocols.md)         | REST / SSE 契约     |
+| [releases/v0.1.md](./releases/v0.1.md) | v0.1 产品线交付说明 |
+| [current-phase.md](./current-phase.md) | 当前版本快照        |
