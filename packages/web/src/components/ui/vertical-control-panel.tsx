@@ -9,13 +9,17 @@ interface VerticalControlPanelProps {
 
 /** 竖向工具条外壳，与 session 树 Flow Controls 视觉一致 */
 export function VerticalControlPanel({ children, className }: VerticalControlPanelProps) {
-  return <div className={cn('flex flex-col overflow-hidden rounded-md border border-border bg-white shadow-sm', className)}>{children}</div>
+  return (
+    <div className={cn('flex flex-col overflow-hidden rounded-md border border-popover-border bg-popover text-popover-foreground shadow-popover', className)}>
+      {children}
+    </div>
+  )
 }
 
 /** 竖向工具条按钮共用样式 */
 export function verticalControlButtonClassName({ isFirst = false, className }: { isFirst?: boolean; className?: string } = {}) {
   return cn(
-    'flex size-7 cursor-pointer items-center justify-center bg-white text-foreground transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40',
+    'flex size-7 cursor-pointer items-center justify-center bg-transparent text-foreground transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40',
     !isFirst && 'border-t border-border',
     className,
   )

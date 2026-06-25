@@ -9,83 +9,94 @@
  * 组件通过 Tailwind 类名引用，如 bg-background、text-muted-foreground
  */
 :root {
+  /* 页面主底色与默认正文色（body、主内容区）→ bg-background / text-foreground */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
 
+  /* 品牌主色：主按钮、链接、进度条高亮等 → bg-primary / text-primary-foreground */
   --primary: oklch(0.488 0.17 252);
   --primary-foreground: oklch(0.985 0 0);
 
+  /* 弱化背景与次要文字：占位、说明、禁用态 → bg-muted / text-muted-foreground */
   --muted: oklch(0.965 0 0);
   --muted-foreground: oklch(0.556 0 0);
 
+  /* 悬停/选中时的浅底与对应文字（菜单项、列表行）→ bg-accent / text-accent-foreground */
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
 
+  /* 卡片/独立面板底色与文字 → bg-card / text-card-foreground */
   --card: oklch(0.985 0 0);
   --card-foreground: oklch(0.145 0 0);
 
+  /* 危险操作与错误提示 → bg-destructive / text-destructive-foreground */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
 
+  /* 成功状态 → bg-success / text-success-foreground */
   --success: oklch(0.527 0.154 150.069);
   --success-foreground: oklch(0.985 0 0);
 
+  /* 表单控件：输入框底色、聚焦环、通用分割线 → bg-input / ring-ring / border-border */
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --border: oklch(0.922 0 0);
 
+  /* 浮层（下拉、对话框 ui-popover-panel / ui-dialog）：底、字、边、阴影 */
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0 0);
   --popover-border: oklch(0.9 0 0);
   --popover-shadow: 0 4px 16px oklch(0.15 0 0 / 0.08);
 
+  /* 左侧会话栏：底、字、选中/悬停项、分隔线 → bg-sidebar 等 */
   --sidebar: oklch(0.975 0.005 260);
   --sidebar-foreground: oklch(0.32 0.01 260);
   --sidebar-accent: oklch(0.94 0.02 252);
   --sidebar-accent-foreground: oklch(0.28 0.03 252);
   --sidebar-border: oklch(0.91 0.01 260);
 
+  /* 自定义滚动条滑块与轨道（全局 scrollbar 样式） */
   --scrollbar-thumb: oklch(0.708 0 0 / 0.45);
   --scrollbar-thumb-hover: oklch(0.556 0 0 / 0.65);
   --scrollbar-track: transparent;
 
-  /* --- Spacing scale --- */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
+  /* --- 间距刻度（原始 rem 值，语义间距均引用此处）--- */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
 
-  /* --- Semantic spacing（换肤时可独立调整）--- */
-  --padding-menu-x: var(--space-3);
-  --padding-menu-y: var(--space-2);
-  --gap-menu: var(--space-2);
-  --padding-popover: var(--space-1);
-  --padding-field-x: var(--space-2);
-  --padding-field-y: var(--space-2);
-  --padding-panel-x: var(--space-2);
-  --padding-panel-y: var(--space-3);
-  --padding-page-x: var(--space-6);
-  --padding-page-y: var(--space-8);
-  --gap-stack-sm: var(--space-1);
-  --gap-stack: var(--space-2);
-  --gap-stack-lg: var(--space-4);
-  --gap-inline: var(--space-2);
-  --gap-inline-sm: var(--space-1);
+  /* --- 语义间距（映射到 Tailwind：px-menu-x、gap-stack 等；换肤时可单独微调）--- */
+  --padding-menu-x: var(--space-3); /* 菜单项、ui-menu-item 水平内边距 */
+  --padding-menu-y: var(--space-2); /* 菜单项、工具条行垂直内边距 */
+  --gap-menu: var(--space-2); /* 菜单内相邻项间距（预留） */
+  --padding-popover: var(--space-1); /* ui-popover-list 外层垂直留白 */
+  --padding-field-x: var(--space-2); /* Input、chip 水平内边距 → px-field-x */
+  --padding-field-y: var(--space-2); /* Input 垂直内边距 → py-field-y */
+  --padding-panel-x: var(--space-2); /* 侧栏区块、浮层列表水平内边距 → px-panel-x */
+  --padding-panel-y: var(--space-3); /* 侧栏区块垂直内边距 → pb-panel-y */
+  --padding-page-x: var(--space-6); /* 设置页等页面水平边距 → px-page-x */
+  --padding-page-y: var(--space-8); /* 页面上下边距 → py-page-y */
+  --gap-stack-sm: var(--space-1); /* 紧凑纵向列表（ui-popover-list、侧栏列表）→ gap-stack-sm */
+  --gap-stack: var(--space-2); /* 默认纵向堆叠间距 → gap-stack */
+  --gap-stack-lg: var(--space-4); /* 页面级区块间距 → gap-stack-lg */
+  --gap-inline: var(--space-2); /* 行内图标+文字、按钮组 → gap-inline */
+  --gap-inline-sm: var(--space-1); /* 更紧的行内间距 → gap-inline-sm */
 
-  /* --- Radius --- */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 0.75rem;
-  /* 交互控件（菜单项、发送按钮、chip）统一圆角 */
+  /* --- 圆角刻度 → rounded-sm / md / lg / xl --- */
+  --radius-sm: 0.375rem; /* 6px，小标签、徽标 */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px，浮窗外壳 ui-popover-panel */
+  --radius-xl: 0.75rem; /* 12px，大卡片 ui-surface、流光边框 */
+  /* 可点击控件统一圆角 → rounded-control（菜单项、发送按钮、chip） */
   --radius-control: var(--radius-md);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.2 0 0);
   --foreground: oklch(0.985 0 0);
   --primary: oklch(0.62 0.17 252);
   --primary-foreground: oklch(0.985 0 0);
@@ -106,11 +117,11 @@
   --popover-foreground: oklch(0.985 0 0);
   --popover-border: oklch(0.32 0 0);
   --popover-shadow: 0 4px 16px oklch(0 0 0 / 0.35);
-  --sidebar: oklch(0.18 0.01 260);
-  --sidebar-foreground: oklch(0.88 0.01 260);
-  --sidebar-accent: oklch(0.26 0.03 252);
-  --sidebar-accent-foreground: oklch(0.95 0.02 252);
-  --sidebar-border: oklch(0.28 0.01 260);
+  --sidebar: oklch(0.19 0.006 252);
+  --sidebar-foreground: oklch(0.78 0.012 252);
+  --sidebar-accent: oklch(0.25 0.035 252);
+  --sidebar-accent-foreground: oklch(0.96 0.015 252);
+  --sidebar-border: oklch(0.27 0.01 252);
   --scrollbar-thumb: oklch(0.708 0 0 / 0.35);
   --scrollbar-thumb-hover: oklch(0.82 0 0 / 0.5);
   --scrollbar-track: transparent;
