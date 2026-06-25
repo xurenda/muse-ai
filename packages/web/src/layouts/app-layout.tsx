@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Group, Panel, usePanelRef } from 'react-resizable-panels'
+import { Group, Panel, usePanelRef, type PanelSize } from 'react-resizable-panels'
 import { useLocation } from 'react-router-dom'
 import { DeviceStatusBar } from '@/components/layout/device-status-bar'
 import { DeviceStatusController } from '@/components/layout/device-status-controller'
@@ -10,7 +10,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { appSidebarItems } from '@/constants/app-sidebar'
 import { MAIN_MIN_WIDTH, MAIN_PANEL_ID, SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_PANEL_ID } from '@/constants/sidebar-layout'
 import { ChatSessionProvider } from '@/context/chat-session-context'
-import { persistPanelLayout } from '@/lib/panel-resize'
+import { persistPanelLayout, syncPanelOpenFromResize } from '@/lib/panel-resize'
 import { useSidebarStore } from '@/stores/sidebar'
 
 function MainPanelContent() {
@@ -40,10 +40,16 @@ function MainPanelContent() {
 
   const handleSidebarLayoutChanged = useCallback(() => {
     persistPanelLayout(skipSidebarLayoutPersistRef, sidebarPanelRef.current, {
-      setOpen: setSidebarOpen,
       setWidth: setSidebarWidth,
     })
-  }, [setSidebarOpen, setSidebarWidth, sidebarPanelRef])
+  }, [setSidebarWidth, sidebarPanelRef])
+
+  const handleSidebarResize = useCallback(
+    (panelSize: PanelSize, _id: string | number | undefined, prevPanelSize: PanelSize | undefined) => {
+      syncPanelOpenFromResize(panelSize, prevPanelSize, setSidebarOpen)
+    },
+    [setSidebarOpen],
+  )
 
   return (
     <Group orientation="horizontal" className="h-full min-h-0" onLayoutChanged={handleSidebarLayoutChanged}>
@@ -56,6 +62,7 @@ function MainPanelContent() {
         collapsible
         collapsedSize={0}
         className="flex h-full min-h-0 flex-col bg-sidebar"
+        onResize={handleSidebarResize}
       >
         {isSettingsRoute ? (
           <SettingsSidebar open={sidebarOpen} onToggle={handleSidebarToggle} />

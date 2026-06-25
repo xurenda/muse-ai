@@ -1,7 +1,6 @@
-import type { PanelImperativeHandle } from 'react-resizable-panels'
+import type { PanelImperativeHandle, PanelSize } from 'react-resizable-panels'
 
 interface PersistPanelLayoutOptions {
-  setOpen: (open: boolean) => void
   setWidth: (width: number) => void
   shouldSkip?: () => boolean
 }
@@ -22,11 +21,18 @@ export function persistPanelLayout(skipInitialLayoutRef: { current: boolean }, p
   }
 
   const { inPixels } = panel.getSize()
-  if (panel.isCollapsed() || inPixels <= 0) {
-    options.setOpen(false)
+  if (inPixels > 0) {
+    options.setWidth(inPixels)
+  }
+}
+
+/** 拖拽收拢时同步 open 状态；忽略挂载时的初始 onResize */
+export function syncPanelOpenFromResize(panelSize: PanelSize, prevPanelSize: PanelSize | undefined, setOpen: (open: boolean) => void): void {
+  if (prevPanelSize === undefined) {
     return
   }
 
-  options.setOpen(true)
-  options.setWidth(inPixels)
+  if (panelSize.inPixels <= 0) {
+    setOpen(false)
+  }
 }
