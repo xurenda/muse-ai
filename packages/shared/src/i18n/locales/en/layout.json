@@ -45,7 +45,8 @@
     "closeTab": "Close panel",
     "noAddableTabs": "No panels available on this page",
     "tabs": {
-      "sessionTree": "Session tree"
+      "sessionTree": "Session tree",
+      "llmInspect": "Inspect"
     }
   },
   "statusBar": {

@@ -29,6 +29,8 @@ import { buildCliEndpoint } from '../backend/client.js'
 import { startDeviceRegistryHeartbeat } from './heartbeat.js'
 import type { CliDaemonDeps } from './deps.js'
 import { allToolNames } from '@/tools/index.js'
+import { computeSessionLlmInspectETag, matchesIfNoneMatch } from '@/llm-inspect/llm-inspect-etag.js'
+import { getSessionLlmInspect, deleteSessionLlmInspect } from '@/llm-inspect/llm-inspect-store.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -47,7 +49,8 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     cors({
       origin: config.corsOrigins,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization'],
+      allowHeaders: ['Content-Type', 'Authorization', 'If-None-Match'],
+      exposeHeaders: ['ETag'],
     }),
   )
 
@@ -183,6 +186,7 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     if (!deleted) {
       return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
     }
+    await deleteSessionLlmInspect(sessionId)
     deps.chatService.evictRuntime(sessionId)
     await publishSessionRegistryChanged(deps.deviceEventHub, 'deleted')
     return c.json({ deleted: true, sessionId })
@@ -252,6 +256,28 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
       }
       throw error
     }
+  })
+
+  app.get('/sessions/:sessionId/llm-inspect', requireAuth, async c => {
+    const sessionId = c.req.param('sessionId')
+    if (!isUuid(sessionId)) {
+      return c.json({ error: 'invalid_session_id' }, 400)
+    }
+
+    const session = await deps.sessionStore.get(sessionId)
+    if (!session) {
+      return c.json({ error: 'session_not_found', message: `Session 不存在: ${sessionId}` }, 404)
+    }
+
+    const body = await getSessionLlmInspect(sessionId)
+    const etag = computeSessionLlmInspectETag(body)
+    const ifNoneMatch = c.req.header('if-none-match')
+
+    if (matchesIfNoneMatch(ifNoneMatch, etag)) {
+      return c.body(null, 304, { ETag: etag })
+    }
+
+    return c.json(body, 200, { ETag: etag })
   })
 
   app.get('/sessions/:sessionId/tree', requireAuth, async c => {

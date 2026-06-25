@@ -24,6 +24,7 @@ export interface MusePaths {
   personas: string
   skills: string
   mcps: string
+  llmInspect: string
 }
 
 /** 本地 Muse 数据根目录；测试可通过 `MUSE_HOME` 覆盖 */
@@ -42,7 +43,13 @@ export function getMusePaths(homeDir: string = getMuseHomeDir()): MusePaths {
     personas: join(homeDir, 'personas'),
     skills: join(homeDir, 'skills'),
     mcps: join(homeDir, 'mcps'),
+    llmInspect: join(homeDir, 'llm-inspect'),
   }
+}
+
+/** LLM 调试快照根目录：~/.muse/llm-inspect */
+export function getLlmInspectDir(homeDir: string = getMuseHomeDir()): string {
+  return join(homeDir, 'llm-inspect')
 }
 
 const DEFAULT_CONFIG: MuseConfig = {

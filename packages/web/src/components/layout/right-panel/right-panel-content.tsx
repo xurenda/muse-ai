@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router-dom'
 import { ChatSessionTreePanel } from '@/components/chat/chat-session-tree-panel'
+import { ChatSessionLlmInspectPanel } from '@/components/chat/chat-session-llm-inspect-panel'
 import { getAvailableTabTypesForPath } from '@/constants/right-panel-tabs'
 import { useRightPanelStore } from '@/stores/right-panel'
 
@@ -19,6 +20,8 @@ export function RightPanelContent() {
   switch (activeTab.type) {
     case 'session-tree':
       return <ChatSessionTreePanel />
+    case 'llm-inspect':
+      return <ChatSessionLlmInspectPanel />
     default: {
       const _exhaustive: never = activeTab.type
       return _exhaustive

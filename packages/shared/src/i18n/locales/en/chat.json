@@ -174,5 +174,11 @@
     "prompt": "Prompt",
     "steer": "Steer",
     "follow_up": "Follow-up"
+  },
+  "llmInspect": {
+    "loading": "Loading…",
+    "empty": "No LLM calls captured yet",
+    "requestTitle": "Request ({{task}})",
+    "responseTitle": "Response"
   }
 }

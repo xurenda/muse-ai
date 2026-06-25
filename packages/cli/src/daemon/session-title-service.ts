@@ -1,6 +1,6 @@
 import { deriveSessionTitle, type MuseSessionStore } from '@museai/core'
 import { MUSE_PROXY_HEADERS, type SessionBranchMessage, type SessionMeta } from '@museai/shared'
-import { buildMuseProxyRequestHeaders } from '../backend/muse-proxy-context.js'
+import { buildMuseProxyRequestHeaders, runWithMuseProxyContext } from '../backend/muse-proxy-context.js'
 import type { BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import type { SessionEventHub } from './event-hub.js'
 
@@ -117,43 +117,45 @@ export class SessionTitleService {
 
   private async generateTitle(sessionId: string, context: TitleTurnContext, backendAuth: BackendLlmAuthConfig, meta: SessionMeta): Promise<string | null> {
     try {
-      const proxyHeaders = buildMuseProxyRequestHeaders('titleGeneration', meta.modelSelection)
-      const response = await fetch(`${backendAuth.backendUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${backendAuth.deviceToken}`,
-          ...proxyHeaders,
-        },
-        body: JSON.stringify({
-          model: 'proxy',
-          ...TITLE_REQUEST_EXTRA,
-          messages: [
-            { role: 'system', content: TITLE_SYSTEM_PROMPT },
-            { role: 'user', content: buildTitleUserPrompt(context) },
-          ],
-          max_tokens: TITLE_MAX_TOKENS,
-          temperature: 0.3,
-          stream: false,
-        }),
-        signal: AbortSignal.timeout(TITLE_FETCH_TIMEOUT_MS),
-      })
-
-      const modelRef = response.headers.get(MUSE_PROXY_HEADERS.RESOLVED_MODEL)
-      if (modelRef) {
-        await this.eventHub.publish(sessionId, {
-          type: 'model_resolved',
-          modelRef,
-          task: 'titleGeneration',
-          usedFallback: response.headers.get(MUSE_PROXY_HEADERS.FALLBACK_USED) === 'true' || undefined,
+      return await runWithMuseProxyContext({ sessionId, task: 'titleGeneration', eventHub: this.eventHub, sessionStore: this.sessionStore }, async () => {
+        const proxyHeaders = buildMuseProxyRequestHeaders('titleGeneration', meta.modelSelection)
+        const response = await fetch(`${backendAuth.backendUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${backendAuth.deviceToken}`,
+            ...proxyHeaders,
+          },
+          body: JSON.stringify({
+            model: 'proxy',
+            ...TITLE_REQUEST_EXTRA,
+            messages: [
+              { role: 'system', content: TITLE_SYSTEM_PROMPT },
+              { role: 'user', content: buildTitleUserPrompt(context) },
+            ],
+            max_tokens: TITLE_MAX_TOKENS,
+            temperature: 0.3,
+            stream: false,
+          }),
+          signal: AbortSignal.timeout(TITLE_FETCH_TIMEOUT_MS),
         })
-      }
 
-      if (!response.ok) return null
-      const body: unknown = await response.json()
-      const raw = extractCompletionText(body)
-      if (!raw) return null
-      return sanitizeGeneratedTitle(raw)
+        const modelRef = response.headers.get(MUSE_PROXY_HEADERS.RESOLVED_MODEL)
+        if (modelRef) {
+          await this.eventHub.publish(sessionId, {
+            type: 'model_resolved',
+            modelRef,
+            task: 'titleGeneration',
+            usedFallback: response.headers.get(MUSE_PROXY_HEADERS.FALLBACK_USED) === 'true' || undefined,
+          })
+        }
+
+        if (!response.ok) return null
+        const body: unknown = await response.json()
+        const raw = extractCompletionText(body)
+        if (!raw) return null
+        return sanitizeGeneratedTitle(raw)
+      })
     } catch {
       return null
     }

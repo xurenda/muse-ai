@@ -40,6 +40,8 @@ export const CLI_API_PATHS = {
   SESSION_COMPACT: '/sessions/:sessionId/compact',
   /** 路由模式；实际路径用 `sessionAbortPath(sessionId)` */
   SESSION_ABORT: '/sessions/:sessionId/abort',
+  /** 路由模式；实际路径用 `sessionLlmInspectPath(sessionId)` */
+  SESSION_LLM_INSPECT: '/sessions/:sessionId/llm-inspect',
   /** 设备级 SSE：`GET /device/events` */
   DEVICE_EVENTS: '/device/events',
 } as const
@@ -82,6 +84,11 @@ export function sessionCompactPath(sessionId: string): string {
 /** 构建 Session abort 路径：`POST /sessions/:id/abort` */
 export function sessionAbortPath(sessionId: string): string {
   return `/sessions/${sessionId}/abort`
+}
+
+/** 构建 Session LLM 检查路径：`GET /sessions/:id/llm-inspect` */
+export function sessionLlmInspectPath(sessionId: string): string {
+  return `/sessions/${sessionId}/llm-inspect`
 }
 
 /** 构建设备级 SSE 路径：`GET /device/events` */

@@ -11,6 +11,7 @@ import {
   sessionNavigatePath,
   sessionSettingsPath,
   sessionTreePath,
+  sessionLlmInspectPath,
   type AgentDefinition,
   type ChatRequest,
   type CreateAgentRequest,
@@ -25,6 +26,7 @@ import {
   type SessionForkRequest,
   type SessionCompactRequest,
   type SessionTreeResponse,
+  type GetSessionLlmInspectResponse,
   type SkillMeta,
   type ToolDescriptor,
 } from '@museai/shared'
@@ -128,6 +130,36 @@ export async function deleteCliSession(endpoint: string, accessToken: string, se
 export async function getSessionTree(endpoint: string, accessToken: string, sessionId: string): Promise<SessionTreeResponse> {
   const res = await fetch(`${endpoint}${sessionTreePath(sessionId)}`, { headers: cliHeaders(accessToken) })
   return parseCliJson(res)
+}
+
+export interface GetSessionLlmInspectResult {
+  notModified: boolean
+  etag: string | null
+  data: GetSessionLlmInspectResponse | null
+}
+
+export async function getSessionLlmInspect(
+  endpoint: string,
+  accessToken: string,
+  sessionId: string,
+  options?: { ifNoneMatch?: string },
+): Promise<GetSessionLlmInspectResult> {
+  const headers: HeadersInit = {
+    ...cliHeaders(accessToken),
+  }
+  if (options?.ifNoneMatch) {
+    ;(headers as Record<string, string>)['If-None-Match'] = options.ifNoneMatch
+  }
+
+  const res = await fetch(`${endpoint}${sessionLlmInspectPath(sessionId)}`, { headers })
+  const etag = res.headers.get('ETag')
+
+  if (res.status === 304) {
+    return { notModified: true, etag, data: null }
+  }
+
+  const body = await parseCliJson<GetSessionLlmInspectResponse>(res)
+  return { notModified: false, etag, data: body }
 }
 
 export async function navigateSession(endpoint: string, accessToken: string, sessionId: string, request: SessionNavigateRequest): Promise<SessionTreeResponse> {

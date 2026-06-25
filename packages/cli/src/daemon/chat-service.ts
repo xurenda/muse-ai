@@ -13,6 +13,7 @@ import type { ChatRequest, CompactionReason, MuseLlmTask } from '@museai/shared'
 import { createBackendGetApiKeyAndHeaders, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { runWithMuseProxyContext } from '../backend/muse-proxy-context.js'
 import { createMuseProxyModel } from '../backend/muse-proxy-model.js'
+import { flushSessionLlmInspectBuffer, llmInspectBufferUpdateResponseMessage } from '@/llm-inspect/llm-inspect-buffer.js'
 import { resolveActiveTools } from '@/tools/index.js'
 import type { SessionEventHub } from './event-hub.js'
 import type { SessionTitleService } from './session-title-service.js'
@@ -353,6 +354,11 @@ export class ChatService {
     let agentStartedAt: number | null = null
 
     const unsubscribeEvents = harness.subscribe(async event => {
+      if (event.type === 'turn_end') {
+        llmInspectBufferUpdateResponseMessage(sessionId, event.message, event.toolResults)
+        void flushSessionLlmInspectBuffer(sessionId)
+      }
+
       let mapped = mapHarnessEventToSse(event)
       if (mapped?.type === 'agent_start') {
         agentStartedAt = Date.now()

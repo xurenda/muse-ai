@@ -174,5 +174,11 @@
     "prompt": "Prompt",
     "steer": "Steer",
     "follow_up": "Follow-up"
+  },
+  "llmInspect": {
+    "loading": "加载中…",
+    "empty": "尚无 LLM 调用记录",
+    "requestTitle": "请求（{{task}}）",
+    "responseTitle": "响应"
   }
 }
