@@ -6,6 +6,8 @@ import { CHAT_SMOOTH_SCROLL_DURATION_MS, smoothScrollIntoView, smoothScrollTop }
 const BOTTOM_ROOT_MARGIN_PX = 80
 /** 滚动条拖拽时，距底部超过此值则停止跟随 */
 const SCROLL_END_THRESHOLD_PX = 80
+/** 距顶部在此范围内视为「在顶部」 */
+const SCROLL_TOP_THRESHOLD_PX = 80
 
 interface UseChatAutoScrollOptions {
   /** 消息等内容变化时，若处于跟随模式则滚到底 */
@@ -23,6 +25,8 @@ interface UseChatAutoScrollResult {
   footerResizeTargetRef: (node: HTMLElement | null) => void
   /** 哨兵是否在视口内（含底部容差） */
   isAtBottom: boolean
+  /** 滚动位置是否在顶部附近 */
+  isAtTop: boolean
   /** 是否显示「回到底部」按钮 */
   showScrollToBottom: boolean
   /** 恢复跟随并平滑滚到底（按钮点击） */
@@ -31,6 +35,8 @@ interface UseChatAutoScrollResult {
   resumeFollowing: () => void
   /** 跳转到指定消息锚点（会暂停自动跟随） */
   scrollToMessage: (messageId: string) => void
+  /** 平滑滚到顶部（会暂停自动跟随） */
+  scrollToTop: () => void
 }
 
 export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: UseChatAutoScrollOptions): UseChatAutoScrollResult {
@@ -44,6 +50,7 @@ export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: 
   const programmaticScrollUntilRef = useRef(0)
 
   const [isAtBottom, setIsAtBottom] = useState(true)
+  const [isAtTop, setIsAtTop] = useState(true)
   const [refsVersion, setRefsVersion] = useState(0)
   const [footerRefsVersion, setFooterRefsVersion] = useState(0)
 
@@ -102,6 +109,14 @@ export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: 
     [disableFollowing, markProgrammaticScroll],
   )
 
+  const scrollToTop = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    disableFollowing()
+    markProgrammaticScroll(CHAT_SMOOTH_SCROLL_DURATION_MS + 32)
+    void smoothScrollTop(container, 0)
+  }, [disableFollowing, markProgrammaticScroll])
+
   const shouldAlignToBottom = useCallback(() => {
     return autoFollowRef.current || isAtBottomRef.current
   }, [])
@@ -158,6 +173,27 @@ export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: 
 
     observer.observe(sentinel)
     return () => observer.disconnect()
+  }, [resetKey, refsVersion])
+
+  // 同步是否在顶部（供单轮对话「回到顶部」按钮）
+  useEffect(() => {
+    const root = scrollContainerRef.current
+    if (!root) return
+
+    const syncAtTop = () => {
+      setIsAtTop(root.scrollTop <= SCROLL_TOP_THRESHOLD_PX)
+    }
+
+    syncAtTop()
+    root.addEventListener('scroll', syncAtTop, { passive: true })
+
+    const observer = new ResizeObserver(syncAtTop)
+    observer.observe(root)
+
+    return () => {
+      root.removeEventListener('scroll', syncAtTop)
+      observer.disconnect()
+    }
   }, [resetKey, refsVersion])
 
   // 用户主动滚动：停止跟随（滚轮、触摸、滚动条）
@@ -246,6 +282,7 @@ export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: 
     scrollToBottomInstant()
     const frameId = requestAnimationFrame(() => {
       setIsAtBottom(true)
+      setIsAtTop(true)
     })
     return () => cancelAnimationFrame(frameId)
   }, [resetKey, scrollToBottomInstant])
@@ -255,9 +292,11 @@ export function useChatAutoScroll({ contentDeps, resetKey, streaming = false }: 
     bottomSentinelRef,
     footerResizeTargetRef,
     isAtBottom,
+    isAtTop,
     showScrollToBottom: !isAtBottom,
     scrollToBottom: scrollToBottomSmooth,
     resumeFollowing,
     scrollToMessage,
+    scrollToTop,
   }
 }

@@ -21,7 +21,7 @@ export function ToolRow({ tool, expanded, onToggle, plain = false }: ToolRowProp
     <li className="text-sm text-muted-foreground">
       <button
         type="button"
-        className={cn('flex items-center gap-1.5 text-left text-sm leading-none', hasDetail && 'hover:text-foreground')}
+        className={cn('flex items-center gap-1.5 text-left text-sm leading-none', hasDetail ? 'cursor-pointer hover:text-foreground' : 'cursor-default')}
         aria-expanded={expanded}
         disabled={!hasDetail}
         onClick={hasDetail ? onToggle : undefined}

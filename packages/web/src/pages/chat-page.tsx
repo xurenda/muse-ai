@@ -4,7 +4,6 @@ import { ChatComposer } from '@/components/chat/chat-composer'
 import { ChatMessageList } from '@/components/chat/chat-message-list'
 import { ChatScrollControls } from '@/components/chat/chat-scroll-controls'
 import { NoDeviceGuide } from '@/components/chat/no-device-guide'
-import { Button } from '@/components/ui/button'
 import { useChatSessionContext } from '@/context/chat-session-context'
 import { useAuth } from '@/hooks/use-auth'
 import { useChatAutoScroll } from '@/hooks/use-chat-auto-scroll'
@@ -62,6 +61,51 @@ function SessionChatFooter({
   )
 }
 
+interface NewChatLandingProps {
+  deviceSession: StoredDeviceSession
+  disabled: boolean
+  onSend: (text: string, mode: ChatInputMode, agentId?: string) => void
+}
+
+function NewChatLanding({ deviceSession, disabled, onSend }: NewChatLandingProps) {
+  const [composerText, setComposerText] = useState('')
+  const [draftAgentId, setDraftAgentId] = useState<string | undefined>()
+  const draftSessionSettings: SessionSettingsResponse | null = draftAgentId ? ({ agentId: draftAgentId } as SessionSettingsResponse) : null
+
+  const handleSend = useCallback(
+    (text: string, mode: ChatInputMode) => {
+      onSend(text, mode, draftAgentId)
+    },
+    [draftAgentId, onSend],
+  )
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-page-x pb-panel-y">
+      <div className="mx-auto w-full max-w-3xl">
+        <ChatComposer
+          value={composerText}
+          onChange={setComposerText}
+          streaming={false}
+          compacting={false}
+          disabled={disabled}
+          canStop={false}
+          stopping={false}
+          prominent
+          autoFocus
+          deviceSession={deviceSession}
+          sessionSettings={draftSessionSettings}
+          onUpdateSession={async patch => {
+            if (patch.agentId) setDraftAgentId(patch.agentId)
+            return true
+          }}
+          onSend={handleSend}
+          onStop={() => {}}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function ChatPage() {
   const { sessionId: routeSessionId } = useParams()
   const { t } = useTranslation('chat')
@@ -78,18 +122,21 @@ export function ChatPage() {
     settingsError,
     treeError,
     compacting,
+    creatingSession,
+    deviceUnreachable,
     sendMessage,
     retryFromMessage,
     stopGeneration,
     updateSessionSettings,
-    startNewSession,
+    startNewSessionWithMessage,
   } = useChatSessionContext()
 
-  const { scrollContainerRef, bottomSentinelRef, footerResizeTargetRef, isAtBottom, scrollToBottom, resumeFollowing, scrollToMessage } = useChatAutoScroll({
-    contentDeps: [messages, streaming],
-    resetKey: routeSessionId,
-    streaming,
-  })
+  const { scrollContainerRef, bottomSentinelRef, footerResizeTargetRef, isAtBottom, isAtTop, scrollToBottom, scrollToTop, resumeFollowing, scrollToMessage } =
+    useChatAutoScroll({
+      contentDeps: [messages, streaming],
+      resetKey: routeSessionId,
+      streaming,
+    })
 
   const footerKey = 0
   const footerInitialText = undefined
@@ -111,19 +158,19 @@ export function ChatPage() {
     [sendMessage, resumeFollowing],
   )
 
+  const handleNewChatSend = useCallback(
+    (text: string, mode: ChatInputMode, agentId?: string) => {
+      void startNewSessionWithMessage(text, mode, agentId)
+    },
+    [startNewSessionWithMessage],
+  )
+
   if (!deviceSession) {
     return <NoDeviceGuide />
   }
 
   if (!routeSessionId) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="max-w-md text-sm text-muted-foreground">{t('newChatHint')}</p>
-        <Button type="button" onClick={() => void startNewSession()}>
-          {t('startNewSession')}
-        </Button>
-      </div>
-    )
+    return <NewChatLanding deviceSession={deviceSession} disabled={deviceUnreachable || creatingSession} onSend={handleNewChatSend} />
   }
 
   const showChatContent = status === 'ready'
@@ -162,8 +209,10 @@ export function ChatPage() {
               messages={messages}
               scrollContainerRef={scrollContainerRef}
               isAtBottom={isAtBottom}
+              isAtTop={isAtTop}
               resetKey={routeSessionId}
               onScrollToBottom={scrollToBottom}
+              onScrollToTop={scrollToTop}
               onScrollToMessage={scrollToMessage}
             />
           </div>

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import type { AgentDefinition, SessionSettingsResponse } from '@muse-ai/shared'
 
 const TEXTAREA_MAX_HEIGHT = 200
+const COMPACT_TEXTAREA_MIN_HEIGHT = 44
 
 interface ChatComposerProps {
   value: string
@@ -25,6 +26,9 @@ interface ChatComposerProps {
   onUpdateSession: (patch: { agentId?: string }) => Promise<boolean>
   onSend: (text: string, mode: ChatInputMode) => void
   onStop: () => void
+  /** 新对话页居中展示时使用更高的初始输入区 */
+  prominent?: boolean
+  autoFocus?: boolean
 }
 
 export function ChatComposer({
@@ -40,6 +44,8 @@ export function ChatComposer({
   onUpdateSession,
   onSend,
   onStop,
+  prominent = false,
+  autoFocus = false,
 }: ChatComposerProps) {
   const { t } = useTranslation('chat')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -69,9 +75,22 @@ export function ChatComposer({
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
+
+    // prominent 空内容时交给 rows 自然撑高，不写 inline height
+    if (prominent && !value) {
+      textarea.style.height = ''
+      return
+    }
+
     textarea.style.height = 'auto'
-    textarea.style.height = `${Math.min(textarea.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`
-  }, [value])
+    const nextHeight = Math.min(textarea.scrollHeight, TEXTAREA_MAX_HEIGHT)
+    textarea.style.height = prominent ? `${nextHeight}px` : `${Math.max(COMPACT_TEXTAREA_MIN_HEIGHT, nextHeight)}px`
+  }, [prominent, value])
+
+  useEffect(() => {
+    if (!autoFocus || disabled) return
+    textareaRef.current?.focus()
+  }, [autoFocus, disabled])
 
   const submit = useCallback(
     (mode: ChatInputMode) => {
@@ -120,8 +139,8 @@ export function ChatComposer({
     <div className={cn('ui-surface', streaming && 'surface-streaming', 'focus-within:border-ring')}>
       <Textarea
         ref={textareaRef}
-        className="max-h-[200px] min-h-11 resize-none border-0 bg-transparent px-menu-x py-menu-y shadow-none focus-visible:ring-0"
-        rows={1}
+        className={cn('max-h-[200px] resize-none border-0 bg-transparent px-menu-x py-menu-y shadow-none focus-visible:ring-0', !prominent && 'min-h-11')}
+        rows={prominent ? 3 : 1}
         placeholder={streaming ? t('input.placeholderStreaming') : compacting ? t('input.placeholderCompacting') : t('input.placeholder')}
         value={value}
         onChange={event => onChange(event.target.value)}

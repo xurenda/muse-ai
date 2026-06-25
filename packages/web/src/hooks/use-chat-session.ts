@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { ChatRequest, SessionSettingsPatch, SessionSettingsResponse, SessionTreeResponse, TurnTokenUsage } from '@muse-ai/shared'
+import type {
+  ChatRequest,
+  ModelSelection,
+  SessionSettingsPatch,
+  SessionSettingsResponse,
+  SessionTreeResponse,
+  ThinkingLevel,
+  TurnTokenUsage,
+} from '@muse-ai/shared'
 import { addTurnToSessionUsage } from '@muse-ai/shared'
 import { checkCliHealth } from '@/api/backend-client'
 import {
@@ -17,7 +25,6 @@ import {
   subscribeSessionEvents,
 } from '@/api/cli-client'
 import { fetchModelStrategy } from '@/api/settings-api'
-import type { ModelSelection } from '@muse-ai/shared'
 import { buildModelCatalog, resolveModelLabel, resolveModelContextWindow, resolveOptimisticModelRef, type ModelCatalogItem } from '@/utils/model-strategy-ui'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { hasRunningTool } from '@/lib/assistant-message-helpers'
@@ -36,6 +43,12 @@ export type SseConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconne
 /** 对话模型 Picker 展示：SSE model_resolved（chat）驱动 */
 export interface ChatModelResolvedDisplay {
   resolvedModelRef: string | null
+}
+
+/** /chat 新对话页内存草稿：切换路由时清空，不持久化 */
+export interface NewChatDraft {
+  modelSelection?: ModelSelection
+  thinkingLevel?: ThinkingLevel
 }
 
 const INITIAL_CHAT_MODEL_DISPLAY: ChatModelResolvedDisplay = {
@@ -122,6 +135,14 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   const prevDeviceReachableRef = useRef<boolean | null>(null)
   const deviceWasUnreachableRef = useRef(false)
   const sessionAutoRetryRef = useRef(false)
+  const pendingInitialMessageRef = useRef<{
+    text: string
+    mode: ChatInputMode
+    settingsPatch?: SessionSettingsPatch
+  } | null>(null)
+  const [creatingSession, setCreatingSession] = useState(false)
+  const [newChatDraft, setNewChatDraft] = useState<NewChatDraft>({})
+  const [trackedRouteSessionId, setTrackedRouteSessionId] = useState(routeSessionId)
   const requestSessionListRefresh = useSessionListStore(state => state.requestRefresh)
   const modelCatalogRef = useRef<ModelCatalogItem[]>([])
   const getValidAccessToken = options?.getValidAccessToken
@@ -169,6 +190,22 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   useEffect(() => {
     onSessionChangeRef.current = options?.onSessionChange
   }, [options?.onSessionChange])
+
+  // 返回 /chat 时恢复为对话默认模型配置
+  if (routeSessionId !== trackedRouteSessionId) {
+    setTrackedRouteSessionId(routeSessionId)
+    if (!routeSessionId) {
+      setNewChatDraft({})
+    }
+  }
+
+  const updateNewChatDraft = useCallback((patch: SessionSettingsPatch) => {
+    setNewChatDraft(prev => ({
+      ...prev,
+      ...(patch.modelSelection !== undefined ? { modelSelection: patch.modelSelection } : {}),
+      ...(patch.thinkingLevel !== undefined ? { thinkingLevel: patch.thinkingLevel } : {}),
+    }))
+  }, [])
 
   const streaming = checkStreaming(messages)
   const streamingTurnTokenDisplay = useMemo(() => {
@@ -527,6 +564,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     let cancelled = false
 
     const resetToIdle = () => {
+      pendingInitialMessageRef.current = null
       setStatus('idle')
       resetChatState({
         setSessionId,
@@ -721,12 +759,12 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
   )
 
   const createSession = useCallback(
-    async (agentId?: string) => {
+    async (options?: { agentId?: string; modelSelection?: ModelSelection }) => {
       if (!deviceSession) return null
       try {
         const settings = sessionSettings ?? (routeSessionId ? await loadSettings(routeSessionId) : null)
-        let initialSelection: ModelSelection | undefined
-        if (getValidAccessToken) {
+        let initialSelection = options?.modelSelection
+        if (!initialSelection && getValidAccessToken) {
           try {
             const token = await getValidAccessToken()
             const strategyResponse = await fetchModelStrategy(token)
@@ -736,7 +774,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
           }
         }
         const session = await createCliSession(deviceSession.endpoint, deviceSession.accessToken, {
-          agentId: agentId ?? settings?.agentId,
+          agentId: options?.agentId ?? settings?.agentId,
           ...(initialSelection ? { modelSelection: initialSelection } : {}),
         })
         requestSessionListRefresh()
@@ -757,6 +795,41 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
       onSessionChangeRef.current?.(id)
     }
   }, [createSession])
+
+  const startNewSessionWithMessage = useCallback(
+    async (text: string, mode: ChatInputMode, agentId?: string) => {
+      if (!deviceSession || creatingSession) return
+      const trimmed = text.trim()
+      if (!trimmed) return
+
+      setCreatingSession(true)
+      setSendError(null)
+      try {
+        const id = await createSession({ agentId, modelSelection: newChatDraft.modelSelection })
+        if (!id) return
+        const settingsPatch =
+          newChatDraft.thinkingLevel !== undefined ? ({ thinkingLevel: newChatDraft.thinkingLevel } satisfies SessionSettingsPatch) : undefined
+        pendingInitialMessageRef.current = { text: trimmed, mode, settingsPatch }
+        onSessionChangeRef.current?.(id)
+      } finally {
+        setCreatingSession(false)
+      }
+    },
+    [createSession, creatingSession, deviceSession, newChatDraft.modelSelection, newChatDraft.thinkingLevel],
+  )
+
+  useEffect(() => {
+    if (status !== 'ready' || !canSend || !pendingInitialMessageRef.current) return
+    const pending = pendingInitialMessageRef.current
+    pendingInitialMessageRef.current = null
+
+    void (async () => {
+      if (pending.settingsPatch) {
+        await updateSessionSettings(pending.settingsPatch)
+      }
+      await sendMessage(pending.text, pending.mode)
+    })()
+  }, [status, canSend, sendMessage, updateSessionSettings])
 
   const compactContext = useCallback(async () => {
     if (!deviceSession || !sessionId || compacting) return false
@@ -821,6 +894,9 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     settingsError,
     treeError,
     compacting,
+    creatingSession,
+    newChatDraft,
+    updateNewChatDraft,
     chatModelDisplay,
     chatContextWindow,
     sendMessage,
@@ -829,6 +905,7 @@ export function useChatSession(deviceSession: StoredDeviceSession | null, routeS
     compactContext,
     updateSessionSettings,
     startNewSession,
+    startNewSessionWithMessage,
     navigateToEntry,
     forkFromEntry,
     retryConnection,

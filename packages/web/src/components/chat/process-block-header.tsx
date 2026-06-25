@@ -15,7 +15,10 @@ export function ProcessBlockHeader({ active, activeLabel, doneLabel, expanded, o
   return (
     <button
       type="button"
-      className={cn('flex w-full items-center gap-1.5 text-left text-sm text-muted-foreground', hasContent && 'hover:text-foreground')}
+      className={cn(
+        'flex w-full items-center gap-1.5 text-left text-sm text-muted-foreground',
+        hasContent ? 'cursor-pointer hover:text-foreground' : 'cursor-default',
+      )}
       aria-expanded={expanded}
       disabled={!hasContent}
       onClick={hasContent ? onToggle : undefined}

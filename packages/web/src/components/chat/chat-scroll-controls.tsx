@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Check, ChevronDown, ChevronUp, List } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpToLine, Check, ChevronDown, ChevronUp, List } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -14,8 +14,10 @@ interface ChatScrollControlsProps {
   messages: ChatMessage[]
   scrollContainerRef: RefObject<HTMLDivElement | null>
   isAtBottom: boolean
+  isAtTop: boolean
   resetKey?: string | null
   onScrollToBottom: () => void
+  onScrollToTop: () => void
   onScrollToMessage: (messageId: string) => void
 }
 
@@ -56,7 +58,16 @@ function OutlineControlButton({
   )
 }
 
-export function ChatScrollControls({ messages, scrollContainerRef, isAtBottom, resetKey, onScrollToBottom, onScrollToMessage }: ChatScrollControlsProps) {
+export function ChatScrollControls({
+  messages,
+  scrollContainerRef,
+  isAtBottom,
+  isAtTop,
+  resetKey,
+  onScrollToBottom,
+  onScrollToTop,
+  onScrollToMessage,
+}: ChatScrollControlsProps) {
   const { t } = useTranslation('chat')
   const [outlineOpen, setOutlineOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -64,9 +75,9 @@ export function ChatScrollControls({ messages, scrollContainerRef, isAtBottom, r
 
   const userQuestions = useMemo(() => extractUserQuestions(messages), [messages])
   const showNavigation = userQuestions.length >= 2
-  const showScrollButton = !isAtBottom
+  const showSingleRoundControls = userQuestions.length === 1
   const shouldMount = showNavigation || userQuestions.length >= 1
-  const toolbarVisible = showNavigation || showScrollButton
+  const toolbarVisible = showNavigation || (showSingleRoundControls && (!isAtTop || !isAtBottom))
 
   const { currentIndex, canGoPrev, canGoNext, goToPrev, goToNext, goToQuestion } = useChatQuestionNav({
     scrollContainerRef,
@@ -141,8 +152,21 @@ export function ChatScrollControls({ messages, scrollContainerRef, isAtBottom, r
               </>
             ) : null}
 
+            {showSingleRoundControls ? (
+              <VerticalControlButton
+                isFirst
+                tooltip={t('scrollToTop')}
+                tooltipSide={tooltipSide}
+                aria-label={t('scrollToTop')}
+                disabled={isAtTop}
+                onClick={onScrollToTop}
+              >
+                <ArrowUpToLine className="size-3.5" strokeWidth={2} />
+              </VerticalControlButton>
+            ) : null}
+
             <VerticalControlButton
-              isFirst={!showNavigation}
+              isFirst={!showNavigation && !showSingleRoundControls}
               tooltip={t('scrollToBottom')}
               tooltipSide={tooltipSide}
               aria-label={t('scrollToBottom')}
