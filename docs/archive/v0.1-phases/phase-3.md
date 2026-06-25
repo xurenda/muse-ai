@@ -48,7 +48,7 @@
 
 ## 实际产出
 
-### 1. `@muse-ai/server` — 控制面
+### 1. `@museai/server` — 控制面
 
 **依赖：** Postgres、Redis、Drizzle、`jose`（JWT）、`bcryptjs`、`dotenv`
 
@@ -86,7 +86,7 @@ packages/server/src/
 
 **测试：** `test/app.test.ts`（mock 依赖）、`test/crypto/aes-gcm.test.ts`
 
-### 2. `@muse-ai/shared`（本阶段增量）
+### 2. `@museai/shared`（本阶段增量）
 
 | 变更                                 | 说明                     |
 | ------------------------------------ | ------------------------ |
@@ -94,7 +94,7 @@ packages/server/src/
 | `types/pair.ts`                      | `pairInitResponseSchema` |
 | `SERVER_API_PATHS.DEVICES_PAIR_INIT` | Web 发起配对             |
 
-### 3. `@muse-ai/core`（本阶段增量）
+### 3. `@museai/core`（本阶段增量）
 
 | 模块                | 变更                                                                             |
 | ------------------- | -------------------------------------------------------------------------------- |
@@ -102,7 +102,7 @@ packages/server/src/
 | `harness-events.ts` | `mapHarnessEventToSse`（含 `thinking_delta` → `text_delta`）                     |
 | `agent-registry.ts` | `parseModelRef` 支持 OpenAI 兼容自定义 model id；默认 `openai/deepseek-v4-flash` |
 
-### 4. `@muse-ai/cli` — 接通 Backend
+### 4. `@museai/cli` — 接通 Backend
 
 **`~/.muse/config.json` 增量：**
 

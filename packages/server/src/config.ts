@@ -1,4 +1,4 @@
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@museai/shared'
 
 export interface ServerConfig {
   host: string

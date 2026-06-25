@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { SERVER_API_PATHS, createHealthResponse, healthResponseSchema } from '@muse-ai/shared'
+import { SERVER_API_PATHS, createHealthResponse, healthResponseSchema } from '@museai/shared'
 import type { ServerConfig } from './config.js'
 import { createDb, initDatabase } from './db/client.js'
 import { createDeviceAuthMiddleware } from './middleware/device-auth.js'

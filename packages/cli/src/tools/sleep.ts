@@ -1,4 +1,4 @@
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 
 const sleepSchema = Type.Object({

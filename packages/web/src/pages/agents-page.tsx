@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { AgentDefinition, Persona, SkillMeta, ToolDescriptor } from '@muse-ai/shared'
+import type { AgentDefinition, Persona, SkillMeta, ToolDescriptor } from '@museai/shared'
 import { createAgent, listCliAgents, listPersonas, listSkills, listTools } from '@/api/cli-client'
 import { PageShell } from '@/components/layout/page-shell'
 import { SettingsFieldRow } from '@/components/settings/settings-field-row'

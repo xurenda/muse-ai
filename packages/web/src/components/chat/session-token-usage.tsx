@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import type { SessionTokenUsage } from '@muse-ai/shared'
+import type { SessionTokenUsage } from '@museai/shared'
 import { formatTokenCount } from '@/lib/format-token-count'
 
 interface SessionTokenUsageProps {

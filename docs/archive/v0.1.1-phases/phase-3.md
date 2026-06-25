@@ -247,7 +247,7 @@ Web 维护会话级 `contextWindow`：优先最近 **chat** 任务的 `model_res
 
 ```bash
 pnpm test:run
-pnpm --filter @muse-ai/web typecheck
+pnpm --filter @museai/web typecheck
 ```
 
 预期新增/更新：

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { buildSessionContext } from '@earendil-works/pi-agent-core'
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
-import type { SessionBranchBlock, SessionBranchMessage, SessionBranchToolCall, SessionTreeNode, TurnTokenUsage } from '@muse-ai/shared'
+import type { SessionBranchBlock, SessionBranchMessage, SessionBranchToolCall, SessionTreeNode, TurnTokenUsage } from '@museai/shared'
 import { extractBranchMessageError } from './assistant-turn-error.js'
 import { extractTurnUsageFromMessage, normalizeTurnTokenUsage } from './session-token-usage.js'
 

@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react'
-import type { ProviderHeaderEntry } from '@muse-ai/shared'
+import type { ProviderHeaderEntry } from '@museai/shared'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'

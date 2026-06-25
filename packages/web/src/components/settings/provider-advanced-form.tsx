@@ -1,4 +1,4 @@
-import type { ProviderAdvancedConfig, ProviderExtraModelEntry } from '@muse-ai/shared'
+import type { ProviderAdvancedConfig, ProviderExtraModelEntry } from '@museai/shared'
 import { ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { HeadersEditor } from '@/components/settings/headers-editor'

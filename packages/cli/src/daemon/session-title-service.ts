@@ -1,5 +1,5 @@
-import { deriveSessionTitle, type MuseSessionStore } from '@muse-ai/core'
-import { MUSE_PROXY_HEADERS, type SessionBranchMessage, type SessionMeta } from '@muse-ai/shared'
+import { deriveSessionTitle, type MuseSessionStore } from '@museai/core'
+import { MUSE_PROXY_HEADERS, type SessionBranchMessage, type SessionMeta } from '@museai/shared'
 import { buildMuseProxyRequestHeaders } from '../backend/muse-proxy-context.js'
 import type { BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import type { SessionEventHub } from './event-hub.js'

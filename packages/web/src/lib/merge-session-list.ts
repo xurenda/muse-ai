@@ -1,4 +1,4 @@
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@museai/shared'
 
 /** 将 SSE 补丁合并进 Session 列表 */
 export function mergeSessionList(sessions: SessionMeta[], patches: Record<string, Partial<SessionMeta>>): SessionMeta[] {

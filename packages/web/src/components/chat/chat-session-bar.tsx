@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { AgentDefinition, SessionSettingsResponse } from '@muse-ai/shared'
+import type { AgentDefinition, SessionSettingsResponse } from '@museai/shared'
 import { listCliAgents } from '@/api/cli-client'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'

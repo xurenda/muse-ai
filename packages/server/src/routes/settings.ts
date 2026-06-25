@@ -6,7 +6,7 @@ import {
   updateProviderApiKeyRequestSchema,
   upsertCustomProviderRequestSchema,
   upsertProviderAdvancedConfigRequestSchema,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import type { SettingsService } from '../services/settings-service.js'
 import { SettingsError } from '../services/settings-service.js'
 import type { ServerVariables } from '../types.js'

@@ -1,5 +1,5 @@
-import type { ModelSelection, ModelStrategyConfig, ModelStrategyPools, ModelsConfigProviderOption, ModelTier, TaskModelSelection } from '@muse-ai/shared'
-import { DEFAULT_MODEL_STRATEGY } from '@muse-ai/shared'
+import type { ModelSelection, ModelStrategyConfig, ModelStrategyPools, ModelsConfigProviderOption, ModelTier, TaskModelSelection } from '@museai/shared'
+import { DEFAULT_MODEL_STRATEGY } from '@museai/shared'
 
 export interface ModelCatalogItem {
   modelRef: string

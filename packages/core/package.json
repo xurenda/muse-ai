@@ -1,6 +1,6 @@
 {
-  "name": "@muse-ai/core",
-  "version": "0.0.0",
+  "name": "@museai/core",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,7 +17,7 @@
   "dependencies": {
     "@earendil-works/pi-agent-core": "^0.79.3",
     "@earendil-works/pi-ai": "^0.79.3",
-    "@muse-ai/shared": "workspace:*"
+    "@museai/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

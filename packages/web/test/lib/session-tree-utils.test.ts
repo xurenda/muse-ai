@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SessionTreeNode } from '@muse-ai/shared'
+import type { SessionTreeNode } from '@museai/shared'
 import { buildSessionTurnFlowGraph, buildSessionTurns, isTurnOnActivePath } from '@/lib/session-tree-utils'
 
 function user(id: string, parentId: string | null, preview: string, timestamp: string): SessionTreeNode {

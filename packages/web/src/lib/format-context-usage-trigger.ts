@@ -1,4 +1,4 @@
-import type { ContextUsage } from '@muse-ai/shared'
+import type { ContextUsage } from '@museai/shared'
 import { formatTokenCount } from '@/lib/format-token-count'
 
 export interface ContextUsageTriggerParts {

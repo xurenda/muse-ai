@@ -1,7 +1,7 @@
 import { constants } from 'node:fs'
 import { access as fsAccess } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 import { OutputAccumulator } from '@/tools/output-accumulator.js'
 import { getShellConfig, getShellEnv, killProcessTree, waitForChildProcess } from '@/tools/shell-utils.js'

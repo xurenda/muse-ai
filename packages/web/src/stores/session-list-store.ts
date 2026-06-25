@@ -1,4 +1,4 @@
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@museai/shared'
 import { create } from 'zustand'
 
 interface SessionListStore {

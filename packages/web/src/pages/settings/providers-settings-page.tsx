@@ -1,5 +1,5 @@
-import { CUSTOM_PROVIDER_API_OPTIONS } from '@muse-ai/shared'
-import type { CustomProviderItem, ProviderAdvancedConfig, ProviderAuthStatus, ProvidersConfigResponse } from '@muse-ai/shared'
+import { CUSTOM_PROVIDER_API_OPTIONS } from '@museai/shared'
+import type { CustomProviderItem, ProviderAdvancedConfig, ProviderAuthStatus, ProvidersConfigResponse } from '@museai/shared'
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'

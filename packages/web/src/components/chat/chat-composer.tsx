@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { StoredDeviceSession } from '@/lib/config'
 import type { ChatInputMode } from '@/lib/chat-types'
 import { cn } from '@/lib/utils'
-import type { AgentDefinition, SessionSettingsResponse } from '@muse-ai/shared'
+import type { AgentDefinition, SessionSettingsResponse } from '@museai/shared'
 
 const TEXTAREA_MAX_HEIGHT = 200
 const COMPACT_TEXTAREA_MIN_HEIGHT = 44

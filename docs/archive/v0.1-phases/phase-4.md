@@ -49,7 +49,7 @@
 
 ## 实际产出
 
-### 1. `@muse-ai/cli` — 内置 tools
+### 1. `@museai/cli` — 内置 tools
 
 **目录：**
 
@@ -106,7 +106,7 @@ resolveActiveTools(activeToolNames, cwd, options?) → AgentTool[]
 
 **测试：** `packages/cli/test/tools/` 镜像 `src/tools/`，共 **29** 项 tools 单测
 
-### 2. `@muse-ai/core`（本阶段增量）
+### 2. `@museai/core`（本阶段增量）
 
 | 模块       | 变更                                                                             |
 | ---------- | -------------------------------------------------------------------------------- |

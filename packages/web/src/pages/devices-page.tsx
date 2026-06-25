@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { Device, PairInitResponse } from '@muse-ai/shared'
+import type { Device, PairInitResponse } from '@museai/shared'
 import { BackendApiError, checkCliHealth, getDeviceCredentials, initDevicePair, listDevices } from '@/api/backend-client'
 import { PageShell } from '@/components/layout/page-shell'
 import { SettingsRow } from '@/components/settings/settings-row'

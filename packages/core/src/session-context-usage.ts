@@ -1,7 +1,7 @@
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
 import { buildSessionContext } from '@earendil-works/pi-agent-core'
 import type { AssistantMessage, Usage } from '@earendil-works/pi-ai'
-import { type ContextUsage, computeCacheHitRate, computeContextUsagePercent } from '@muse-ai/shared'
+import { type ContextUsage, computeCacheHitRate, computeContextUsagePercent } from '@museai/shared'
 
 const ESTIMATED_IMAGE_CHARS = 4800
 

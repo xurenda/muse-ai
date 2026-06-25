@@ -1,4 +1,4 @@
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { createBashTool, type BashToolOptions } from '@/tools/bash.js'
 import { createEditTool, type EditToolOptions } from '@/tools/edit.js'
 import { createFindTool, type FindToolOptions } from '@/tools/find.js'

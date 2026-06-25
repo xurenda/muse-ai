@@ -1,4 +1,4 @@
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@museai/shared'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { codeInspectorPlugin } from 'code-inspector-plugin'

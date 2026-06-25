@@ -1,5 +1,5 @@
 import type { Hono } from 'hono'
-import { MUSE_PROXY_HEADERS } from '@muse-ai/shared'
+import { MUSE_PROXY_HEADERS } from '@museai/shared'
 import type { LlmProxyOrchestrator } from '../services/llm-proxy-orchestrator.js'
 import { SettingsError } from '../services/settings-service.js'
 import type { ServerVariables } from '../types.js'

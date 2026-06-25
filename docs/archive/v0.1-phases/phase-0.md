@@ -41,7 +41,7 @@
 | `README.md`           | 安装、构建、三进程启动、health curl                       |
 | `AGENTS.md`           | 贡献约定（命名、Vitest、架构约束、参考仓库路径）          |
 
-### 2. `@muse-ai/shared`
+### 2. `@museai/shared`
 
 跨包契约层，Zod schema + 类型导出。
 
@@ -70,13 +70,13 @@ packages/shared/src/
 
 **测试：** `test/constants/api-paths.test.ts`（6 项）
 
-### 3. `@muse-ai/core`
+### 3. `@museai/core`
 
 占位包，导出 `CORE_VERSION`。阶段 1 在此封装 pi `AgentHarness`。
 
 **测试：** `test/index.test.ts`（1 项）
 
-### 4. `@muse-ai/cli`
+### 4. `@museai/cli`
 
 本地命令 `muse`，daemon 基于 **Hono** + `@hono/node-server`。
 
@@ -97,7 +97,7 @@ packages/shared/src/
 
 **测试：** `test/daemon/server.test.ts`（3 项）
 
-### 5. `@muse-ai/server`
+### 5. `@museai/server`
 
 Backend API，Docker Compose 放在本包内。
 
@@ -115,7 +115,7 @@ Backend API，Docker Compose 放在本包内。
 
 **测试：** `test/app.test.ts`（4 项）
 
-### 6. `@muse-ai/web`
+### 6. `@museai/web`
 
 Vite 7 + React 19 占位页，展示 Backend URL 与 CLI 默认端口。
 

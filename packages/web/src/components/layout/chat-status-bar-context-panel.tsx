@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { computeSessionCacheHitRate, hasSessionCacheUsage, type SessionSettingsResponse } from '@muse-ai/shared'
+import { computeSessionCacheHitRate, hasSessionCacheUsage, type SessionSettingsResponse } from '@museai/shared'
 import { HelpTooltip } from '@/components/ui/help-tooltip'
 import { formatHitRatePercent } from '@/lib/format-hit-rate-percent'
 import { formatTokenCount } from '@/lib/format-token-count'

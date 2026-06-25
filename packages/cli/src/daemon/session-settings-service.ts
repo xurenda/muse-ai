@@ -1,8 +1,8 @@
-import type { ModelSelection, ThinkingLevel } from '@muse-ai/shared'
-import { modelRefToModelSelection } from '@muse-ai/shared'
-import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
-import { sessionSettingsResponseSchema } from '@muse-ai/shared'
-import type { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
+import type { ModelSelection, ThinkingLevel } from '@museai/shared'
+import { modelRefToModelSelection } from '@museai/shared'
+import type { SessionSettingsPatch, SessionSettingsResponse } from '@museai/shared'
+import { sessionSettingsResponseSchema } from '@museai/shared'
+import type { MuseAgentRegistry, MuseSessionStore } from '@museai/core'
 import {
   MuseHarness,
   placeholderGetApiKeyAndHeaders,
@@ -10,7 +10,7 @@ import {
   readSessionContextUsage,
   readSessionTokenUsage,
   resolveEffectiveHarnessConfig,
-} from '@muse-ai/core'
+} from '@museai/core'
 import { resolveActiveTools } from '@/tools/index.js'
 
 /** settings 响应中的 modelRef：仅回显 chat 粘性解析或显式 model 选择 */

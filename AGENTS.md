@@ -12,13 +12,13 @@
 
 本仓库为 **pnpm monorepo**：
 
-| 包                                     | 说明                                                                                                |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `packages/shared`（`@muse-ai/shared`） | 跨包共享的常量、类型、协议、i18n、公共函数                                                          |
-| `packages/core`（`@muse-ai/core`）     | Agent 组装、资产加载；**唯一**封装 `@earendil-works/pi-agent-core` / `@earendil-works/pi-ai` 的地方 |
-| `packages/server`（`@muse-ai/server`） | 后端：账号、LLM Provider 代理、设备注册；**Docker Compose 在此包**                                  |
-| `packages/cli`（`@muse-ai/cli`）       | 客户端 daemon 与 `muse` 命令；agent runtime                                                         |
-| `packages/web`（`@muse-ai/web`）       | Web 前端                                                                                            |
+| 包                                    | 说明                                                                                                |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `packages/shared`（`@museai/shared`） | 跨包共享的常量、类型、协议、i18n、公共函数                                                          |
+| `packages/core`（`@museai/core`）     | Agent 组装、资产加载；**唯一**封装 `@earendil-works/pi-agent-core` / `@earendil-works/pi-ai` 的地方 |
+| `packages/server`（`@museai/server`） | 后端：账号、LLM Provider 代理、设备注册；**Docker Compose 在此包**                                  |
+| `packages/cli`（`@museai/cli`）       | 客户端 daemon 与 `muse` 命令；agent runtime                                                         |
+| `packages/web`（`@museai/web`）       | Web 前端                                                                                            |
 
 说明：
 
@@ -32,8 +32,8 @@
 cd packages/server && docker compose up -d
 
 # CLI / Web
-pnpm --filter @muse-ai/cli dev
-pnpm --filter @muse-ai/web dev
+pnpm --filter @museai/cli dev
+pnpm --filter @museai/web dev
 ```
 
 CLI 与 Web 用 `pnpm dev`；**仅 server 包**使用 Docker Compose（`packages/server/docker-compose.yml`）。
@@ -79,7 +79,7 @@ CLI 与 Web 用 `pnpm dev`；**仅 server 包**使用 Docker Compose（`packages
 | 枚举              | 枚举名 PascalCase；成员按场景选 PascalCase 或 UPPER_SNAKE_CASE                                         | —                                                         |
 | 测试文件          | 与 `src` 内源文件同基名 + `.test.ts` / `.test.tsx`；放在与 `src` 同级的 `test/` 下，目录结构镜像 `src` | `src/utils/parse-sse.ts` → `test/utils/parse-sse.test.ts` |
 
-- **工具模块、通用函数/类型、HTTP 封装**等使用**能说明职责**的普适命名；**不要**仅为对齐仓库名而加 `muse` / `Muse` 前缀（CLI 命令 `muse` 与 npm scope `@muse-ai/*` 除外）。
+- **工具模块、通用函数/类型、HTTP 封装**等使用**能说明职责**的普适命名；**不要**仅为对齐仓库名而加 `muse` / `Muse` 前缀（CLI 命令 `muse` 与 npm scope `@museai/*` 除外）。
 
 ---
 

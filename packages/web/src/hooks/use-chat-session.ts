@@ -9,8 +9,8 @@ import type {
   SessionTreeResponse,
   ThinkingLevel,
   TurnTokenUsage,
-} from '@muse-ai/shared'
-import { addTurnToSessionUsage } from '@muse-ai/shared'
+} from '@museai/shared'
+import { addTurnToSessionUsage } from '@museai/shared'
 import { checkCliHealth } from '@/api/backend-client'
 import {
   createCliSession,

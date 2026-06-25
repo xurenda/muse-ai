@@ -1,6 +1,6 @@
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 import { withFileMutationQueue } from '@/tools/file-mutation-queue.js'
 import { resolveToCwd } from '@/tools/path-utils.js'

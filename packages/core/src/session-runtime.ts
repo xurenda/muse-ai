@@ -1,5 +1,5 @@
 import type { Session } from '@earendil-works/pi-agent-core'
-import type { ThinkingLevel } from '@muse-ai/shared'
+import type { ThinkingLevel } from '@museai/shared'
 import { DEFAULT_MODEL_REF, formatModelRef, parseModelRef } from './model-ref.js'
 
 export interface SessionRuntimeOverrides {

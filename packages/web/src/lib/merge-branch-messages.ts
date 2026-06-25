@@ -1,4 +1,4 @@
-import type { SessionBranchMessage } from '@muse-ai/shared'
+import type { SessionBranchMessage } from '@museai/shared'
 import { finalizeRunningTools, hasRunningTool } from '@/lib/assistant-message-helpers'
 import { branchMessagesToChat } from '@/lib/branch-messages'
 import { isAssistantMessage, type AssistantChatMessage, type ChatMessage } from '@/lib/chat-types'

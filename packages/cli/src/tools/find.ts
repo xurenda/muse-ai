@@ -1,7 +1,7 @@
 import { createInterface } from 'node:readline'
 import { spawn } from 'node:child_process'
 import nodePath from 'node:path'
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 import { pathExists, resolveToCwd } from '@/tools/path-utils.js'
 import { FD_NOT_FOUND_MESSAGE, resolveFdPath } from '@/tools/system-binary.js'

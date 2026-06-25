@@ -5,7 +5,7 @@ import type {
   ProviderAdvancedConfig,
   UpsertCustomProviderRequest,
   UpsertProviderAdvancedConfigRequest,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import type { MuseDb } from '../db/client.js'
 import { userProviderConfig } from '../db/schema.js'
 import { headersEntriesToRecord, headersRecordToEntries } from '../utils/header-utils.js'

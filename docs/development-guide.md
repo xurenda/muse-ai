@@ -16,11 +16,11 @@
 muse-ai/
 ├── AGENTS.md              # AI / 贡献者约定
 ├── packages/
-│   ├── shared/            # @muse-ai/shared — 类型、API 路径、SSE 协议、i18n
-│   ├── core/              # @muse-ai/core — MuseHarness、Session、资产加载
-│   ├── server/            # @muse-ai/server — 后端 + docker-compose.yml
-│   ├── cli/               # @muse-ai/cli — muse 命令与 HTTP daemon
-│   └── web/               # @muse-ai/web — Vite + React 前端
+│   ├── shared/            # @museai/shared — 类型、API 路径、SSE 协议、i18n
+│   ├── core/              # @museai/core — MuseHarness、Session、资产加载
+│   ├── server/            # @museai/server — 后端 + docker-compose.yml
+│   ├── cli/               # @museai/cli — muse 命令与 HTTP daemon
+│   └── web/               # @museai/web — Vite + React 前端
 └── docs/                  # 产品与阶段文档
 ```
 
@@ -88,7 +88,7 @@ cd packages/server && docker compose up -d && cd ../..
 
 浏览器打开 **http://127.0.0.1:65434**。
 
-> `pnpm dev:web` 会先执行 `@muse-ai/shared build`，再启动 Vite。日常改 Web 代码无需手动 build shared。
+> `pnpm dev:web` 会先执行 `@museai/shared build`，再启动 Vite。日常改 Web 代码无需手动 build shared。
 
 ### 4. 首次配对
 
@@ -107,16 +107,16 @@ curl http://127.0.0.1:65435/health   # server
 curl http://127.0.0.1:65433/health   # cli
 ```
 
-## 修改 `@muse-ai/shared` 后
+## 修改 `@museai/shared` 后
 
 `shared` 产出编译后的 `.js` / `.d.ts`，被 `core`、`cli`、`web` 消费。修改 shared 源码后：
 
 ```bash
 # 改 types / 协议 / i18n / api-paths 后至少执行一次
-pnpm --filter @muse-ai/shared build
+pnpm --filter @museai/shared build
 
 # 若改了 core（Harness、Session 等），还需
-pnpm --filter @muse-ai/core build
+pnpm --filter @museai/core build
 ```
 
 **何时必须 rebuild：**
@@ -245,8 +245,8 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 | 设备 SSE 断开但会话仍在           | 仅设备长连接断线                              | 等待自动重连或点「立即重连」；Session SSE 独立          |
 | 配对成功但聊天连不上              | endpoint 是内网地址，浏览器在另一网络         | 将 `MUSE_CLI_HOST` 设为浏览器可达 IP 后重新 pair        |
 | CORS 错误（控制台）               | `MUSE_CORS_ORIGINS` 未含 Web origin           | CLI / Server 的 CORS 都加上浏览器地址栏 origin          |
-| 改协议 / schema 后类型报错        | shared 未 rebuild                             | `pnpm --filter @muse-ai/shared build`，重启 cli / web   |
-| `pnpm dev:web` 报 shared 导入失败 | 首次 clone 未 build                           | `pnpm --filter @muse-ai/shared build`                   |
+| 改协议 / schema 后类型报错        | shared 未 rebuild                             | `pnpm --filter @museai/shared build`，重启 cli / web    |
+| `pnpm dev:web` 报 shared 导入失败 | 首次 clone 未 build                           | `pnpm --filter @museai/shared build`                    |
 | Server 启动失败                   | 缺 `JWT_SECRET` / `ENCRYPTION_KEY` 或 DB 未起 | 检查 `packages/server/.env` 与 `docker compose ps`      |
 | 发消息 401                        | 未 pair 或 device token 失效                  | `pnpm muse pair <码>`；Web 重新选设备                   |
 | Provider 报错                     | Server 未配置 API Key                         | Web「Provider 设置」                                    |
@@ -262,8 +262,8 @@ pnpm test:run          # build + vitest 全量
 pnpm typecheck         # 各包 tsc --noEmit
 
 # 单包
-pnpm --filter @muse-ai/web test:run
-pnpm --filter @muse-ai/cli build
+pnpm --filter @museai/web test:run
+pnpm --filter @museai/cli build
 ```
 
 提交前 husky + lint-staged 会对 staged 文件自动 fix。

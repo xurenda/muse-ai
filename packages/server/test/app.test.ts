@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@museai/shared'
 import { loadServerConfig } from '@/config.js'
 import { createServerApp, type ServerContext } from '@/app.js'
 

@@ -8,7 +8,7 @@ import { useChatSessionContext } from '@/context/chat-session-context'
 import { useAuth } from '@/hooks/use-auth'
 import { useChatAutoScroll } from '@/hooks/use-chat-auto-scroll'
 import type { StoredDeviceSession } from '@/lib/config'
-import type { SessionSettingsPatch, SessionSettingsResponse } from '@muse-ai/shared'
+import type { SessionSettingsPatch, SessionSettingsResponse } from '@museai/shared'
 import type { ChatInputMode } from '@/lib/chat-types'
 import { useCallback, useState } from 'react'
 

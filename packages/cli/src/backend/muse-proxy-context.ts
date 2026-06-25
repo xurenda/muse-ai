@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { encodeModelSelectionHeader, MUSE_PROXY_HEADERS, type ModelSelection, type MuseLlmTask } from '@muse-ai/shared'
-import type { MuseSessionStore } from '@muse-ai/core'
+import { encodeModelSelectionHeader, MUSE_PROXY_HEADERS, type ModelSelection, type MuseLlmTask } from '@museai/shared'
+import type { MuseSessionStore } from '@museai/core'
 import type { SessionEventHub } from '@/daemon/event-hub.js'
 
 export interface MuseProxyRuntimeContext {

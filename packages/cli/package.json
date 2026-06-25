@@ -1,6 +1,6 @@
 {
-  "name": "@muse-ai/cli",
-  "version": "0.0.0",
+  "name": "@museai/cli",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "bin": {
@@ -20,8 +20,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@muse-ai/core": "workspace:*",
-    "@muse-ai/shared": "workspace:*",
+    "@museai/core": "workspace:*",
+    "@museai/shared": "workspace:*",
     "@hono/node-server": "^1.19.3",
     "hono": "^4.9.6",
     "diff": "^8.0.4",

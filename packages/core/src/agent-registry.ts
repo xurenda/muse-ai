@@ -10,7 +10,7 @@ import {
   type AgentDefinition,
   type Persona,
   type SkillMeta,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { DEFAULT_MODEL_REF, parseModelRef } from './model-ref.js'
 import type { MuseHarnessOptions } from './types.js'
 

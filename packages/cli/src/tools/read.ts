@@ -1,6 +1,6 @@
 import { constants } from 'node:fs'
 import { access as fsAccess, readFile as fsReadFile } from 'node:fs/promises'
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 import { resolveReadPathAsync } from '@/tools/path-utils.js'
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from '@/tools/truncate.js'

@@ -6,7 +6,7 @@ import {
   loginRequestSchema,
   refreshTokenRequestSchema,
   registerRequestSchema,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { AuthError, type AuthService } from '../services/auth-service.js'
 import { DeviceError, type DeviceService } from '../services/device-service.js'
 import type { ServerVariables } from '../types.js'

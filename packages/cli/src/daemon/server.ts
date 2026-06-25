@@ -17,11 +17,11 @@ import {
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
   sessionTreeResponseSchema,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import type { CliConfig } from '../config.js'
 import { ChatServiceError } from './chat-service.js'
 import { SessionSettingsError } from './session-settings-service.js'
-import { SessionStoreError } from '@muse-ai/core'
+import { SessionStoreError } from '@museai/core'
 import { createCliAuthMiddleware } from './auth-middleware.js'
 import { createSseSubscriber } from './event-hub.js'
 import { createDeviceSseSubscriber, publishSessionRegistryChanged } from './device-event-hub.js'

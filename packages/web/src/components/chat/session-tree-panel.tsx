@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SessionTreeResponse } from '@muse-ai/shared'
+import type { SessionTreeResponse } from '@museai/shared'
 import { ReactFlow, Background, useEdgesState, useNodesState, type Edge, type Node } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { SessionTreeFlowAutoFit } from '@/components/chat/session-tree-flow-auto-fit'

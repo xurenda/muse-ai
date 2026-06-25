@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { MuseSseEvent } from '@muse-ai/shared'
+import type { MuseSseEvent } from '@museai/shared'
 
 export interface SseSubscriber {
   id: string

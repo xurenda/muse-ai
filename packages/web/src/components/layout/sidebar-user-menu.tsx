@@ -1,7 +1,7 @@
 import { ChevronRight, ChevronUp, Globe, LogOut, Monitor, Moon, Palette, SlidersHorizontal, Sun, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { SUPPORTED_LOCALES, type SupportedLocale } from '@muse-ai/shared'
+import { SUPPORTED_LOCALES, type SupportedLocale } from '@museai/shared'
 import {
   DropdownMenu,
   DropdownMenuContent,

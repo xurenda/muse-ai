@@ -1,4 +1,4 @@
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@museai/shared'
 import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'

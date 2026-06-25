@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY, dedupeModelPoolRefs } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY, dedupeModelPoolRefs } from '@museai/shared'
 import {
   deriveLegacyDefaultFromStrategy,
   migrateModelStrategyFromLegacy,

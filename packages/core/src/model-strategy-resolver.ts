@@ -1,4 +1,4 @@
-import type { ModelSelection, ModelStrategyConfig, ModelStrategyPools, TaskModelSelection } from '@muse-ai/shared'
+import type { ModelSelection, ModelStrategyConfig, ModelStrategyPools, TaskModelSelection } from '@museai/shared'
 import { DEFAULT_MODEL_REF } from './model-ref.js'
 import { expandModelSelection, expandTaskModelSelection, resolvePrimaryModelCandidate } from './model-strategy.js'
 

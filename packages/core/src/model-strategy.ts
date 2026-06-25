@@ -1,6 +1,6 @@
-import type { ModelSelection, ModelStrategyPools, TaskModelSelection } from '@muse-ai/shared'
+import type { ModelSelection, ModelStrategyPools, TaskModelSelection } from '@museai/shared'
 
-export { collectModelRefsFromStrategy, dedupeModelPoolRefs, normalizeModelStrategyPools } from '@muse-ai/shared'
+export { collectModelRefsFromStrategy, dedupeModelPoolRefs, normalizeModelStrategyPools } from '@museai/shared'
 
 export interface ResolvedModelCandidate {
   modelRef: string

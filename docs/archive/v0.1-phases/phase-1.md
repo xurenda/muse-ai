@@ -43,7 +43,7 @@
 | `.husky/pre-commit` | 提交前 lint-staged                                            |
 | `package.json`      | `lint` / `format` / `format:check`；`engines.node >= 22.19.0` |
 
-### 2. `@muse-ai/core`
+### 2. `@museai/core`
 
 封装 pi `AgentHarness`，固定 `NodeExecutionEnv`；Session 持久化接 pi JSONL。
 
@@ -67,7 +67,7 @@ packages/core/src/
 
 **测试：** `test/muse-harness.test.ts`（2 项）、`test/session-store.test.ts`（3 项）
 
-### 3. `@muse-ai/cli`
+### 3. `@museai/cli`
 
 Daemon 基于 **Hono**；`muse start` 启动 HTTP 服务。
 
@@ -106,7 +106,7 @@ packages/cli/src/daemon/
 
 **测试：** `test/paths.test.ts`（3 项）、`test/daemon/event-hub.test.ts`（1 项）、`test/daemon/server.test.ts`（5 项）
 
-### 4. `@muse-ai/shared`（本阶段增量）
+### 4. `@museai/shared`（本阶段增量）
 
 | 类型                 | 说明                                                                 |
 | -------------------- | -------------------------------------------------------------------- |

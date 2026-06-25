@@ -2,7 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { and, eq, gt } from 'drizzle-orm'
 import { SignJWT, jwtVerify } from 'jose'
-import type { LoginResponse, RegisterRequest } from '@muse-ai/shared'
+import type { LoginResponse, RegisterRequest } from '@museai/shared'
 import type { MuseDb } from '../db/client.js'
 import { refreshTokens, users } from '../db/schema.js'
 

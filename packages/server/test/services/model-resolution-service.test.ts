@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY, type ModelStrategyConfig } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY, type ModelStrategyConfig } from '@museai/shared'
 import { ModelResolutionError, ModelResolutionService } from '@/services/model-resolution-service.js'
 
 function createStrategy(overrides?: Partial<ModelStrategyConfig>): ModelStrategyConfig {

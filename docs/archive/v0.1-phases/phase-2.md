@@ -89,7 +89,7 @@ packages/cli/assets/          # 内置（只读）
 
 常量见 `packages/shared/src/constants/builtin-agents.ts`。
 
-### 3. `@muse-ai/core` — `MuseAgentRegistry`
+### 3. `@museai/core` — `MuseAgentRegistry`
 
 ```
 packages/core/src/agent-registry.ts
@@ -105,7 +105,7 @@ packages/core/src/agent-registry.ts
 
 **测试：** `test/agent-registry.test.ts`（5 项，含 fixtures）
 
-### 4. `@muse-ai/shared`（本阶段增量）
+### 4. `@museai/shared`（本阶段增量）
 
 | 变更                                                       | 说明                                 |
 | ---------------------------------------------------------- | ------------------------------------ |
@@ -114,7 +114,7 @@ packages/core/src/agent-registry.ts
 | `createSessionRequestSchema`                               | `agentId` 改为可选                   |
 | `skillMetaSchema`、`thinkingLevelSchema`、`modelRefSchema` | 新增                                 |
 
-### 5. `@muse-ai/cli`
+### 5. `@museai/cli`
 
 **新增命令（`commands/agent.ts`）：**
 
@@ -134,7 +134,7 @@ packages/core/src/agent-registry.ts
 | `paths.ts`        | `MuseConfig.activeAgentId`、`saveMuseConfig()`         |
 | `assets-path.ts`  | 解析 `packages/cli/assets` 路径                        |
 
-**根 `package.json`：** `"muse": "pnpm --filter @muse-ai/cli exec tsx src/cli.ts"`
+**根 `package.json`：** `"muse": "pnpm --filter @museai/cli exec tsx src/cli.ts"`
 
 **测试：** `test/commands/agent.test.ts`（3 项）；`test/daemon/server.test.ts` 扩展至 10 项
 

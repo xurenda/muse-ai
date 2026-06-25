@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { SessionMeta, SessionNameSource } from '@muse-ai/shared'
-import type { ModelSelection } from '@muse-ai/shared'
+import type { SessionMeta, SessionNameSource } from '@museai/shared'
+import type { ModelSelection } from '@museai/shared'
 
 export const SESSION_REGISTRY_VERSION = 1 as const
 

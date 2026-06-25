@@ -9,7 +9,7 @@ import {
   type PairInitResponse,
   type RegisterRequest,
   type RefreshTokenResponse,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { backendBaseUrl } from '@/lib/config'
 
 export class BackendApiError extends Error {

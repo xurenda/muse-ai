@@ -1,6 +1,6 @@
 # API 与 SSE 协议（v0 草案）
 
-> 阶段 0 定稿首版契约。实现以 `@muse-ai/shared` 中的 Zod schema 为准。
+> 阶段 0 定稿首版契约。实现以 `@museai/shared` 中的 Zod schema 为准。
 
 ## Server REST
 

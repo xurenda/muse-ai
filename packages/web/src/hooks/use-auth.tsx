@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import type { LoginResponse } from '@muse-ai/shared'
-import { SERVER_API_PATHS } from '@muse-ai/shared'
+import type { LoginResponse } from '@museai/shared'
+import { SERVER_API_PATHS } from '@museai/shared'
 import { AUTH_STORAGE_KEY, DEVICE_SESSION_KEY, backendBaseUrl, type StoredAuth, type StoredDeviceSession } from '@/lib/config'
 import i18n from '@/i18n/setup'
 

@@ -1,4 +1,4 @@
-import type { ThinkingLevel } from '@muse-ai/shared'
+import type { ThinkingLevel } from '@museai/shared'
 import type { MuseAgentRegistry } from './agent-registry.js'
 import type { MuseHarnessOptions } from './types.js'
 import type { Session } from '@earendil-works/pi-agent-core'

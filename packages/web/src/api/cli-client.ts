@@ -27,7 +27,7 @@ import {
   type SessionTreeResponse,
   type SkillMeta,
   type ToolDescriptor,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { computeSseBackoffMs, waitForSseRetry } from '@/lib/sse-reconnect'
 
 export class CliApiError extends Error {

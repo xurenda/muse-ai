@@ -1,6 +1,6 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type SupportedLocale } from '@muse-ai/shared'
+import { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type SupportedLocale } from '@museai/shared'
 import { LOCALE_STORAGE_KEY } from '@/lib/config'
 
 function readStoredLocale(): SupportedLocale {

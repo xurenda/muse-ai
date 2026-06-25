@@ -94,7 +94,7 @@
 
 ## 实际产出
 
-### 1. `@muse-ai/shared`
+### 1. `@museai/shared`
 
 | 模块                         | 变更                                                              |
 | ---------------------------- | ----------------------------------------------------------------- |
@@ -105,7 +105,7 @@
 | `constants/api-paths.ts`     | `sessionTreePath`、`sessionNavigatePath`、`sessionForkPath`       |
 | `i18n/locales/{zh,en}/`      | `common`、`auth`、`device`、`chat`、`agents`、`settings` 命名空间 |
 
-### 2. `@muse-ai/core`
+### 2. `@museai/core`
 
 | 模块                                  | 变更                                                             |
 | ------------------------------------- | ---------------------------------------------------------------- |
@@ -117,7 +117,7 @@
 | `session-tree.ts`                     | pi `SessionTreeEntry` → API 节点；`buildBranchFromSession`       |
 | `session-store.ts`                    | `getTree`、`navigate`（moveTo）、`fork`（JsonlSessionRepo.fork） |
 
-### 3. `@muse-ai/server`
+### 3. `@museai/server`
 
 | 模块                         | 变更                                           |
 | ---------------------------- | ---------------------------------------------- |
@@ -125,7 +125,7 @@
 | `services/device-service.ts` | endpoint + `access_token_encrypted`（AES-GCM） |
 | `app.ts`                     | CORS middleware（`MUSE_CORS_ORIGINS`）         |
 
-### 4. `@muse-ai/cli`
+### 4. `@museai/cli`
 
 **Daemon 新/改路由：**
 
@@ -150,7 +150,7 @@
 
 **命令：** `muse chat --show-thinking` — thinking 输出 stderr
 
-### 5. `@muse-ai/web`
+### 5. `@museai/web`
 
 **页面：** `/login`、`/register`、`/devices`、`/chat`、`/agents`、`/settings/providers`
 

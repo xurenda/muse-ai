@@ -1,6 +1,6 @@
 {
-  "name": "@muse-ai/server",
-  "version": "0.0.0",
+  "name": "@museai/server",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -19,8 +19,8 @@
   "dependencies": {
     "@earendil-works/pi-ai": "^0.79.3",
     "@hono/node-server": "^1.19.3",
-    "@muse-ai/core": "workspace:*",
-    "@muse-ai/shared": "workspace:*",
+    "@museai/core": "workspace:*",
+    "@museai/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",

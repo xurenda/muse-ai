@@ -1,4 +1,4 @@
-import type { ProviderHealthStatus } from '@muse-ai/shared'
+import type { ProviderHealthStatus } from '@museai/shared'
 import { cn } from '@/lib/utils'
 
 interface ProviderHealthDotProps {

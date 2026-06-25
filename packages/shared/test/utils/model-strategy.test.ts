@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY, appendModelRefsToAllPools } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY, appendModelRefsToAllPools } from '@museai/shared'
 
 describe('appendModelRefsToAllPools', () => {
   it('应将 modelRef 追加到三档模型组', () => {

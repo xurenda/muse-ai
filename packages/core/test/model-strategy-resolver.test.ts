@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY } from '@museai/shared'
 import { resolveEffectiveChatModelSelection, resolvePrimaryModelRef, resolveTaskModelCandidates } from '@/model-strategy-resolver.js'
 
 describe('resolveEffectiveChatModelSelection', () => {

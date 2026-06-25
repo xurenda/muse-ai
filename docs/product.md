@@ -47,11 +47,11 @@ Agent（运行实例）
 
 ### 三层产品
 
-| 层          | 包/部署                     | 职责                                            |
-| ----------- | --------------------------- | ----------------------------------------------- |
-| **CLI**     | `@muse-ai/cli`，命令 `muse` | Agent runtime、Session 持久化、HTTP+SSE 服务    |
-| **Backend** | Docker Compose              | 账号、LLM Provider 代理、设备注册、市场（后期） |
-| **Web**     | `pnpm dev` / 静态部署       | 聊天 UI、Session 树、Agent 组装、设置           |
+| 层          | 包/部署                    | 职责                                            |
+| ----------- | -------------------------- | ----------------------------------------------- |
+| **CLI**     | `@museai/cli`，命令 `muse` | Agent runtime、Session 持久化、HTTP+SSE 服务    |
+| **Backend** | Docker Compose             | 账号、LLM Provider 代理、设备注册、市场（后期） |
+| **Web**     | `pnpm dev` / 静态部署      | 聊天 UI、Session 树、Agent 组装、设置           |
 
 ## 关键体验
 

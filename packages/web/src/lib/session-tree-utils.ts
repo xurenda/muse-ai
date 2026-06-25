@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 import dagre from '@dagrejs/dagre'
-import type { SessionTreeNode } from '@muse-ai/shared'
+import type { SessionTreeNode } from '@museai/shared'
 
 export interface SessionTreeItem {
   node: SessionTreeNode

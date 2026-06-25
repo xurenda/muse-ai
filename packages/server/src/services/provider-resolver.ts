@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { AuthCredential } from '@muse-ai/shared'
+import type { AuthCredential } from '@museai/shared'
 import type { MuseDb } from '../db/client.js'
 import { userSettings } from '../db/schema.js'
 import type { CredentialStore } from '../stores/credential-store.js'

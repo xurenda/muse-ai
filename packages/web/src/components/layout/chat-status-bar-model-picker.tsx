@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
-import type { SessionSettingsResponse } from '@muse-ai/shared'
+import type { SessionSettingsResponse } from '@museai/shared'
 import { ChatModelPicker } from '@/components/chat/chat-model-picker'
 import { STATUS_BAR_TRAILING_SLOT_ID } from '@/constants/status-bar'
 import { useChatSessionContext } from '@/context/chat-session-context'

@@ -1,4 +1,4 @@
-import type { ChatRequest, TurnTokenUsage } from '@muse-ai/shared'
+import type { ChatRequest, TurnTokenUsage } from '@museai/shared'
 
 export type ChatInputMode = ChatRequest['mode']
 

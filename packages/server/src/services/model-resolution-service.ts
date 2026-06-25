@@ -1,5 +1,5 @@
-import { parseModelSelectionHeader, parseProviderIdFromModelRef, type ModelSelection, type ModelStrategyConfig, type MuseLlmTask } from '@muse-ai/shared'
-import { resolveEffectiveChatModelSelection, resolveTaskModelCandidates } from '@muse-ai/core'
+import { parseModelSelectionHeader, parseProviderIdFromModelRef, type ModelSelection, type ModelStrategyConfig, type MuseLlmTask } from '@museai/shared'
+import { resolveEffectiveChatModelSelection, resolveTaskModelCandidates } from '@museai/core'
 import type { SettingsService } from './settings-service.js'
 
 export interface ModelResolutionDeps {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY, MUSE_PROXY_HEADERS, type ModelStrategyConfig } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY, MUSE_PROXY_HEADERS, type ModelStrategyConfig } from '@museai/shared'
 import { ModelResolutionService } from '@/services/model-resolution-service.js'
 import { LlmProxyOrchestrator } from '@/services/llm-proxy-orchestrator.js'
 import type { LlmProxyService } from '@/services/llm-proxy-service.js'

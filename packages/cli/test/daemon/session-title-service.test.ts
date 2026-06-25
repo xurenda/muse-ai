@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { MuseSessionStore } from '@muse-ai/core'
-import type { SessionMeta } from '@muse-ai/shared'
-import { DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@muse-ai/shared'
+import type { MuseSessionStore } from '@museai/core'
+import type { SessionMeta } from '@museai/shared'
+import { DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@museai/shared'
 import { SessionEventHub } from '@/daemon/event-hub.js'
 import { SessionTitleService } from '@/daemon/session-title-service.js'
 

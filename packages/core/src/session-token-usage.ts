@@ -1,6 +1,6 @@
 import type { AgentMessage, SessionTreeEntry } from '@earendil-works/pi-agent-core'
-import type { SessionTokenUsage, TurnTokenUsage } from '@muse-ai/shared'
-import { EMPTY_SESSION_TOKEN_USAGE } from '@muse-ai/shared'
+import type { SessionTokenUsage, TurnTokenUsage } from '@museai/shared'
+import { EMPTY_SESSION_TOKEN_USAGE } from '@museai/shared'
 
 interface PiUsageLike {
   input?: number

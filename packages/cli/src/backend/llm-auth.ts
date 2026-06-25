@@ -1,6 +1,6 @@
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@museai/shared'
 
-import { encodeModelSelectionHeader, MUSE_PROXY_HEADERS, type ModelSelection, type MuseLlmTask } from '@muse-ai/shared'
+import { encodeModelSelectionHeader, MUSE_PROXY_HEADERS, type ModelSelection, type MuseLlmTask } from '@museai/shared'
 
 export interface BackendLlmAuthConfig {
   backendUrl: string

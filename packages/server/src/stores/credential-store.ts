@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import type { AuthCredential } from '@muse-ai/shared'
+import type { AuthCredential } from '@museai/shared'
 import { decryptSecret, encryptSecret } from '../crypto/aes-gcm.js'
 import type { MuseDb } from '../db/client.js'
 import { userProviderCredentials } from '../db/schema.js'

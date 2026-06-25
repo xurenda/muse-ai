@@ -1,4 +1,4 @@
-import type { ProviderHealthStatus } from '@muse-ai/shared'
+import type { ProviderHealthStatus } from '@museai/shared'
 
 const authFailureMessages = new Map<string, string>()
 

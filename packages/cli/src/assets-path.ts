@@ -1,6 +1,6 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { MuseAssetRoots } from '@muse-ai/core'
+import type { MuseAssetRoots } from '@museai/core'
 import type { MusePaths } from './paths.js'
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..')

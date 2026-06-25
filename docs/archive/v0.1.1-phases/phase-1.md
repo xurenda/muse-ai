@@ -190,13 +190,13 @@ return last error or pool_empty
 ### 自动化
 
 ```bash
-pnpm --filter @muse-ai/shared build
-pnpm --filter @muse-ai/core build
+pnpm --filter @museai/shared build
+pnpm --filter @museai/core build
 pnpm test:run packages/core/test/model-strategy
 pnpm test:run packages/server/test/settings
 pnpm test:run packages/cli/test/daemon/session-title-service.test.ts
 pnpm test:run packages/cli/test/daemon/chat-service.test.ts
-pnpm --filter @muse-ai/web typecheck
+pnpm --filter @museai/web typecheck
 ```
 
 预期：新增/更新测试全绿；既有 CLI daemon 测试不回归。

@@ -6,7 +6,7 @@ import type {
   ModelsConfigProviderOption,
   ModelTier,
   TaskModelSelection,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'

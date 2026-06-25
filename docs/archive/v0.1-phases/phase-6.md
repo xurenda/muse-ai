@@ -134,7 +134,7 @@
 | Session URL      | `/chat` + `/chat/:sessionId`     | `useChatSession` + `ChatSessionProvider` URL 驱动              |
 | 设置路由         | `/settings/*` 嵌套路由           | 进入 settings 时左栏切 `SettingsSidebar`；General 占位         |
 | 侧栏状态         | zustand + persist                | `sidebar`、`session-tree-panel` store                          |
-| i18n             | `layout` 命名空间                | 侧栏/Header 文案；`dev:web` 启动前 build `@muse-ai/shared`     |
+| i18n             | `layout` 命名空间                | 侧栏/Header 文案；`dev:web` 启动前 build `@museai/shared`      |
 | Session 树 Panel | 始终挂载                         | 避免条件渲染时 `panel.isCollapsed()` 在 Group 注册前抛错       |
 | 业务逻辑         | 不改阶段 5 链路                  | SSE / reducer / Backend CRUD / fork-navigate 行为保持          |
 
@@ -142,7 +142,7 @@
 
 ## 实际产出
 
-### 1. `@muse-ai/shared`
+### 1. `@museai/shared`
 
 | 模块                                 | 变更                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------- |
@@ -153,7 +153,7 @@
 | `i18n/locales/{zh,en}/device.json`   | `listTitle`                                                               |
 | `i18n/resources.ts`                  | 注册 `layout` 命名空间                                                    |
 
-### 2. `@muse-ai/web` — 设计系统（6.1）
+### 2. `@museai/web` — 设计系统（6.1）
 
 | 模块                                                  | 说明                                                                        |
 | ----------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -163,7 +163,7 @@
 | `components/ui/*`                                     | Button、Input、Textarea、Select、IconButton、Tooltip、DropdownMenu、Toaster |
 | 依赖                                                  | `lucide-react`、`sonner`、`zustand`、`shiki`、`@tailwindcss/typography`     |
 
-### 3. `@muse-ai/web` — 应用壳层（6.2）
+### 3. `@museai/web` — 应用壳层（6.2）
 
 | 模块                               | 说明                                                                        |
 | ---------------------------------- | --------------------------------------------------------------------------- |
@@ -177,7 +177,7 @@
 
 **删除：** `session-sidebar.tsx`、`DeviceRequiredLayout` 用法
 
-### 4. `@muse-ai/web` — 聊天视觉（6.3）
+### 4. `@museai/web` — 聊天视觉（6.3）
 
 | 模块                                                                                | 说明                                |
 | ----------------------------------------------------------------------------------- | ----------------------------------- |
@@ -192,7 +192,7 @@
 
 **删除：** `chat-input.tsx`、`message-parts.tsx`
 
-### 5. `@muse-ai/web` — 设置 / 认证 / 设备 / Agent（6.4）
+### 5. `@museai/web` — 设置 / 认证 / 设备 / Agent（6.4）
 
 | 模块                                         | 说明                                                 |
 | -------------------------------------------- | ---------------------------------------------------- |
@@ -208,11 +208,11 @@
 
 ### 6. 根目录 / 工具链
 
-| 变更                                         | 说明                                                   |
-| -------------------------------------------- | ------------------------------------------------------ |
-| `package.json` / `packages/web/package.json` | `dev:web` 启动前 `pnpm --filter @muse-ai/shared build` |
-| `AGENTS.md`                                  | UI 基元表补充 Settings / PageShell / AuthLayout        |
-| `test/utils/apply-theme.test.ts`             | 主题应用单元测试                                       |
+| 变更                                         | 说明                                                  |
+| -------------------------------------------- | ----------------------------------------------------- |
+| `package.json` / `packages/web/package.json` | `dev:web` 启动前 `pnpm --filter @museai/shared build` |
+| `AGENTS.md`                                  | UI 基元表补充 Settings / PageShell / AuthLayout       |
+| `test/utils/apply-theme.test.ts`             | 主题应用单元测试                                      |
 
 ---
 
@@ -220,12 +220,12 @@
 
 ```bash
 # 1. 类型与测试（web 需先 build shared，dev 脚本已内置）
-pnpm --filter @muse-ai/shared build
-pnpm --filter @muse-ai/web typecheck
-pnpm --filter @muse-ai/web test:run
+pnpm --filter @museai/shared build
+pnpm --filter @museai/web typecheck
+pnpm --filter @museai/web test:run
 
 # 2. 构建
-pnpm --filter @muse-ai/web build
+pnpm --filter @museai/web build
 
 # 3. 手动（pnpm dev:web + CLI + Server 联调）
 # - 主题默认跟随系统；切换 light/dark/system 后刷新仍生效
@@ -238,9 +238,9 @@ pnpm --filter @muse-ai/web build
 
 **2026-06-16 自动化验收：**
 
-- `pnpm --filter @muse-ai/web typecheck` — 通过
-- `pnpm --filter @muse-ai/web test:run` — **4 passed**（`apply-theme` 2、`chat-reducer` 2）
-- `pnpm --filter @muse-ai/web build` — 通过
+- `pnpm --filter @museai/web typecheck` — 通过
+- `pnpm --filter @museai/web test:run` — **4 passed**（`apply-theme` 2、`chat-reducer` 2）
+- `pnpm --filter @museai/web build` — 通过
 
 **联调注意：**
 

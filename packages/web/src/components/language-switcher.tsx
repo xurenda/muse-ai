@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { SUPPORTED_LOCALES, type SupportedLocale } from '@muse-ai/shared'
+import { SUPPORTED_LOCALES, type SupportedLocale } from '@museai/shared'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button } from '@/components/ui/button'
 import { setAppLocale } from '@/i18n/setup'

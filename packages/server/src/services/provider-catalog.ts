@@ -1,6 +1,6 @@
 import { getModels, getProviders, type Api, type KnownProvider, type Model } from '@earendil-works/pi-ai'
-import type { MuseModelsConfig, MuseProviderDefinition } from '@muse-ai/shared'
-import { DEFAULT_PROVIDER_API } from '@muse-ai/shared'
+import type { MuseModelsConfig, MuseProviderDefinition } from '@museai/shared'
+import { DEFAULT_PROVIDER_API } from '@museai/shared'
 import { mergeHeaderRecords } from '../utils/header-utils.js'
 
 const DEFAULT_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }

@@ -9,7 +9,7 @@ describe('formatContextUsageTriggerParts', () => {
       percent: 0,
     })
     expect(parts.percentText).toBe('0')
-    expect(parts.windowText).toBe('200k')
+    expect(parts.windowText).toBe('200.0k')
     expect(parts.tokensPending).toBe(false)
     expect(resolveContextUsageProgressPercent(parts)).toBe(0)
   })

@@ -1,12 +1,12 @@
-import type { MuseModelsConfig } from '@muse-ai/shared'
+import type { MuseModelsConfig } from '@museai/shared'
 import {
   DEFAULT_MODEL_STRATEGY,
   modelStrategyConfigSchema,
   type ModelSelection,
   type ModelStrategyConfig,
   type UpdateModelStrategyRequest,
-} from '@muse-ai/shared'
-import { collectModelRefsFromStrategy, normalizeModelStrategyPools } from '@muse-ai/shared'
+} from '@museai/shared'
+import { collectModelRefsFromStrategy, normalizeModelStrategyPools } from '@museai/shared'
 import { findCatalogModel } from './provider-catalog.js'
 
 export class ModelStrategyValidationError extends Error {

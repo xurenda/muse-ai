@@ -1,6 +1,6 @@
 import { readdir as fsReaddir, stat as fsStat } from 'node:fs/promises'
 import nodePath from 'node:path'
-import type { AgentTool } from '@muse-ai/core'
+import type { AgentTool } from '@museai/core'
 import { Type, type Static } from 'typebox'
 import { pathExists, resolveToCwd } from '@/tools/path-utils.js'
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from '@/tools/truncate.js'

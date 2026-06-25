@@ -2,7 +2,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { DEFAULT_AGENT_ID } from '@muse-ai/shared'
+import { DEFAULT_AGENT_ID } from '@museai/shared'
 import { MuseSessionStore } from '../src/session-store.js'
 import { mapSessionTreeEntry } from '../src/session-tree.js'
 

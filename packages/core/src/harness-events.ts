@@ -1,5 +1,5 @@
 import type { AgentHarnessEvent } from '@earendil-works/pi-agent-core'
-import type { MuseSseEvent } from '@muse-ai/shared'
+import type { MuseSseEvent } from '@museai/shared'
 import { extractTurnUsageFromMessage } from './session-token-usage.js'
 
 /** 将 pi AgentHarnessEvent 映射为 Muse SSE 事件 */

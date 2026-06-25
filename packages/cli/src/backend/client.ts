@@ -1,4 +1,4 @@
-import { DEFAULT_PORTS, SERVER_API_PATHS, devicePairResponseSchema, type DevicePairRequest, type DevicePairResponse } from '@muse-ai/shared'
+import { DEFAULT_PORTS, SERVER_API_PATHS, devicePairResponseSchema, type DevicePairRequest, type DevicePairResponse } from '@museai/shared'
 import { resolveBackendUrl } from './llm-auth.js'
 
 export class BackendClient {

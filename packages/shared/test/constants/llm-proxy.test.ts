@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_MODEL_STRATEGY, encodeModelSelectionHeader, parseModelSelectionHeader, parseMuseLlmTask, parseProviderIdFromModelRef } from '@muse-ai/shared'
+import { DEFAULT_MODEL_STRATEGY, encodeModelSelectionHeader, parseModelSelectionHeader, parseMuseLlmTask, parseProviderIdFromModelRef } from '@museai/shared'
 
 describe('encodeModelSelectionHeader / parseModelSelectionHeader', () => {
   it('tier selection 应往返', () => {

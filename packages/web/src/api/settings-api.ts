@@ -8,7 +8,7 @@ import {
   type UpdateProviderApiKeyRequest,
   type UpsertCustomProviderRequest,
   type UpsertProviderAdvancedConfigRequest,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import { BackendApiError } from '@/api/backend-client'
 import { backendBaseUrl } from '@/lib/config'
 

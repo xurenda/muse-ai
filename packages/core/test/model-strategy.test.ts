@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ModelStrategyConfig, ModelStrategyPools } from '@muse-ai/shared'
+import type { ModelStrategyConfig, ModelStrategyPools } from '@museai/shared'
 import {
   expandModelSelection,
   expandTaskModelSelection,
@@ -117,7 +117,7 @@ describe('extractHttpStatus', () => {
 
 describe('collectModelRefsFromStrategy', () => {
   it('应收集池与任务中的 model ref', async () => {
-    const { collectModelRefsFromStrategy } = await import('@muse-ai/shared')
+    const { collectModelRefsFromStrategy } = await import('@museai/shared')
     const strategy: ModelStrategyConfig = {
       pools,
       taskRouting: {

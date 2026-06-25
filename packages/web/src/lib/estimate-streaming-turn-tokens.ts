@@ -1,4 +1,4 @@
-import type { TurnTokenUsage } from '@muse-ai/shared'
+import type { TurnTokenUsage } from '@museai/shared'
 import type { AssistantContentBlock } from '@/lib/chat-types'
 
 function estimateToolChars(tool: { toolName: string; args: unknown; result?: unknown }): number {

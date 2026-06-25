@@ -73,7 +73,7 @@ pnpm lint
 pnpm format:check
 ```
 
-开发日常只需按上文「开发环境」启动，不必每次 `pnpm build`。修改 `packages/shared` 后需 `pnpm --filter @muse-ai/shared build`，详见开发指南。
+开发日常只需按上文「开发环境」启动，不必每次 `pnpm build`。修改 `packages/shared` 后需 `pnpm --filter @museai/shared build`，详见开发指南。
 
 ## 远程 CLI（摘要）
 
@@ -90,13 +90,13 @@ curl http://127.0.0.1:65433/health   # cli
 
 ## 包说明
 
-| 包                | 说明                      |
-| ----------------- | ------------------------- |
-| `@muse-ai/shared` | 类型、API 路径、SSE 协议  |
-| `@muse-ai/core`   | Agent 组装（阶段 1）      |
-| `@muse-ai/cli`    | `muse` 命令与 daemon      |
-| `@muse-ai/server` | 后端 API + docker-compose |
-| `@muse-ai/web`    | Web 前端                  |
+| 包               | 说明                      |
+| ---------------- | ------------------------- |
+| `@museai/shared` | 类型、API 路径、SSE 协议  |
+| `@museai/core`   | Agent 组装（阶段 1）      |
+| `@museai/cli`    | `muse` 命令与 daemon      |
+| `@museai/server` | 后端 API + docker-compose |
+| `@museai/web`    | Web 前端                  |
 
 ## 参考仓库（本机）
 

@@ -1,4 +1,4 @@
-import { MuseAgentRegistry } from '@muse-ai/core'
+import { MuseAgentRegistry } from '@museai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig, saveMuseConfig, type MusePaths } from '../paths.js'
 

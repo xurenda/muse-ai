@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@museai/shared'
 import { mergeSessionList } from '@/lib/merge-session-list'
 
 describe('mergeSessionList', () => {

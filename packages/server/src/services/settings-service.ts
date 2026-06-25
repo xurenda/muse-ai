@@ -16,7 +16,7 @@ import {
   type UpdateModelsConfigRequest,
   type UpsertCustomProviderRequest,
   type UpsertProviderAdvancedConfigRequest,
-} from '@muse-ai/shared'
+} from '@museai/shared'
 import type { MuseDb } from '../db/client.js'
 import { userSettings } from '../db/schema.js'
 import type { CredentialStore } from '../stores/credential-store.js'

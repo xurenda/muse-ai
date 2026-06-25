@@ -1,4 +1,4 @@
-import { CLI_API_PATHS, sessionEventsPath, type MuseSseEvent } from '@muse-ai/shared'
+import { CLI_API_PATHS, sessionEventsPath, type MuseSseEvent } from '@museai/shared'
 import { loadCliConfig } from '../config.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 

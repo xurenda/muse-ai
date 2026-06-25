@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { MuseAgentRegistry, MuseSessionStore } from '@muse-ai/core'
+import { MuseAgentRegistry, MuseSessionStore } from '@museai/core'
 import { createAssetRoots } from '../assets-path.js'
 import { getMusePaths, loadMuseConfig } from '../paths.js'
 import { installMuseProxyFetchInterceptor } from '../backend/muse-proxy-context.js'

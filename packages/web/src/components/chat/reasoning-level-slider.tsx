@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { thinkingLevelSchema, type ThinkingLevel } from '@muse-ai/shared'
+import { thinkingLevelSchema, type ThinkingLevel } from '@museai/shared'
 import { cn } from '@/lib/utils'
 
 const THINKING_LEVELS = thinkingLevelSchema.options

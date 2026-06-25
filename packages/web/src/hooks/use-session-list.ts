@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { SessionMeta } from '@muse-ai/shared'
+import type { SessionMeta } from '@museai/shared'
 import { listCliSessions } from '@/api/cli-client'
 import { useAuth } from '@/hooks/use-auth'
 import { useDeviceHealth } from '@/hooks/use-device-health'

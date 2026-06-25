@@ -1,4 +1,4 @@
-import type { SessionBranchBlock, SessionBranchToolCall } from '@muse-ai/shared'
+import type { SessionBranchBlock, SessionBranchToolCall } from '@museai/shared'
 import type { AssistantChatMessage, AssistantContentBlock, ToolCallItem } from '@/lib/chat-types'
 
 export function mapBranchToolToItem(tool: SessionBranchToolCall): ToolCallItem {

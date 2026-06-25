@@ -1,4 +1,4 @@
-import type { MuseSseEvent, TurnTokenUsage } from '@muse-ai/shared'
+import type { MuseSseEvent, TurnTokenUsage } from '@museai/shared'
 import {
   appendTextDelta,
   appendThinkingDelta,

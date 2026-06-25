@@ -1,4 +1,4 @@
-import { DEFAULT_PORTS } from '@muse-ai/shared'
+import { DEFAULT_PORTS } from '@museai/shared'
 
 export const backendBaseUrl = import.meta.env.VITE_BACKEND_URL ?? `http://127.0.0.1:${DEFAULT_PORTS.SERVER}`
 

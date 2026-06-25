@@ -8,8 +8,8 @@ import {
   isAssistantContextOverflow,
   type MuseAgentRegistry,
   type MuseSessionStore,
-} from '@muse-ai/core'
-import type { ChatRequest, CompactionReason, MuseLlmTask } from '@muse-ai/shared'
+} from '@museai/core'
+import type { ChatRequest, CompactionReason, MuseLlmTask } from '@museai/shared'
 import { createBackendGetApiKeyAndHeaders, type BackendLlmAuthConfig } from '../backend/llm-auth.js'
 import { runWithMuseProxyContext } from '../backend/muse-proxy-context.js'
 import { createMuseProxyModel } from '../backend/muse-proxy-model.js'
