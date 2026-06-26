@@ -18,6 +18,7 @@ muse-ai/
 ├── packages/
 │   ├── shared/            # @museai/shared — 类型、API 路径、SSE 协议、i18n
 │   ├── core/              # @museai/core — MuseHarness、Session、资产加载
+│   ├── basic-kit/         # @museai/basic-kit — 官方基础套件
 │   ├── server/            # @museai/server — 后端 + docker-compose.yml
 │   ├── cli/               # @museai/cli — muse 命令与 HTTP daemon
 │   └── web/               # @museai/web — Vite + React 前端
@@ -99,6 +100,8 @@ cd packages/server && docker compose up -d && cd ../..
 5. 在 Web 选择该设备，进入聊天
 
 配对成功后 CLI 会写入 `~/.muse/config.json`（device token、backend URL），并向 Server 发送**目录心跳**（启动立即 `online`，之后每 30s，退出时 `online: false`）。
+
+首次 `muse start` / `pnpm dev:cli` 还会在本机执行 `syncBasicKit()`，将 `museai/basic-kit` 落盘到 `~/.muse/`（无需 Backend）。
 
 ### 5. 健康检查
 
@@ -237,6 +240,46 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 
 更通用的公网方案（Cloudflare Tunnel、Nginx 反代等）思路相同：**TLS 终止在代理**，CLI 本机 HTTP；关键是 Backend 存的 endpoint 必须是 **浏览器实际请求的 origin**，v0.1 需 LAN IP + HTTP 验证。
 
+## 市场 v1 端到端验收
+
+适用于 v0.2 市场功能（规格见 [v0.2/market.md](./v0.2/market.md)）。前置：三进程已启动，Docker 中 Postgres / Redis 正常。
+
+### 检查清单
+
+1. **注册**：Web 注册页填写用户名；保留名（如 `museai`、`admin`）应提示「用户名已存在」
+2. **CLI 首装**：删除 `~/.muse/` 后执行 `pnpm dev:cli`；确认 `~/.muse/personas/museai/basic-kit/` 与 `market/installed.json` 存在
+3. **市场种子**：`pnpm dev:server` 启动后，`GET /market/packages`（带 user JWT）应含 `museai/basic-kit`
+4. **配对**：设备页生成配对码 → `pnpm muse pair <码>` → Web 选择设备，底栏「就绪」
+5. **逛市场**：侧栏「市场」→ 列表与详情；未配对时仍可浏览，安装按钮引导至设备页
+6. **装包 / 更新**：设备在线时于详情页「安装」或「更新」；本机 `installed.json` 版本应与 Backend 一致
+7. **聊天**：新建对话，默认 Agent 可正常会话
+8. **Agents 页**：Persona / Skill 显示 `local` / `市场` 标签
+
+### 常用 curl
+
+```bash
+# 登录拿 JWT
+TOKEN=$(curl -s -X POST http://127.0.0.1:65435/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"your-password"}' | jq -r .accessToken)
+
+# 市场列表（未登录应 401）
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:65435/market/packages
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:65435/market/packages | jq .
+
+# CLI 已安装（device token）
+curl -s -H "Authorization: Bearer $DEVICE_TOKEN" http://127.0.0.1:65433/market/installed | jq .
+```
+
+### 构建 musepack
+
+与 Server 启动种子、`pnpm pack:basic-kit` 同源：
+
+```bash
+pnpm pack:basic-kit
+# 输出 packages/basic-kit/dist/museai-basic-kit-<version>.musepack 与 sha256
+```
+
 ## 常见排错
 
 | 现象                              | 可能原因                                      | 处理                                                    |
@@ -258,9 +301,14 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 ```bash
 pnpm lint              # ESLint
 pnpm format:check      # Prettier
+pnpm pack:basic-kit    # 构建 official .musepack
 pnpm test:run          # build + vitest 全量
 pnpm typecheck         # 各包 tsc --noEmit
+```
 
+CI（GitHub Actions）：push / PR 时执行 `pnpm pack:basic-kit` 与 `pnpm test:run`（见 `.github/workflows/ci.yml`）。
+
+```bash
 # 单包
 pnpm --filter @museai/web test:run
 pnpm --filter @museai/cli build
@@ -275,5 +323,6 @@ pnpm --filter @museai/cli build
 | [README.md](../README.md)              | 快速开始            |
 | [architecture.md](./architecture.md)   | 三层架构与存储      |
 | [protocols.md](./protocols.md)         | REST / SSE 契约     |
+| [v0.2/market.md](./v0.2/market.md)     | 市场 v1 规格与验收  |
 | [releases/v0.1.md](./releases/v0.1.md) | v0.1 产品线交付说明 |
 | [current-phase.md](./current-phase.md) | 当前版本快照        |

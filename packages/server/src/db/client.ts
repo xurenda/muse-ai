@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  username TEXT NOT NULL UNIQUE,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -23,16 +25,13 @@ CREATE TABLE IF NOT EXISTS devices (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   access_token_hash TEXT NOT NULL,
+  access_token_encrypted TEXT,
   endpoint TEXT,
   last_seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS devices_user_id_idx ON devices(user_id);
-
-ALTER TABLE devices ADD COLUMN IF NOT EXISTS access_token_encrypted TEXT;
-
-DROP TABLE IF EXISTS providers CASCADE;
 
 CREATE TABLE IF NOT EXISTS user_provider_credentials (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -57,10 +56,9 @@ CREATE TABLE IF NOT EXISTS user_settings (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   default_provider TEXT,
   default_model TEXT,
+  model_strategy_json TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS model_strategy_json TEXT;
 
 CREATE INDEX IF NOT EXISTS user_provider_credentials_user_id_idx ON user_provider_credentials(user_id);
 CREATE INDEX IF NOT EXISTS user_provider_config_user_id_idx ON user_provider_config(user_id);
@@ -76,6 +74,32 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS refresh_tokens_token_idx ON refresh_tokens(token);
+
+CREATE TABLE IF NOT EXISTS market_packages (
+  id TEXT PRIMARY KEY,
+  author_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  kind TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'published',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS market_packages_author_id_idx ON market_packages(author_id);
+CREATE INDEX IF NOT EXISTS market_packages_status_idx ON market_packages(status);
+
+CREATE TABLE IF NOT EXISTS market_package_versions (
+  package_id TEXT NOT NULL REFERENCES market_packages(id) ON DELETE CASCADE,
+  version TEXT NOT NULL,
+  manifest_json TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  blob_path TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (package_id, version)
+);
+
+CREATE INDEX IF NOT EXISTS market_package_versions_package_id_idx ON market_package_versions(package_id);
 `
 
 export async function initDatabase(pool: pg.Pool): Promise<void> {

@@ -9,7 +9,7 @@ export interface StoredAuth {
   /** access token 过期的 Unix 时间戳（秒），小于等于 1d 时自动刷新 */
   accessTokenExpiresAt: number
   refreshToken: string
-  user: { id: string; email: string }
+  user: { id: string; email: string; username?: string }
 }
 
 export const DEVICE_SESSION_KEY = 'muse.deviceSession'

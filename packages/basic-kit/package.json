@@ -1,0 +1,32 @@
+{
+  "name": "@museai/basic-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./manifest.json": "./manifest.json"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "manifest.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "pack:musepack": "tsx src/pack-musepack.ts"
+  },
+  "dependencies": {
+    "@museai/shared": "workspace:*",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}

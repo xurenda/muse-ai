@@ -1,13 +1,24 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSseEvent } from '@museai/shared'
-import { BUILTIN_CODING_AGENT_ID, BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS, sessionEventsPath } from '@museai/shared'
+import {
+  BUILTIN_CODING_AGENT_ID,
+  BUILTIN_GENERAL_AGENT_ID,
+  BUILTIN_PERSONA_GENERAL,
+  BASIC_KIT_PACKAGE_ID,
+  CLI_API_PATHS,
+  DEFAULT_PORTS,
+  sessionEventsPath,
+} from '@museai/shared'
 import { loadCliConfig } from '@/config.js'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
 import { createCliApp } from '@/daemon/server.js'
+import { MarketInstallerError } from '@/market/market-errors.js'
+import * as marketInstaller from '@/market/market-installer.js'
+import { seedTestAssets } from '../helpers/seed-test-assets.js'
 
 async function createTestApp() {
   const tempHome = await mkdtemp(join(tmpdir(), 'muse-cli-daemon-'))
@@ -20,7 +31,10 @@ async function createTestApp() {
     personas: join(tempHome, 'personas'),
     skills: join(tempHome, 'skills'),
     mcps: join(tempHome, 'mcps'),
+    llmInspect: join(tempHome, 'llm-inspect'),
+    market: join(tempHome, 'market'),
   }
+  await seedTestAssets(musePaths)
   const deps = await createCliDaemonDeps({ musePaths, cwd: tempHome })
   const app = createCliApp(loadCliConfig({}), deps)
   return { app, deps, tempHome }
@@ -211,13 +225,164 @@ describe('createCliApp', () => {
     const { app } = await createTestApp()
     const personasRes = await app.request('http://localhost/personas')
     expect(personasRes.status).toBe(200)
-    const personasBody = (await personasRes.json()) as { personas: Array<{ id: string }> }
-    expect(personasBody.personas.some(p => p.id === 'general')).toBe(true)
+    const personasBody = (await personasRes.json()) as { personas: Array<{ id: string; source: string }> }
+    const general = personasBody.personas.find(p => p.id === BUILTIN_PERSONA_GENERAL)
+    expect(general).toBeTruthy()
+    expect(general?.source).toBe('local')
 
     const toolsRes = await app.request('http://localhost/tools')
     expect(toolsRes.status).toBe(200)
     const toolsBody = (await toolsRes.json()) as { tools: Array<{ name: string }> }
     expect(toolsBody.tools.some(t => t.name === 'read')).toBe(true)
+  })
+
+  it('GET /personas 有 .muse-origin.json 时应返回 source=market', async () => {
+    const { app, tempHome } = await createTestApp()
+    const personaDir = join(tempHome, 'personas', 'museai/basic-kit/general')
+    await mkdir(personaDir, { recursive: true })
+    await writeFile(
+      join(personaDir, '.muse-origin.json'),
+      `${JSON.stringify({ packageId: BASIC_KIT_PACKAGE_ID, packageVersion: '1.0.0', installedAt: '2026-01-01T00:00:00.000Z' })}\n`,
+    )
+
+    const res = await app.request('http://localhost/personas')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { personas: Array<{ id: string; source: string }> }
+    const general = body.personas.find(p => p.id === BUILTIN_PERSONA_GENERAL)
+    expect(general?.source).toBe('market')
+  })
+
+  it('GET /skills 应返回带 source 的资产列表', async () => {
+    const { app } = await createTestApp()
+    const res = await app.request('http://localhost/skills')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { skills: Array<{ id: string; source: string }> }
+    expect(body.skills.length).toBeGreaterThan(0)
+    expect(body.skills.every(skill => skill.source === 'local' || skill.source === 'market')).toBe(true)
+  })
+
+  it('GET /market/installed 应返回 installed.json', async () => {
+    const { app, tempHome } = await createTestApp()
+    await mkdir(join(tempHome, 'market'), { recursive: true })
+    await writeFile(
+      join(tempHome, 'market', 'installed.json'),
+      `${JSON.stringify({
+        packages: {
+          [BASIC_KIT_PACKAGE_ID]: {
+            version: '1.0.0',
+            installedAt: '2026-01-01T00:00:00.000Z',
+            assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+          },
+        },
+      })}\n`,
+    )
+
+    const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_INSTALLED}`)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { packages: Record<string, { version: string }> }
+    expect(body.packages[BASIC_KIT_PACKAGE_ID]?.version).toBe('1.0.0')
+  })
+
+  it('POST /market/install 未配对时应返回 401', async () => {
+    const { app } = await createTestApp()
+    const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_INSTALL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packageId: BASIC_KIT_PACKAGE_ID }),
+    })
+    expect(res.status).toBe(401)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('device_not_paired')
+  })
+
+  it('POST /market/install 成功时应返回安装结果并推送 market_installed 事件', async () => {
+    const { app, deps, tempHome } = await createTestApp()
+    await writeFile(
+      join(tempHome, 'config.json'),
+      `${JSON.stringify({ version: 1, deviceToken: 'test-token', backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}` }, null, 2)}\n`,
+    )
+    deps.authState.deviceToken = 'test-token'
+
+    const installSpy = vi.spyOn(marketInstaller, 'installMarketPackageFromBackend').mockResolvedValue({
+      packageId: BASIC_KIT_PACKAGE_ID,
+      version: '1.0.1',
+      action: 'updated',
+      assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+    })
+
+    const events: Array<{ type: string; packageId?: string }> = []
+    const abort = new AbortController()
+    deps.deviceEventHub.subscribe({
+      id: 'test-market',
+      signal: abort.signal,
+      write: async event => {
+        events.push(event)
+      },
+    })
+
+    const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_INSTALL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token',
+      },
+      body: JSON.stringify({ packageId: BASIC_KIT_PACKAGE_ID }),
+    })
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { packageId: string; version: string; action: string }
+    expect(body).toEqual({ packageId: BASIC_KIT_PACKAGE_ID, version: '1.0.1', action: 'updated' })
+    expect(installSpy).toHaveBeenCalled()
+    expect(events.some(e => e.type === 'market_installed' && e.packageId === BASIC_KIT_PACKAGE_ID)).toBe(true)
+
+    abort.abort()
+    installSpy.mockRestore()
+  })
+
+  it('POST /market/uninstall basic-kit 应返回 409', async () => {
+    const { app } = await createTestApp()
+    const uninstallSpy = vi
+      .spyOn(marketInstaller, 'uninstallMarketPackage')
+      .mockRejectedValue(new MarketInstallerError('basic_kit_uninstall_forbidden', 'museai/basic-kit 不可卸载'))
+
+    const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_UNINSTALL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ packageId: BASIC_KIT_PACKAGE_ID }),
+    })
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('basic_kit_uninstall_forbidden')
+    uninstallSpy.mockRestore()
+  })
+
+  it('POST /market/update 应调用 updateMarketPackage', async () => {
+    const { app, deps, tempHome } = await createTestApp()
+    await writeFile(
+      join(tempHome, 'config.json'),
+      `${JSON.stringify({ version: 1, deviceToken: 'test-token', backendUrl: `http://127.0.0.1:${DEFAULT_PORTS.SERVER}` }, null, 2)}\n`,
+    )
+    deps.authState.deviceToken = 'test-token'
+
+    const updateSpy = vi.spyOn(marketInstaller, 'updateMarketPackage').mockResolvedValue({
+      packageId: BASIC_KIT_PACKAGE_ID,
+      version: '1.0.1',
+      action: 'updated',
+      assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+    })
+
+    const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_UPDATE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token',
+      },
+      body: JSON.stringify({ packageId: BASIC_KIT_PACKAGE_ID }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(updateSpy).toHaveBeenCalledWith(expect.anything(), BASIC_KIT_PACKAGE_ID, expect.objectContaining({ deviceToken: 'test-token' }))
+    updateSpy.mockRestore()
   })
 
   it('POST /agents 应创建带 activeToolNames 的 Agent', async () => {
@@ -227,7 +392,7 @@ describe('createCliApp', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: '测试 Agent',
-        personaId: 'general',
+        personaId: BUILTIN_PERSONA_GENERAL,
         skillIds: [],
         activeToolNames: ['read', 'ls'],
       }),

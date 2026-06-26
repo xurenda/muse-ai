@@ -1,7 +1,6 @@
 import { join } from 'node:path'
 import { MuseAgentRegistry, MuseSessionStore } from '@museai/core'
-import { createAssetRoots } from '../assets-path.js'
-import { getMusePaths, loadMuseConfig } from '../paths.js'
+import { createAssetRoots, getMusePaths, loadMuseConfig, type MusePaths } from '../paths.js'
 import { installMuseProxyFetchInterceptor } from '../backend/muse-proxy-context.js'
 import { ChatService } from './chat-service.js'
 import { SessionSettingsService } from './session-settings-service.js'
@@ -12,6 +11,7 @@ import { SessionEventHub } from './event-hub.js'
 import { DeviceEventHub } from './device-event-hub.js'
 
 export interface CliDaemonDeps {
+  musePaths: MusePaths
   sessionStore: MuseSessionStore
   eventHub: SessionEventHub
   deviceEventHub: DeviceEventHub
@@ -23,28 +23,10 @@ export interface CliDaemonDeps {
   authState: CliAuthState
 }
 
-export async function createCliDaemonDeps(options?: {
-  musePaths?: ReturnType<typeof getMusePaths>
-  cwd?: string
-  bundledAssetsRoot?: string
-}): Promise<CliDaemonDeps> {
+export async function createCliDaemonDeps(options?: { musePaths?: ReturnType<typeof getMusePaths>; cwd?: string }): Promise<CliDaemonDeps> {
   const musePaths = options?.musePaths ?? getMusePaths()
   const cwd = options?.cwd ?? process.cwd()
-  const assetRoots =
-    options?.bundledAssetsRoot !== undefined
-      ? {
-          user: {
-            agents: musePaths.agents,
-            personas: musePaths.personas,
-            skills: musePaths.skills,
-          },
-          bundled: {
-            agents: join(options.bundledAssetsRoot, 'agents'),
-            personas: join(options.bundledAssetsRoot, 'personas'),
-            skills: join(options.bundledAssetsRoot, 'skills'),
-          },
-        }
-      : createAssetRoots(musePaths)
+  const assetRoots = createAssetRoots(musePaths)
 
   const sessionStore = new MuseSessionStore({
     sessionsRoot: musePaths.sessions,
@@ -99,5 +81,16 @@ export async function createCliDaemonDeps(options?: {
     authState = {}
   }
 
-  return { sessionStore, eventHub, deviceEventHub, chatService, sessionSettingsService, sessionTitleService, agentRegistry, resolveDefaultAgentId, authState }
+  return {
+    musePaths,
+    sessionStore,
+    eventHub,
+    deviceEventHub,
+    chatService,
+    sessionSettingsService,
+    sessionTitleService,
+    agentRegistry,
+    resolveDefaultAgentId,
+    authState,
+  }
 }

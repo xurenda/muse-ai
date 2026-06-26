@@ -14,10 +14,11 @@ import {
 import { DEFAULT_MODEL_REF, parseModelRef } from './model-ref.js'
 import type { MuseHarnessOptions } from './types.js'
 
-/** 用户目录与内置只读资产目录 */
+/** `~/.muse/` 下 agents / personas / skills 根目录 */
 export interface MuseAssetRoots {
-  user: { agents: string; personas: string; skills: string }
-  bundled: { agents: string; personas: string; skills: string }
+  agents: string
+  personas: string
+  skills: string
 }
 
 export interface LoadedPersona {
@@ -65,6 +66,18 @@ async function listSubdirs(root: string): Promise<string[]> {
   return entries.filter(entry => entry.isDirectory()).map(entry => entry.name)
 }
 
+function assertSafeAssetId(id: string): void {
+  const segments = id.split('/')
+  if (segments.length === 0 || segments.some(segment => segment === '' || segment === '.' || segment === '..')) {
+    throw new Error(`非法资产 id: ${id}`)
+  }
+}
+
+function joinAssetId(root: string, id: string): string {
+  assertSafeAssetId(id)
+  return join(root, ...id.split('/'))
+}
+
 /** 组装 Persona system.md 与 Skills 索引块 */
 export function composeSystemPrompt(personaPrompt: string, skills: Skill[]): string {
   const skillsBlock = formatSkillsForSystemPrompt(skills)
@@ -75,7 +88,7 @@ export function composeSystemPrompt(personaPrompt: string, skills: Skill[]): str
   return parts.join('\n\n')
 }
 
-/** 加载、列出、实例化 Agent；内置资产只读，用户 Agent 写入 user.agents */
+/** 加载、列出、实例化 Agent；资产目录只读自 roots（通常为 ~/.muse/） */
 export class MuseAgentRegistry {
   private readonly env: NodeExecutionEnv
   private readonly roots: MuseAssetRoots
@@ -85,26 +98,57 @@ export class MuseAgentRegistry {
     this.env = new NodeExecutionEnv({ cwd: options.cwd })
   }
 
-  /** 解析资产目录：用户优先，其次内置 */
+  /** 将 scoped id 解析为磁盘目录（id 中 `/` 对应嵌套子目录） */
   private async resolveAssetDir(kind: 'agents' | 'personas' | 'skills', id: string): Promise<string | undefined> {
-    const userDir = join(this.roots.user[kind], id)
-    if (await pathAccessible(userDir)) return userDir
-
-    const bundledDir = join(this.roots.bundled[kind], id)
-    if (await pathAccessible(bundledDir)) return bundledDir
-
+    const dir = joinAssetId(this.roots[kind], id)
+    if (await pathAccessible(dir)) return dir
     return undefined
+  }
+
+  private async collectPersonaDirs(root: string, relativeDir = ''): Promise<Array<{ dir: string; persona: Persona }>> {
+    const absDir = relativeDir ? join(root, relativeDir) : root
+    if (!(await pathAccessible(absDir))) return []
+
+    const personaFile = join(absDir, PERSONA_FILE)
+    if (await pathAccessible(personaFile)) {
+      const persona = personaSchema.parse(await readJsonFile(personaFile))
+      return [{ dir: absDir, persona }]
+    }
+
+    const found: Array<{ dir: string; persona: Persona }> = []
+    for (const name of await listSubdirs(absDir)) {
+      const childRelative = relativeDir ? `${relativeDir}/${name}` : name
+      found.push(...(await this.collectPersonaDirs(root, childRelative)))
+    }
+    return found
+  }
+
+  private async collectSkillDirs(root: string, relativeDir = ''): Promise<Array<{ id: string; dir: string }>> {
+    const absDir = relativeDir ? join(root, relativeDir) : root
+    if (!(await pathAccessible(absDir))) return []
+
+    const skillFile = join(absDir, 'SKILL.md')
+    if (await pathAccessible(skillFile)) {
+      const id = relativeDir.replaceAll('\\', '/')
+      if (!id) return []
+      return [{ id, dir: absDir }]
+    }
+
+    const found: Array<{ id: string; dir: string }> = []
+    for (const name of await listSubdirs(absDir)) {
+      const childRelative = relativeDir ? `${relativeDir}/${name}` : name
+      found.push(...(await this.collectSkillDirs(root, childRelative)))
+    }
+    return found
   }
 
   async listAgents(): Promise<AgentDefinition[]> {
     const byId = new Map<string, AgentDefinition>()
 
-    for (const source of [this.roots.bundled.agents, this.roots.user.agents]) {
-      for (const dirName of await listSubdirs(source)) {
-        const agent = await this.loadAgentFromDir(join(source, dirName))
-        if (agent) {
-          byId.set(agent.id, agent)
-        }
+    for (const dirName of await listSubdirs(this.roots.agents)) {
+      const agent = await this.loadAgentFromDir(join(this.roots.agents, dirName))
+      if (agent) {
+        byId.set(agent.id, agent)
       }
     }
 
@@ -118,26 +162,25 @@ export class MuseAgentRegistry {
 
   async listPersonas(): Promise<Persona[]> {
     const byId = new Map<string, Persona>()
-    for (const source of [this.roots.bundled.personas, this.roots.user.personas]) {
-      for (const dirName of await listSubdirs(source)) {
-        const filePath = join(source, dirName, PERSONA_FILE)
-        if (!(await pathAccessible(filePath))) continue
-        const parsed = personaSchema.parse(await readJsonFile(filePath))
-        byId.set(parsed.id, parsed)
-      }
+    for (const { persona } of await this.collectPersonaDirs(this.roots.personas)) {
+      byId.set(persona.id, persona)
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
   }
 
   async listSkills(): Promise<SkillMeta[]> {
     const byId = new Map<string, SkillMeta>()
-    for (const source of [this.roots.bundled.skills, this.roots.user.skills]) {
-      for (const dirName of await listSubdirs(source)) {
-        const dir = join(source, dirName)
-        const { skills: loaded } = await loadSkills(this.env, dir)
-        for (const skill of loaded) {
-          byId.set(skill.name, skillMetaSchema.parse({ id: dirName, name: skill.name, description: skill.description }))
-        }
+    for (const { id, dir } of await this.collectSkillDirs(this.roots.skills)) {
+      const { skills: loaded } = await loadSkills(this.env, dir)
+      for (const skill of loaded) {
+        byId.set(
+          id,
+          skillMetaSchema.parse({
+            id,
+            name: skill.name,
+            description: skill.description,
+          }),
+        )
       }
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
@@ -232,7 +275,7 @@ export class MuseAgentRegistry {
       updatedAt: now,
     })
 
-    const agentDir = join(this.roots.user.agents, agent.id)
+    const agentDir = join(this.roots.agents, agent.id)
     await mkdir(agentDir, { recursive: true })
     await writeFile(join(agentDir, AGENT_FILE), `${JSON.stringify(agent, null, 2)}\n`, 'utf8')
     return agent

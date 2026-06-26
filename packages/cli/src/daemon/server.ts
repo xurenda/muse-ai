@@ -17,6 +17,14 @@ import {
   sessionForkRequestSchema,
   sessionNavigateRequestSchema,
   sessionTreeResponseSchema,
+  marketInstallRequestSchema,
+  marketInstallResponseSchema,
+  marketInstalledResponseSchema,
+  marketUninstallRequestSchema,
+  marketUninstallResponseSchema,
+  marketUpdateRequestSchema,
+  personasListResponseSchema,
+  skillsListResponseSchema,
 } from '@museai/shared'
 import type { CliConfig } from '../config.js'
 import { ChatServiceError } from './chat-service.js'
@@ -24,13 +32,18 @@ import { SessionSettingsError } from './session-settings-service.js'
 import { SessionStoreError } from '@museai/core'
 import { createCliAuthMiddleware } from './auth-middleware.js'
 import { createSseSubscriber } from './event-hub.js'
-import { createDeviceSseSubscriber, publishSessionRegistryChanged } from './device-event-hub.js'
+import { createDeviceSseSubscriber, publishMarketInstalled, publishSessionRegistryChanged } from './device-event-hub.js'
 import { buildCliEndpoint } from '../backend/client.js'
 import { startDeviceRegistryHeartbeat } from './heartbeat.js'
 import type { CliDaemonDeps } from './deps.js'
 import { allToolNames } from '@/tools/index.js'
 import { computeSessionLlmInspectETag, matchesIfNoneMatch } from '@/llm-inspect/llm-inspect-etag.js'
 import { getSessionLlmInspect, deleteSessionLlmInspect } from '@/llm-inspect/llm-inspect-store.js'
+import { enrichPersonaWithSource, enrichSkillWithSource } from '@/market/asset-source.js'
+import { respondMarketInstallerError } from '@/market/market-http.js'
+import { MarketInstallerError } from '@/market/market-errors.js'
+import { installMarketPackageFromBackend, listInstalledMarketPackages, uninstallMarketPackage, updateMarketPackage } from '@/market/market-installer.js'
+import { resolveMarketBackendOptions } from '@/market/resolve-backend-options.js'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -119,12 +132,16 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
 
   app.get(CLI_API_PATHS.PERSONAS, requireAuth, async c => {
     const personas = await deps.agentRegistry.listPersonas()
-    return c.json({ personas })
+    const enriched = await Promise.all(personas.map(persona => enrichPersonaWithSource(deps.musePaths, persona)))
+    const body = personasListResponseSchema.parse({ personas: enriched })
+    return c.json(body)
   })
 
   app.get(CLI_API_PATHS.SKILLS, requireAuth, async c => {
     const skills = await deps.agentRegistry.listSkills()
-    return c.json({ skills })
+    const enriched = await Promise.all(skills.map(skill => enrichSkillWithSource(deps.musePaths, skill)))
+    const body = skillsListResponseSchema.parse({ skills: enriched })
+    return c.json(body)
   })
 
   app.get(CLI_API_PATHS.TOOLS, requireAuth, async c => {
@@ -378,6 +395,84 @@ export function createCliApp(config: CliConfig, deps: CliDaemonDeps): Hono {
     }
     const result = await deps.chatService.abortTurn(sessionId)
     return c.json(result, 202)
+  })
+
+  app.get(CLI_API_PATHS.MARKET_INSTALLED, requireAuth, async c => {
+    const installed = await listInstalledMarketPackages(deps.musePaths)
+    const body = marketInstalledResponseSchema.parse(installed)
+    return c.json(body)
+  })
+
+  app.post(CLI_API_PATHS.MARKET_INSTALL, requireAuth, async c => {
+    const body: unknown = await c.req.json()
+    const parsed = marketInstallRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const backend = await resolveMarketBackendOptions(deps.musePaths)
+      const result = await installMarketPackageFromBackend(deps.musePaths, parsed.data.packageId, {
+        ...backend,
+        version: parsed.data.version,
+      })
+      const response = marketInstallResponseSchema.parse({
+        packageId: result.packageId,
+        version: result.version,
+        action: result.action,
+      })
+      await publishMarketInstalled(deps.deviceEventHub, response)
+      return c.json(response)
+    } catch (error: unknown) {
+      if (error instanceof MarketInstallerError) {
+        return respondMarketInstallerError(c, error)
+      }
+      throw error
+    }
+  })
+
+  app.post(CLI_API_PATHS.MARKET_UNINSTALL, requireAuth, async c => {
+    const body: unknown = await c.req.json()
+    const parsed = marketUninstallRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      await uninstallMarketPackage(deps.musePaths, parsed.data.packageId)
+      const response = marketUninstallResponseSchema.parse({
+        packageId: parsed.data.packageId,
+        uninstalled: true,
+      })
+      return c.json(response)
+    } catch (error: unknown) {
+      if (error instanceof MarketInstallerError) {
+        return respondMarketInstallerError(c, error)
+      }
+      throw error
+    }
+  })
+
+  app.post(CLI_API_PATHS.MARKET_UPDATE, requireAuth, async c => {
+    const body: unknown = await c.req.json()
+    const parsed = marketUpdateRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    }
+    try {
+      const backend = await resolveMarketBackendOptions(deps.musePaths)
+      const result = await updateMarketPackage(deps.musePaths, parsed.data.packageId, backend)
+      const response = marketInstallResponseSchema.parse({
+        packageId: result.packageId,
+        version: result.version,
+        action: result.action,
+      })
+      await publishMarketInstalled(deps.deviceEventHub, response)
+      return c.json(response)
+    } catch (error: unknown) {
+      if (error instanceof MarketInstallerError) {
+        return respondMarketInstallerError(c, error)
+      }
+      throw error
+    }
   })
 
   app.post(CLI_API_PATHS.CHAT, requireAuth, async c => {

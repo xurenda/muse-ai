@@ -8,6 +8,7 @@ import { createUserAuthMiddleware } from './middleware/user-auth.js'
 import { createRedis } from './redis/client.js'
 import { registerAuthRoutes, registerDeviceRoutes } from './routes/auth-devices.js'
 import { registerLlmProxyRoutes } from './routes/llm-proxy.js'
+import { registerMarketRoutes } from './routes/market.js'
 import { registerSettingsRoutes } from './routes/settings.js'
 import { AuthService } from './services/auth-service.js'
 import { DeviceService } from './services/device-service.js'
@@ -17,6 +18,8 @@ import { LlmProxyService } from './services/llm-proxy-service.js'
 import { ProviderResolver } from './services/provider-resolver.js'
 import { SettingsService } from './services/settings-service.js'
 import { CredentialStore } from './stores/credential-store.js'
+import { MarketService } from './market/market-service.js'
+import { seedMarketData } from './market/seed.js'
 import type { ServerVariables } from './types.js'
 
 export interface ServerContext {
@@ -27,6 +30,7 @@ export interface ServerContext {
   deviceService: DeviceService
   llmProxyService: LlmProxyService
   llmProxyOrchestrator: LlmProxyOrchestrator
+  marketService: MarketService
   close: () => Promise<void>
 }
 
@@ -47,6 +51,11 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
   const llmProxyOrchestrator = new LlmProxyOrchestrator(modelResolutionService, providerResolver, llmProxyService, userId =>
     settingsService.readModelsStore(userId),
   )
+  const marketService = new MarketService(db, {
+    marketDataDir: config.marketDataDir,
+    publicBaseUrl: config.publicBaseUrl,
+  })
+  await seedMarketData(db, config.marketDataDir)
 
   return {
     config,
@@ -56,6 +65,7 @@ export async function createServerContext(config: ServerConfig): Promise<ServerC
     deviceService,
     llmProxyService,
     llmProxyOrchestrator,
+    marketService,
     close: async () => {
       await redis.quit()
       await pool.end()
@@ -87,6 +97,7 @@ export function createServerApp(ctx: ServerContext): Hono<{ Variables: ServerVar
   registerSettingsRoutes(app, ctx.settingsService, userAuth)
   registerDeviceRoutes(app, ctx.deviceService, userAuth, deviceAuth)
   registerLlmProxyRoutes(app, ctx.llmProxyOrchestrator, deviceAuth)
+  registerMarketRoutes(app, ctx.marketService, ctx.authService, userAuth, deviceAuth, ctx.deviceService)
 
   return app
 }

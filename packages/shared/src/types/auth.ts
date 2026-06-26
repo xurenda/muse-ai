@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { usernameSchema } from '../schemas/market-id.js'
 
 export const loginRequestSchema = z.object({
   email: z.string().email(),
@@ -15,12 +16,15 @@ export const loginResponseSchema = z.object({
   user: z.object({
     id: z.string().uuid(),
     email: z.string().email(),
+    username: z.string().min(1).optional(),
   }),
 })
 
 export type LoginResponse = z.infer<typeof loginResponseSchema>
 
-export const registerRequestSchema = loginRequestSchema
+export const registerRequestSchema = loginRequestSchema.extend({
+  username: usernameSchema,
+})
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>
 

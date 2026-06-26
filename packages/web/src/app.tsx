@@ -7,6 +7,9 @@ import { AgentsPage } from '@/pages/agents-page'
 import { ChatPage } from '@/pages/chat-page'
 import { DevicesPage } from '@/pages/devices-page'
 import { LoginPage } from '@/pages/login-page'
+import { MarketDetailPage } from '@/pages/market-detail-page'
+import { MarketInstalledPage } from '@/pages/market-installed-page'
+import { MarketListPage } from '@/pages/market-list-page'
 import { RegisterPage } from '@/pages/register-page'
 import { GeneralSettingsPage } from '@/pages/settings/general-settings-page'
 import { ModelsSettingsPage } from '@/pages/settings/models-settings-page'
@@ -29,6 +32,9 @@ export function App() {
               <Route path="/chat/:sessionId" element={<ChatPage />} />
             </Route>
             <Route path="/devices" element={<DevicesPage />} />
+            <Route path="/market" element={<MarketListPage />} />
+            <Route path="/market/installed" element={<MarketInstalledPage />} />
+            <Route path="/market/*" element={<MarketDetailPage />} />
             <Route path="/agents" element={<AgentsPage />} />
             <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<Navigate to="general" replace />} />

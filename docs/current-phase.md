@@ -1,11 +1,11 @@
 # 当前阶段
 
 **最后更新**：2026-06-25  
-**目标版本**：[v0.2](./roadmap.md#v02第二期)（规划中）  
-**当前**：v0.1 产品线已交付；v0.2 尚未启动
+**目标版本**：[v0.2](./roadmap.md#v02第二期)（进行中）  
+**当前**：v0.1 已交付；**v0.2 市场 v1 已交付**（步骤 1–13）；输入增强、记忆 v1 尚未启动
 
-> 进行 v0.2 任务时，在此期间有什么问题，都可以与用户进行讨论。  
-> v0.1 交付说明见 [releases/v0.1.md](./releases/v0.1.md)。
+> v0.1 交付说明见 [releases/v0.1.md](./releases/v0.1.md)。  
+> 市场 v1 规格与验收见 [v0.2/market.md](./v0.2/market.md)。
 
 ---
 
@@ -16,7 +16,19 @@
 | [releases/v0.1.md](./releases/v0.1.md) | v0.1 + v0.1.1 终态：已交付能力、限制、验收结论 |
 | [archive/](./archive/)                 | 原 phase 过程文档（考古用）                    |
 
-**下一步（产品）**：见 [roadmap.md](./roadmap.md#v02第二期) — 市场 v1、输入增强、记忆 v1 等。
+---
+
+## v0.2 市场 v1（已交付）
+
+| 能力                | 说明                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `@museai/basic-kit` | 官方套件源码、`musepack` 构建、CLI 首装                                                                                         |
+| Backend 市场        | 列表/详情、install-url、device 下载、DB 种子                                                                                    |
+| CLI 市场            | 安装/更新/卸载、daemon `/market/*`、`source` 字段                                                                               |
+| Web 市场            | `/market` 列表与详情、已安装、Agents 页 `source`                                                                                |
+| 文档 / CI           | [protocols.md](./protocols.md)、[development-guide 验收](./development-guide.md#市场-v1-端到端验收)、`.github/workflows/ci.yml` |
+
+**下一步（v0.2 其余）**：见 [roadmap.md](./roadmap.md#v02第二期) — 输入增强、记忆 v1 等。
 
 **阻塞项**：无
 

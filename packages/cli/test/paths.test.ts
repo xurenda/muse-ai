@@ -20,6 +20,7 @@ describe('paths', () => {
     expect(paths.config).toBe(join(tempHome, 'config.json'))
     expect(paths.sessions).toBe(join(tempHome, 'sessions'))
     expect(paths.mcps).toBe(join(tempHome, 'mcps'))
+    expect(paths.market).toBe(join(tempHome, 'market'))
   })
 
   it('ensureMuseDir 应创建目录与默认 config.json', async () => {
@@ -31,7 +32,7 @@ describe('paths', () => {
     expect(result.createdConfig).toBe(true)
 
     const entries = await readdir(paths.home)
-    expect(entries).toEqual(expect.arrayContaining(['config.json', 'sessions', 'agents', 'personas', 'skills', 'mcps']))
+    expect(entries).toEqual(expect.arrayContaining(['config.json', 'sessions', 'agents', 'personas', 'skills', 'mcps', 'market']))
 
     const config = await loadMuseConfig(paths)
     expect(config.version).toBe(MUSE_CONFIG_VERSION)

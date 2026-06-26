@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import type { MuseAssetRoots } from '@museai/core'
 
 export const MUSE_DIR_NAME = '.muse'
 export const MUSE_CONFIG_VERSION = 1 as const
@@ -25,6 +26,7 @@ export interface MusePaths {
   skills: string
   mcps: string
   llmInspect: string
+  market: string
 }
 
 /** 本地 Muse 数据根目录；测试可通过 `MUSE_HOME` 覆盖 */
@@ -44,6 +46,16 @@ export function getMusePaths(homeDir: string = getMuseHomeDir()): MusePaths {
     skills: join(homeDir, 'skills'),
     mcps: join(homeDir, 'mcps'),
     llmInspect: join(homeDir, 'llm-inspect'),
+    market: join(homeDir, 'market'),
+  }
+}
+
+/** `~/.muse/` 下资产根目录，供 `MuseAgentRegistry` 使用 */
+export function createAssetRoots(musePaths: MusePaths): MuseAssetRoots {
+  return {
+    agents: musePaths.agents,
+    personas: musePaths.personas,
+    skills: musePaths.skills,
   }
 }
 
@@ -69,7 +81,7 @@ async function pathExists(path: string): Promise<boolean> {
 export async function ensureMuseDir(paths: MusePaths = getMusePaths()): Promise<{ createdConfig: boolean }> {
   const hadConfig = await pathExists(paths.config)
 
-  for (const dir of [paths.home, paths.sessions, paths.agents, paths.personas, paths.skills, paths.mcps]) {
+  for (const dir of [paths.home, paths.sessions, paths.agents, paths.personas, paths.skills, paths.mcps, paths.market]) {
     await mkdir(dir, { recursive: true })
   }
 

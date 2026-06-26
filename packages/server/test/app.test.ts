@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PORTS } from '@museai/shared'
 import { loadServerConfig } from '@/config.js'
 import { createServerApp, type ServerContext } from '@/app.js'
+import { AuthError } from '@/services/auth-service.js'
 
 const TEST_ENV = {
   JWT_SECRET: 'test-jwt-secret',
@@ -43,6 +44,13 @@ function createMockContext(): ServerContext {
     },
     llmProxyService: {
       forward: vi.fn(),
+    },
+    llmProxyOrchestrator: {
+      handle: vi.fn(),
+    },
+    marketService: {
+      listPublishedPackages: vi.fn().mockResolvedValue({ packages: [] }),
+      getPackageDetail: vi.fn(),
     },
     close: async () => {},
   }
@@ -95,6 +103,44 @@ describe('createServerApp', () => {
       body: JSON.stringify({ email: 'bad', password: 'short' }),
     })
     expect(res.status).toBe(400)
+  })
+
+  it('POST /auth/register 保留用户名应返回 409 username_taken', async () => {
+    const app = createServerApp(createMockContext())
+    const res = await app.request('http://localhost/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'password123', username: 'museai' }),
+    })
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body).toMatchObject({ error: 'username_taken' })
+  })
+
+  it('POST /auth/register 缺少 username 应返回 400', async () => {
+    const app = createServerApp(createMockContext())
+    const res = await app.request('http://localhost/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'password123' }),
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('invalid_request')
+  })
+
+  it('POST /auth/register 用户名冲突应返回 409', async () => {
+    const ctx = createMockContext()
+    ctx.authService.register = vi.fn().mockRejectedValue(new AuthError('username_taken', '用户名已存在'))
+    const app = createServerApp(ctx)
+    const res = await app.request('http://localhost/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'user@example.com', password: 'password123', username: 'kingen' }),
+    })
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body).toMatchObject({ error: 'username_taken' })
   })
 
   it('OPTIONS 预检应返回 CORS 头', async () => {

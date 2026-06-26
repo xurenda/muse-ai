@@ -3,7 +3,10 @@ import { boolean, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
+  /** 市场 namespace；注册后不可修改，存小写 */
+  username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 })
 
@@ -78,3 +81,34 @@ export const refreshTokens = pgTable('refresh_tokens', {
 export type UserProviderCredentialRow = typeof userProviderCredentials.$inferSelect
 export type UserProviderConfigRow = typeof userProviderConfig.$inferSelect
 export type RefreshTokenRow = typeof refreshTokens.$inferSelect
+
+export const marketPackages = pgTable('market_packages', {
+  id: text('id').primaryKey(),
+  authorId: uuid('author_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  kind: text('kind').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  status: text('status').notNull().default('published'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+})
+
+export const marketPackageVersions = pgTable(
+  'market_package_versions',
+  {
+    packageId: text('package_id')
+      .notNull()
+      .references(() => marketPackages.id, { onDelete: 'cascade' }),
+    version: text('version').notNull(),
+    manifestJson: text('manifest_json').notNull(),
+    sha256: text('sha256').notNull(),
+    blobPath: text('blob_path').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+  },
+  table => [primaryKey({ columns: [table.packageId, table.version] })],
+)
+
+export type MarketPackageRow = typeof marketPackages.$inferSelect
+export type MarketPackageVersionRow = typeof marketPackageVersions.$inferSelect

@@ -15,6 +15,10 @@ export const SERVER_API_PATHS = {
   SETTINGS_MODEL_STRATEGY: '/settings/model-strategy',
   /** LLM 代理根路径；实际转发路径为 `/v1/*` */
   LLM_PROXY: '/v1/chat/completions',
+  /** 市场包列表 */
+  MARKET_PACKAGES: '/market/packages',
+  /** 市场包下载（device token）；路径模式为 /market/download/…/:version */
+  MARKET_DOWNLOAD: '/market/download',
 } as const
 
 /** CLI daemon REST 路径常量 */
@@ -44,6 +48,14 @@ export const CLI_API_PATHS = {
   SESSION_LLM_INSPECT: '/sessions/:sessionId/llm-inspect',
   /** 设备级 SSE：`GET /device/events` */
   DEVICE_EVENTS: '/device/events',
+  /** 本机已安装市场包：`GET /market/installed` */
+  MARKET_INSTALLED: '/market/installed',
+  /** 从 Backend 安装市场包：`POST /market/install` */
+  MARKET_INSTALL: '/market/install',
+  /** 卸载市场包：`POST /market/uninstall` */
+  MARKET_UNINSTALL: '/market/uninstall',
+  /** 更新市场包：`POST /market/update` */
+  MARKET_UPDATE: '/market/update',
 } as const
 
 /** 构建 Session SSE 路径：`GET /sessions/:id/events` */

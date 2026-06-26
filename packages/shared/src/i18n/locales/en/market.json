@@ -1,0 +1,39 @@
+{
+  "title": "Market",
+  "subtitle": "Browse personas, skills, and kits",
+  "installedLink": "Installed",
+  "installedTitle": "Installed packages",
+  "installedSubtitle": "Packages on your connected CLI",
+  "installedSection": "Local installs",
+  "installedEmpty": "No installed market packages",
+  "installedNoDevice": "Connect a device to view locally installed packages.",
+  "installedRowVersion": "Installed {{installed}} · Latest {{latest}}",
+  "backToList": "Back to market",
+  "empty": "No packages yet",
+  "noDescription": "No description",
+  "latestVersionBadge": "Latest {{version}}",
+  "latestVersionLabel": "Latest version",
+  "loadFailed": "Failed to load",
+  "actionFailed": "Action failed",
+  "noDeviceHint": "Install, update, or uninstall requires an online CLI. Pair and select a device first.",
+  "packageId": "Package ID",
+  "installedVersion": "Local version",
+  "notInstalled": "Not installed",
+  "install": "Install",
+  "update": "Update",
+  "uninstall": "Uninstall",
+  "upToDate": "Up to date",
+  "conflictTitle": "These agents still reference assets from this package:",
+  "assetsTitle": "Assets",
+  "viewDetail": "Details",
+  "goDevices": "Go to devices",
+  "kind": {
+    "persona": "Persona",
+    "skill": "Skill",
+    "kit": "Kit"
+  },
+  "source": {
+    "local": "Local",
+    "market": "Market"
+  }
+}

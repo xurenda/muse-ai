@@ -14,5 +14,9 @@
   "noDevice": "Connect a device from the sidebar before managing agents.",
   "selectPersona": "Select persona",
   "selectSkillsHint": "Choose skills to inject",
-  "selectToolsHint": "Choose built-in tools to enable"
+  "selectToolsHint": "Choose built-in tools to enable",
+  "fromKitTitle": "Create from installed kit",
+  "fromKitEmpty": "No agent templates in installed kits.",
+  "fromKitUse": "Use template",
+  "personaWithSource": "{{name}}"
 }

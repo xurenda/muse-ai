@@ -16,6 +16,7 @@
     "prepare": "husky",
     "test": "vitest",
     "test:run": "pnpm build && vitest run",
+    "pack:basic-kit": "pnpm --filter @museai/basic-kit pack:musepack",
     "typecheck": "pnpm -r typecheck"
   },
   "lint-staged": {

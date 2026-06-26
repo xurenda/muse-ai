@@ -2,10 +2,13 @@ import {
   CLI_API_PATHS,
   SERVER_API_PATHS,
   deviceCredentialsPath,
+  marketPackageDetailPath,
   type Device,
   type DeviceCredentialsResponse,
   type LoginRequest,
   type LoginResponse,
+  type MarketPackageDetail,
+  type MarketPackageListResponse,
   type PairInitResponse,
   type RegisterRequest,
   type RefreshTokenResponse,
@@ -84,6 +87,20 @@ export async function initDevicePair(userToken: string): Promise<PairInitRespons
 
 export async function getDeviceCredentials(userToken: string, deviceId: string): Promise<DeviceCredentialsResponse> {
   const res = await fetch(`${backendBaseUrl}${deviceCredentialsPath(deviceId)}`, {
+    headers: authHeaders(userToken),
+  })
+  return parseJsonResponse(res)
+}
+
+export async function listMarketPackages(userToken: string): Promise<MarketPackageListResponse> {
+  const res = await fetch(`${backendBaseUrl}${SERVER_API_PATHS.MARKET_PACKAGES}`, {
+    headers: authHeaders(userToken),
+  })
+  return parseJsonResponse(res)
+}
+
+export async function getMarketPackageDetail(userToken: string, packageId: string): Promise<MarketPackageDetail> {
+  const res = await fetch(`${backendBaseUrl}${marketPackageDetailPath(packageId)}`, {
     headers: authHeaders(userToken),
   })
   return parseJsonResponse(res)

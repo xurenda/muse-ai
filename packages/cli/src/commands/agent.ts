@@ -1,6 +1,5 @@
 import { MuseAgentRegistry } from '@museai/core'
-import { createAssetRoots } from '../assets-path.js'
-import { getMusePaths, loadMuseConfig, saveMuseConfig, type MusePaths } from '../paths.js'
+import { createAssetRoots, getMusePaths, loadMuseConfig, saveMuseConfig, type MusePaths } from '../paths.js'
 
 export interface AgentCommandDeps {
   musePaths: MusePaths

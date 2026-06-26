@@ -34,6 +34,7 @@ export {
   BUILTIN_SKILL_GIT,
   BUILTIN_SKILL_REVIEW,
 } from './constants/builtin-agents.js'
+export { BASIC_KIT_PACKAGE_ID, LOCAL_ASSET_NAMESPACE, MUSEPACK_MAX_BYTES, RESERVED_USERNAMES, isReservedUsername } from './constants/market.js'
 export {
   MUSE_LLM_TASKS,
   MUSE_PROXY_HEADERS,
@@ -150,7 +151,77 @@ export {
   type TaskModelSelection,
   type UpdateModelStrategyRequest,
 } from './types/model-strategy.js'
-export { maskApiKey } from './utils/mask-api-key.js'
+export {
+  marketSlugSchema,
+  packageIdSchema,
+  scopedAssetIdSchema,
+  usernameSchema,
+  type PackageId,
+  type ScopedAssetId,
+  type Username,
+} from './schemas/market-id.js'
+export {
+  agentTemplateSchema,
+  assetSourceSchema,
+  inferAssetSource,
+  installedPackageSchema,
+  installedPackagesFileSchema,
+  marketAssetSchema,
+  marketAssetTypeSchema,
+  marketManifestSchema,
+  marketPackageKindSchema,
+  museOriginSchema,
+  semverSchema,
+  type AgentTemplate,
+  type AssetSource,
+  type InstalledPackage,
+  type InstalledPackagesFile,
+  type MarketAsset,
+  type MarketManifest,
+  type MarketPackageKind,
+  type MuseOrigin,
+} from './types/market.js'
+export {
+  marketInstallRequestSchema,
+  marketInstallResponseSchema,
+  marketInstalledResponseSchema,
+  marketUninstallRequestSchema,
+  marketUninstallResponseSchema,
+  marketUpdateRequestSchema,
+  personaWithSourceSchema,
+  personasListResponseSchema,
+  skillWithSourceSchema,
+  skillsListResponseSchema,
+  type MarketInstallRequest,
+  type MarketInstallResponse,
+  type MarketInstalledResponse,
+  type MarketUninstallRequest,
+  type MarketUninstallResponse,
+  type MarketUpdateRequest,
+  type PersonaWithSource,
+  type PersonasListResponse,
+  type SkillWithSource,
+  type SkillsListResponse,
+} from './types/market-cli-api.js'
+export {
+  marketPackageDetailPath,
+  marketPackageDetailSchema,
+  marketPackageInstallUrlPath,
+  marketPackageListResponseSchema,
+  marketPackageStatusSchema,
+  marketPackageSummarySchema,
+  marketPackageVersionSummarySchema,
+  marketDownloadPath,
+  marketInstallUrlRequestSchema,
+  marketInstallUrlResponseSchema,
+  type MarketInstallUrlRequest,
+  type MarketInstallUrlResponse,
+  type MarketPackageDetail,
+  type MarketPackageListResponse,
+  type MarketPackageStatus,
+  type MarketPackageSummary,
+  type MarketPackageVersionSummary,
+} from './types/market-api.js'
 export { appendModelRefsToAllPools, collectModelRefsFromStrategy, dedupeModelPoolRefs, normalizeModelStrategyPools } from './utils/model-strategy.js'
 export { createHealthResponse, healthResponseSchema, type HealthResponse } from './types/health.js'
 export { chatRequestSchema, formatSseData, museLlmTaskSchema, museSseEventSchema, type ChatRequest, type MuseSseEvent } from './types/sse-events.js'
@@ -181,4 +252,6 @@ export {
 } from './types/session-token-usage.js'
 export { EMPTY_CONTEXT_USAGE, computeContextUsagePercent, contextUsageSchema, type ContextUsage } from './types/context-usage.js'
 export { computeCacheHitRate, computeSessionCacheHitRate, hasSessionCacheUsage } from './utils/cache-hit-rate.js'
+export { compareSemver, pickLatestSemver } from './utils/compare-semver.js'
+export { maskApiKey } from './utils/mask-api-key.js'
 export { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type I18nNamespace, type SupportedLocale } from './i18n/resources.js'

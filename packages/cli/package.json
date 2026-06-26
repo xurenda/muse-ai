@@ -20,11 +20,13 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@museai/basic-kit": "workspace:*",
     "@museai/core": "workspace:*",
     "@museai/shared": "workspace:*",
     "@hono/node-server": "^1.19.3",
     "hono": "^4.9.6",
     "diff": "^8.0.4",
+    "fflate": "^0.8.2",
     "typebox": "^1.1.38"
   },
   "devDependencies": {

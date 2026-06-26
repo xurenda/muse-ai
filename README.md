@@ -56,8 +56,10 @@ cd packages/server && docker compose up -d && cd ../..
 2. 进入「设备」页生成配对码
 3. 另开终端执行：`pnpm muse pair <配对码>`
 4. 在 Web「Provider 设置」配置 LLM API Key 后，即可开始聊天
+5. （可选）侧栏「市场」浏览官方套件；设备在线后可安装/更新
 
-> 修改 `packages/server/.env`（如 CORS）或 Server 代码后，需重启 `pnpm dev:server`。
+> 修改 `packages/server/.env`（如 CORS）或 Server 代码后，需重启 `pnpm dev:server`。  
+> Server 首次启动会从 `@museai/basic-kit` 构建并种子 `museai/basic-kit` 市场包（blob 落盘 `packages/server/data/market/`，已 gitignore）。
 
 ## 快速开始
 
@@ -67,6 +69,9 @@ pnpm build
 
 # 单元测试
 pnpm test:run
+
+# 构建 official basic-kit .musepack（CI 与 Server 种子同源）
+pnpm pack:basic-kit
 
 # 代码检查与格式化
 pnpm lint
@@ -90,13 +95,14 @@ curl http://127.0.0.1:65433/health   # cli
 
 ## 包说明
 
-| 包               | 说明                      |
-| ---------------- | ------------------------- |
-| `@museai/shared` | 类型、API 路径、SSE 协议  |
-| `@museai/core`   | Agent 组装（阶段 1）      |
-| `@museai/cli`    | `muse` 命令与 daemon      |
-| `@museai/server` | 后端 API + docker-compose |
-| `@museai/web`    | Web 前端                  |
+| 包                  | 说明                                         |
+| ------------------- | -------------------------------------------- |
+| `@museai/shared`    | 类型、API 路径、SSE 协议、市场 schema        |
+| `@museai/basic-kit` | 官方 `museai/basic-kit` 资产与 musepack 构建 |
+| `@museai/core`      | Agent 组装（阶段 1）                         |
+| `@museai/cli`       | `muse` 命令与 daemon                         |
+| `@museai/server`    | 后端 API + docker-compose                    |
+| `@museai/web`       | Web 前端                                     |
 
 ## 参考仓库（本机）
 

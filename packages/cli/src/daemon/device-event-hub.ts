@@ -65,3 +65,10 @@ export type SessionRegistryChangeReason = 'created' | 'deleted' | 'renamed'
 export async function publishSessionRegistryChanged(hub: DeviceEventHub, reason: SessionRegistryChangeReason): Promise<void> {
   await hub.publish({ type: 'session_registry_changed', reason })
 }
+
+export async function publishMarketInstalled(
+  hub: DeviceEventHub,
+  payload: { packageId: string; version: string; action: 'installed' | 'updated' },
+): Promise<void> {
+  await hub.publish({ type: 'market_installed', ...payload })
+}

@@ -13,19 +13,39 @@ import type { ServerVariables } from '../types.js'
 
 type ServerApp = Hono<{ Variables: ServerVariables }>
 
+function parseRegisterBody(json: unknown) {
+  const parsed = registerRequestSchema.safeParse(json)
+  if (parsed.success) {
+    return { ok: true as const, data: parsed.data }
+  }
+  const usernameTaken = parsed.error.issues.some(issue => issue.message === 'username_taken')
+  if (usernameTaken) {
+    return { ok: false as const, error: 'username_taken' as const }
+  }
+  return { ok: false as const, error: 'invalid_request' as const, details: parsed.error.flatten() }
+}
+
 export function registerAuthRoutes(app: ServerApp, authService: AuthService): void {
   app.post(SERVER_API_PATHS.AUTH_REGISTER, async c => {
     const json: unknown = await c.req.json()
-    const parsed = registerRequestSchema.safeParse(json)
-    if (!parsed.success) {
-      return c.json({ error: 'invalid_request', details: parsed.error.flatten() }, 400)
+    const parsed = parseRegisterBody(json)
+    if (!parsed.ok) {
+      if (parsed.error === 'username_taken') {
+        return c.json({ error: 'username_taken', message: '用户名已存在' }, 409)
+      }
+      return c.json({ error: 'invalid_request', details: parsed.details }, 400)
     }
     try {
       const result = await authService.register(parsed.data)
       return c.json(result, 201)
     } catch (error: unknown) {
-      if (error instanceof AuthError && error.code === 'email_taken') {
-        return c.json({ error: error.code, message: error.message }, 409)
+      if (error instanceof AuthError) {
+        if (error.code === 'email_taken') {
+          return c.json({ error: error.code, message: error.message }, 409)
+        }
+        if (error.code === 'username_taken') {
+          return c.json({ error: error.code, message: error.message }, 409)
+        }
       }
       throw error
     }

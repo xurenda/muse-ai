@@ -18,7 +18,13 @@ import {
   type CreateSessionRequest,
   type DeviceSseEvent,
   type MuseSseEvent,
-  type Persona,
+  type MarketInstallRequest,
+  type MarketInstallResponse,
+  type MarketInstalledResponse,
+  type MarketUninstallRequest,
+  type MarketUninstallResponse,
+  type MarketUpdateRequest,
+  type PersonaWithSource,
   type SessionMeta,
   type SessionNavigateRequest,
   type SessionSettingsPatch,
@@ -27,7 +33,7 @@ import {
   type SessionCompactRequest,
   type SessionTreeResponse,
   type GetSessionLlmInspectResponse,
-  type SkillMeta,
+  type SkillWithSource,
   type ToolDescriptor,
 } from '@museai/shared'
 import { computeSseBackoffMs, waitForSseRetry } from '@/lib/sse-reconnect'
@@ -37,6 +43,7 @@ export class CliApiError extends Error {
     readonly status: number,
     readonly code: string | undefined,
     message: string,
+    readonly details?: unknown,
   ) {
     super(message)
     this.name = 'CliApiError'
@@ -54,7 +61,7 @@ async function parseCliJson<T>(res: Response): Promise<T> {
   const body: unknown = await res.json().catch(() => ({}))
   if (!res.ok) {
     const err = body as { error?: string; message?: string }
-    throw new CliApiError(res.status, err.error, err.message ?? `CLI 请求失败 (${res.status})`)
+    throw new CliApiError(res.status, err.error, err.message ?? `CLI 请求失败 (${res.status})`, body)
   }
   return body as T
 }
@@ -75,16 +82,48 @@ export async function listCliAgents(endpoint: string, accessToken: string): Prom
   return body.agents
 }
 
-export async function listPersonas(endpoint: string, accessToken: string): Promise<Persona[]> {
+export async function listPersonas(endpoint: string, accessToken: string): Promise<PersonaWithSource[]> {
   const res = await fetch(`${endpoint}${CLI_API_PATHS.PERSONAS}`, { headers: cliHeaders(accessToken) })
-  const body = await parseCliJson<{ personas: Persona[] }>(res)
+  const body = await parseCliJson<{ personas: PersonaWithSource[] }>(res)
   return body.personas
 }
 
-export async function listSkills(endpoint: string, accessToken: string): Promise<SkillMeta[]> {
+export async function listSkills(endpoint: string, accessToken: string): Promise<SkillWithSource[]> {
   const res = await fetch(`${endpoint}${CLI_API_PATHS.SKILLS}`, { headers: cliHeaders(accessToken) })
-  const body = await parseCliJson<{ skills: SkillMeta[] }>(res)
+  const body = await parseCliJson<{ skills: SkillWithSource[] }>(res)
   return body.skills
+}
+
+export async function listInstalledMarketPackages(endpoint: string, accessToken: string): Promise<MarketInstalledResponse> {
+  const res = await fetch(`${endpoint}${CLI_API_PATHS.MARKET_INSTALLED}`, { headers: cliHeaders(accessToken) })
+  return parseCliJson(res)
+}
+
+export async function installMarketPackage(endpoint: string, accessToken: string, request: MarketInstallRequest): Promise<MarketInstallResponse> {
+  const res = await fetch(`${endpoint}${CLI_API_PATHS.MARKET_INSTALL}`, {
+    method: 'POST',
+    headers: cliHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  return parseCliJson(res)
+}
+
+export async function uninstallMarketPackage(endpoint: string, accessToken: string, request: MarketUninstallRequest): Promise<MarketUninstallResponse> {
+  const res = await fetch(`${endpoint}${CLI_API_PATHS.MARKET_UNINSTALL}`, {
+    method: 'POST',
+    headers: cliHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  return parseCliJson(res)
+}
+
+export async function updateMarketPackage(endpoint: string, accessToken: string, request: MarketUpdateRequest): Promise<MarketInstallResponse> {
+  const res = await fetch(`${endpoint}${CLI_API_PATHS.MARKET_UPDATE}`, {
+    method: 'POST',
+    headers: cliHeaders(accessToken),
+    body: JSON.stringify(request),
+  })
+  return parseCliJson(res)
 }
 
 export async function listTools(endpoint: string, accessToken: string): Promise<ToolDescriptor[]> {

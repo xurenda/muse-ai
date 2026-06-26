@@ -1,0 +1,5 @@
+{
+  "id": "museai/basic-kit/general",
+  "name": "通用 Persona",
+  "systemPromptPath": "system.md"
+}

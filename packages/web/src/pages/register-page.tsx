@@ -1,7 +1,8 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { register } from '@/api/backend-client'
+import { registerRequestSchema } from '@museai/shared'
+import { BackendApiError, register } from '@/api/backend-client'
 import { AuthLayout } from '@/components/layout/auth-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +14,7 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const { setAuth } = useAuth()
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -20,13 +22,25 @@ export function RegisterPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+
+    const parsed = registerRequestSchema.safeParse({ email, password, username })
+    if (!parsed.success) {
+      const usernameTaken = parsed.error.issues.some(issue => issue.message === 'username_taken')
+      setError(usernameTaken ? t('usernameTaken') : (parsed.error.issues[0]?.message ?? t('registerFailed')))
+      return
+    }
+
     setLoading(true)
     try {
-      const response = await register({ email, password })
+      const response = await register(parsed.data)
       setAuth(loginResponseToStored(response))
       navigate('/chat')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('registerFailed'))
+      if (err instanceof BackendApiError && err.code === 'username_taken') {
+        setError(t('usernameTaken'))
+      } else {
+        setError(err instanceof Error ? err.message : t('registerFailed'))
+      }
     } finally {
       setLoading(false)
     }
@@ -48,6 +62,22 @@ export function RegisterPage() {
         <div className="space-y-2">
           <Label htmlFor="email">{t('email')}</Label>
           <Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="username">{t('username')}</Label>
+          <Input
+            id="username"
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            required
+            minLength={3}
+            maxLength={32}
+            pattern="[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*"
+            spellCheck={false}
+          />
+          <p className="text-xs text-muted-foreground">{t('usernameHint')}</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">{t('password')}</Label>

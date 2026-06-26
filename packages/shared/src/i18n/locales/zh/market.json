@@ -1,0 +1,39 @@
+{
+  "title": "市场",
+  "subtitle": "浏览 Persona、Skill 与套件",
+  "installedLink": "已安装",
+  "installedTitle": "已安装市场包",
+  "installedSubtitle": "本机 CLI 已落盘的套件与版本",
+  "installedSection": "本机安装",
+  "installedEmpty": "暂无已安装市场包",
+  "installedNoDevice": "请先连接设备以查看本机已安装的市场包。",
+  "installedRowVersion": "已装 {{installed}} · 最新 {{latest}}",
+  "backToList": "返回市场",
+  "empty": "暂无市场包",
+  "noDescription": "暂无简介",
+  "latestVersionBadge": "最新 {{version}}",
+  "latestVersionLabel": "最新版本",
+  "loadFailed": "加载失败",
+  "actionFailed": "操作失败",
+  "noDeviceHint": "安装、更新或卸载需要在线 CLI。请先在设备页完成配对并选择设备。",
+  "packageId": "包 ID",
+  "installedVersion": "本机版本",
+  "notInstalled": "未安装",
+  "install": "安装",
+  "update": "更新",
+  "uninstall": "卸载",
+  "upToDate": "已是最新版本",
+  "conflictTitle": "以下 Agent 仍引用该套件资产，无法卸载：",
+  "assetsTitle": "包含资产",
+  "viewDetail": "详情",
+  "goDevices": "前往设备页",
+  "kind": {
+    "persona": "Persona",
+    "skill": "Skill",
+    "kit": "套件"
+  },
+  "source": {
+    "local": "本地",
+    "market": "市场"
+  }
+}

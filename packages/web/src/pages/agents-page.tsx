@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { AgentDefinition, Persona, SkillMeta, ToolDescriptor } from '@museai/shared'
-import { createAgent, listCliAgents, listPersonas, listSkills, listTools } from '@/api/cli-client'
+import type { AgentDefinition, AgentTemplate, PersonaWithSource, SkillWithSource, ToolDescriptor } from '@museai/shared'
+import { getMarketPackageDetail } from '@/api/backend-client'
+import { createAgent, listCliAgents, listInstalledMarketPackages, listPersonas, listSkills, listTools } from '@/api/cli-client'
+import { AssetSourceBadge } from '@/components/market/asset-source-badge'
 import { PageShell } from '@/components/layout/page-shell'
 import { SettingsFieldRow } from '@/components/settings/settings-field-row'
 import { SettingsRow } from '@/components/settings/settings-row'
@@ -12,15 +14,27 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
 
+interface KitTemplateOption {
+  packageId: string
+  packageName: string
+  template: AgentTemplate
+}
+
+function formatPersonaLabel(persona: PersonaWithSource, sourceLabel: (source: PersonaWithSource['source']) => string): string {
+  return `${persona.name} · ${sourceLabel(persona.source)}`
+}
+
 export function AgentsPage() {
   const { t } = useTranslation('agents')
+  const { t: tm } = useTranslation('market')
   const { t: tc } = useTranslation('common')
   const { t: tl } = useTranslation('layout')
-  const { deviceSession } = useAuth()
+  const { deviceSession, getValidAccessToken } = useAuth()
   const [agents, setAgents] = useState<AgentDefinition[]>([])
-  const [personas, setPersonas] = useState<Persona[]>([])
-  const [skills, setSkills] = useState<SkillMeta[]>([])
+  const [personas, setPersonas] = useState<PersonaWithSource[]>([])
+  const [skills, setSkills] = useState<SkillWithSource[]>([])
   const [tools, setTools] = useState<ToolDescriptor[]>([])
+  const [kitTemplates, setKitTemplates] = useState<KitTemplateOption[]>([])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [personaId, setPersonaId] = useState('')
@@ -29,6 +43,8 @@ export function AgentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const sourceLabel = (source: PersonaWithSource['source']) => (source === 'market' ? tm('source.market') : tm('source.local'))
 
   useEffect(() => {
     if (!deviceSession) return
@@ -47,11 +63,30 @@ export function AgentsPage() {
         setSkills(skillList)
         setTools(toolList)
         if (personaList[0]) setPersonaId(personaList[0].id)
+
+        try {
+          const token = await getValidAccessToken()
+          const installed = await listInstalledMarketPackages(ds.endpoint, ds.accessToken)
+          const templateOptions: KitTemplateOption[] = []
+          for (const packageId of Object.keys(installed.packages)) {
+            const detail = await getMarketPackageDetail(token, packageId)
+            if (detail.manifest.agentTemplate) {
+              templateOptions.push({
+                packageId,
+                packageName: detail.name,
+                template: detail.manifest.agentTemplate,
+              })
+            }
+          }
+          setKitTemplates(templateOptions)
+        } catch {
+          setKitTemplates([])
+        }
       } finally {
         setLoading(false)
       }
     })()
-  }, [deviceSession])
+  }, [deviceSession, getValidAccessToken])
 
   function toggleSkill(id: string) {
     setSkillIds(prev => (prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]))
@@ -59,6 +94,16 @@ export function AgentsPage() {
 
   function toggleTool(name: string) {
     setActiveToolNames(prev => (prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]))
+  }
+
+  function applyKitTemplate(template: AgentTemplate) {
+    setName(template.name)
+    setDescription(template.description ?? '')
+    setPersonaId(template.personaId)
+    setSkillIds(template.skillIds)
+    setActiveToolNames(template.activeToolNames ?? [])
+    setError(null)
+    setSuccess(null)
   }
 
   async function onSubmit(e: FormEvent) {
@@ -102,6 +147,23 @@ export function AgentsPage() {
     <PageShell title={t('title')}>
       {loading ? <p className="px-1 text-sm text-muted-foreground">{tc('loading')}</p> : null}
 
+      {kitTemplates.length > 0 ? (
+        <SettingsSection title={t('fromKitTitle')}>
+          {kitTemplates.map(option => (
+            <SettingsRow
+              key={option.packageId}
+              title={option.packageName}
+              description={option.template.name}
+              children={
+                <Button type="button" variant="outline" size="sm" onClick={() => applyKitTemplate(option.template)}>
+                  {t('fromKitUse')}
+                </Button>
+              }
+            />
+          ))}
+        </SettingsSection>
+      ) : null}
+
       <SettingsSection title={t('createTitle')}>
         <form className="flex flex-col gap-4 px-4 py-3.5" onSubmit={onSubmit}>
           <SettingsFieldRow label={t('name')}>
@@ -111,7 +173,12 @@ export function AgentsPage() {
             <Input value={description} onChange={e => setDescription(e.target.value)} />
           </SettingsFieldRow>
           <SettingsFieldRow label={t('persona')}>
-            <Select value={personaId} onValueChange={setPersonaId} options={personas.map(p => ({ value: p.id, label: p.name }))} placeholder={t('persona')} />
+            <Select
+              value={personaId}
+              onValueChange={setPersonaId}
+              options={personas.map(p => ({ value: p.id, label: formatPersonaLabel(p, sourceLabel) }))}
+              placeholder={t('persona')}
+            />
           </SettingsFieldRow>
           <div className="flex flex-col gap-2">
             <p className="text-sm text-muted-foreground">{t('skills')}</p>
@@ -123,7 +190,8 @@ export function AgentsPage() {
                   className="flex cursor-pointer items-center gap-2 rounded-lg border border-sidebar-border px-3 py-2 text-sm hover:bg-sidebar-accent/30"
                 >
                   <input type="checkbox" checked={skillIds.includes(skill.id)} onChange={() => toggleSkill(skill.id)} />
-                  {skill.name}
+                  <span>{skill.name}</span>
+                  <AssetSourceBadge source={skill.source} />
                 </label>
               ))}
             </div>

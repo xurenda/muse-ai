@@ -1,6 +1,6 @@
 # v0.2 市场 v1 规格
 
-**状态**：⬜ 规划中  
+**状态**：✅ v1 已交付（步骤 1–13）  
 **最后更新**：2026-06-25  
 **关联**：[roadmap.md](../roadmap.md#v02第二期)、[architecture.md](../architecture.md)、[product.md](../product.md)
 
@@ -299,7 +299,7 @@ museai-basic-kit-1.0.0.musepack
 
 **完整性校验**：归档文件的 **sha256 仅存 Backend**（`market_package_versions.sha256`）；`install-url` 返回给 CLI；**manifest 内不含 sha256**。
 
-**安全（v0.2）**：包内仅允许 `.json`、`.md`、`.txt` 及 manifest 声明的资源；单包上限 **2 MB**；禁止 `..` 路径穿越；**拒绝 zip 内 symlink**。
+**安全（v0.2）**：**不限**包内文件扩展名（Skill 可含脚本、配置等附属文件）；单包上限 **10 MB**；禁止 `..` 路径穿越；**拒绝 zip 内 symlink**。包内脚本等资源**仅落盘**，v0.2 不自动执行；二进制与 MCP 配置仍留 v0.3（见上方「不做」）。
 
 ---
 
@@ -582,7 +582,7 @@ stateDiagram-v2
 | 7   | **Server 账号**             | migration：`users.username`；注册 API + 保留名校验；Web 注册页                                                                                           | 保留名返回 `username_taken`            |
 | 8   | **Server 市场**             | `market_packages` / `market_package_versions` 表；本地 blob；种子 `museai` + `museai/basic-kit`                                                          | docker compose up 后可列表/详情        |
 | 9   | **Server 读 API**           | `GET packages`、`GET packages/*`、`POST install-url`、`GET download`（通配路由 + device token）                                                          | curl 可拿 install-url 并下载           |
-| 10  | **CLI 市场安装器**          | 下载、sha256 校验、解压、扩展名白名单、防 `..`、拒 symlink；install / update / uninstall + 备份；卸载引用检查 409；拒卸 basic-kit                        | 单测 + 本地 `.musepack` 调试命令       |
+| 10  | **CLI 市场安装器**          | 下载、sha256 校验、解压、体积上限 10 MB、防 `..`、拒 symlink；install / update / uninstall + 备份；卸载引用检查 409；拒卸 basic-kit                      | 单测 + 本地 `.musepack` 调试命令       |
 | 11  | **CLI daemon**              | `GET /market/installed`、`POST install/uninstall/update`；`GET /personas`、`/skills` 增 `source`；可选 `market_installed` 事件                           | Web 可调通                             |
 | 12  | **Web 市场**                | `/market` 列表与详情；已装 vs 最新版本；安装/更新/卸载；无 CLI 时引导配对；Agents 页 `source` 与套件预填                                                 | 对照验收标准 1–7                       |
 | 13  | **收尾**                    | 更新 `protocols.md`；CI 构建 basic-kit `.musepack` 并 seed；端到端：注册 → 配对 → 逛市场 → 装包 → 聊天                                                   | 文档与 CI 就绪                         |
@@ -619,6 +619,7 @@ stateDiagram-v2
 | 11  | v0.2 市场仅 **官方内容**（种子/CI）；**不做**作者上传与审核                                              |
 | 12  | zip 内 **拒绝 symlink**；`RESERVED_USERNAMES` 放 **shared**，server 与 Web 共用                          |
 | 13  | `local/my-draft` **后续**可发布为 `{username}/my-draft`；上传时 Backend 校验 `author === username`       |
+| 14  | 包内 **不限扩展名**；单包上限 **10 MB**；脚本等仅落盘，v0.2 不自动执行                                   |
 
 ---
 

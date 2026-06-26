@@ -2,7 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { and, eq, gt } from 'drizzle-orm'
 import { SignJWT, jwtVerify } from 'jose'
-import type { LoginResponse, RegisterRequest } from '@museai/shared'
+import { isReservedUsername, type LoginResponse, type RegisterRequest } from '@museai/shared'
 import type { MuseDb } from '../db/client.js'
 import { refreshTokens, users } from '../db/schema.js'
 
@@ -17,6 +17,7 @@ const REFRESH_TOKEN_EXPIRY_DAYS = 30
 export interface AuthUser {
   id: string
   email: string
+  username: string
 }
 
 export class AuthService {
@@ -30,14 +31,28 @@ export class AuthService {
   }
 
   async register(input: RegisterRequest): Promise<LoginResponse> {
-    const normalized = input.email.toLowerCase()
-    const [existing] = await this.db.select().from(users).where(eq(users.email, normalized)).limit(1)
-    if (existing) {
+    const normalizedEmail = input.email.toLowerCase()
+    const username = input.username
+
+    if (isReservedUsername(username)) {
+      throw new AuthError('username_taken', '用户名已存在')
+    }
+
+    const [existingEmail] = await this.db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1)
+    if (existingEmail) {
       throw new AuthError('email_taken', '邮箱已被注册')
     }
 
+    const [existingUsername] = await this.db.select().from(users).where(eq(users.username, username)).limit(1)
+    if (existingUsername) {
+      throw new AuthError('username_taken', '用户名已存在')
+    }
+
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS)
-    const [row] = await this.db.insert(users).values({ email: normalized, passwordHash }).returning({ id: users.id, email: users.email })
+    const [row] = await this.db
+      .insert(users)
+      .values({ email: normalizedEmail, username, passwordHash })
+      .returning({ id: users.id, email: users.email, username: users.username })
     if (!row) throw new Error('注册失败')
     return this.issueToken(row)
   }
@@ -52,7 +67,7 @@ export class AuthService {
     if (!ok) {
       throw new AuthError('invalid_credentials', '邮箱或密码错误')
     }
-    return this.issueToken({ id: row.id, email: row.email })
+    return this.issueToken({ id: row.id, email: row.email, username: row.username })
   }
 
   async verifyAccessToken(token: string): Promise<AuthUser> {
@@ -66,8 +81,17 @@ export class AuthService {
       if (typeof email !== 'string') {
         throw new AuthError('invalid_token', '无效的访问令牌')
       }
-      return { id: sub, email }
-    } catch {
+      const usernamePayload = payload.username
+      if (typeof usernamePayload === 'string' && usernamePayload.length > 0) {
+        return { id: sub, email, username: usernamePayload }
+      }
+      const [userRow] = await this.db.select().from(users).where(eq(users.id, sub)).limit(1)
+      if (!userRow?.username) {
+        throw new AuthError('invalid_token', '无效的访问令牌')
+      }
+      return { id: sub, email: userRow.email, username: userRow.username }
+    } catch (error: unknown) {
+      if (error instanceof AuthError) throw error
       throw new AuthError('invalid_token', '无效的访问令牌')
     }
   }
@@ -96,14 +120,14 @@ export class AuthService {
       throw new AuthError('invalid_token', '用户不存在')
     }
 
-    return this.issueToken({ id: userRow.id, email: userRow.email })
+    return this.issueToken({ id: userRow.id, email: userRow.email, username: userRow.username })
   }
 
   private async issueToken(user: AuthUser): Promise<LoginResponse> {
     const now = Math.floor(Date.now() / 1000)
     const accessTokenExpiresAt = now + ACCESS_TOKEN_EXPIRY_SECONDS
 
-    const accessToken = await new SignJWT({ email: user.email })
+    const accessToken = await new SignJWT({ email: user.email, username: user.username })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(user.id)
       .setIssuedAt()
@@ -119,7 +143,7 @@ export class AuthService {
       accessToken,
       accessTokenExpiresAt,
       refreshToken,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, username: user.username },
     }
   }
 }
@@ -146,7 +170,7 @@ export function safeEqualString(a: string, b: string): boolean {
 
 export class AuthError extends Error {
   constructor(
-    readonly code: 'email_taken' | 'invalid_credentials' | 'invalid_token',
+    readonly code: 'email_taken' | 'username_taken' | 'invalid_credentials' | 'invalid_token',
     message: string,
   ) {
     super(message)

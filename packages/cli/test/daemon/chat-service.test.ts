@@ -7,6 +7,7 @@ import { MuseHarness } from '@museai/core'
 import { BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS } from '@museai/shared'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
+import { seedTestAssets } from '../helpers/seed-test-assets.js'
 
 async function createPairedDeps() {
   const tempHome = await mkdtemp(join(tmpdir(), 'muse-chat-service-'))
@@ -19,7 +20,10 @@ async function createPairedDeps() {
     personas: join(tempHome, 'personas'),
     skills: join(tempHome, 'skills'),
     mcps: join(tempHome, 'mcps'),
+    llmInspect: join(tempHome, 'llm-inspect'),
+    market: join(tempHome, 'market'),
   }
+  await seedTestAssets(musePaths)
   await writeFile(
     join(tempHome, 'config.json'),
     `${JSON.stringify(

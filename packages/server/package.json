@@ -19,6 +19,7 @@
   "dependencies": {
     "@earendil-works/pi-ai": "^0.79.3",
     "@hono/node-server": "^1.19.3",
+    "@museai/basic-kit": "workspace:*",
     "@museai/core": "workspace:*",
     "@museai/shared": "workspace:*",
     "bcryptjs": "^3.0.3",

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { semverSchema } from './market.js'
 
 /** 设备级 SSE（Web→CLI `/device/events`），与 Session 聊天 SSE 分离 */
 export const deviceSseEventSchema = z.discriminatedUnion('type', [
@@ -13,6 +14,12 @@ export const deviceSseEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('session_registry_changed'),
     reason: z.enum(['created', 'deleted', 'renamed']).optional(),
+  }),
+  z.object({
+    type: z.literal('market_installed'),
+    packageId: z.string().min(1),
+    version: semverSchema,
+    action: z.enum(['installed', 'updated']),
   }),
 ])
 
