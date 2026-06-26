@@ -1,9 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { BASIC_KIT_PACKAGE_ID } from '@museai/shared'
-
-export { BASIC_KIT_PACKAGE_ID }
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -13,14 +10,13 @@ export function getBasicKitVersion(): string {
   return pkg.version
 }
 
-/** 解压后对应 ~/.muse/ 的资产根目录（`assets/`） */
-export function getBasicKitAssetsRoot(): string {
-  return join(packageRoot, 'assets')
-}
-
-/** npm 包根目录（含 manifest.json、assets/） */
+/** musepack 源码根目录（manifest.json + personas/skills/agents，与 zip 根布局一致） */
 export function getBasicKitPackageRoot(): string {
   return packageRoot
 }
 
-export { packMusepack, type PackMusepackResult } from './pack-musepack.js'
+/** 构建产物路径：`dist/museai-basic-kit-<version>.musepack` */
+export function getBasicKitMusepackPath(): string {
+  const version = getBasicKitVersion()
+  return join(packageRoot, 'dist', `museai-basic-kit-${version}.musepack`)
+}

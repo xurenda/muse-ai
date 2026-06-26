@@ -1,0 +1,7 @@
+{
+  "name": "编程助手",
+  "description": "代码编写、调试与重构",
+  "systemPromptPath": "system.md",
+  "defaultModel": "deepseek/deepseek-v4-flash",
+  "thinkingLevel": "medium"
+}

@@ -1,16 +1,16 @@
-import { readFileSync } from 'node:fs'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { unzipSync } from 'fflate'
-import { packMusepack } from '../src/pack-musepack.js'
-import { BASIC_KIT_PACKAGE_ID } from '../src/index.js'
+import { getBasicKitPackageRoot } from '@museai/basic-kit'
+import { BASIC_KIT_PACKAGE_ID } from '@museai/shared'
+import { packMusepack } from '@/market/pack-musepack.js'
 
 describe('packMusepack', () => {
-  it('生成可解压的 .musepack 且 manifest 合法', () => {
-    const packageRoot = join(import.meta.dirname, '..')
+  it('应从 musepack 源码目录生成可解压的 .musepack', () => {
+    const packageRoot = getBasicKitPackageRoot()
     const outputDir = mkdtempSync(join(tmpdir(), 'muse-pack-'))
     try {
       const result = packMusepack({ packageRoot, outputDir })
@@ -25,15 +25,15 @@ describe('packMusepack', () => {
       const entries = unzipSync(bytes)
       expect(Object.keys(entries).sort()).toEqual(
         [
-          'agents/00000000-0000-4000-8000-000000000001/agent.json',
-          'agents/00000000-0000-4000-8000-000000000002/agent.json',
+          'agents/coding/agent.json',
+          'agents/general/agent.json',
           'manifest.json',
-          'personas/museai/basic-kit/coding/persona.json',
-          'personas/museai/basic-kit/coding/system.md',
-          'personas/museai/basic-kit/general/persona.json',
-          'personas/museai/basic-kit/general/system.md',
-          'skills/museai/basic-kit/git/SKILL.md',
-          'skills/museai/basic-kit/review/SKILL.md',
+          'personas/coding/persona.json',
+          'personas/coding/system.md',
+          'personas/general/persona.json',
+          'personas/general/system.md',
+          'skills/git/SKILL.md',
+          'skills/review/SKILL.md',
         ].sort(),
       )
 
@@ -41,11 +41,10 @@ describe('packMusepack', () => {
         id: string
         version: string
         kind: string
-        assets: { type: string; id: string }[]
       }
       expect(manifest.id).toBe('museai/basic-kit')
       expect(manifest.kind).toBe('kit')
-      expect(manifest.assets).toHaveLength(6)
+      expect(manifest).not.toHaveProperty('assets')
       expect(manifest).not.toHaveProperty('sha256')
     } finally {
       rmSync(outputDir, { recursive: true, force: true })

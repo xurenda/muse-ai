@@ -17,7 +17,7 @@ export {
   type ServerApiPath,
 } from './constants/api-paths.js'
 export { BUILTIN_TOOL_DESCRIPTORS, BUILTIN_TOOL_NAMES } from './constants/builtin-tools.js'
-export { DEFAULT_AGENT_ID } from './constants/default-agent.js'
+export { DEFAULT_AGENT_ID, DEFAULT_BASIC_KIT_AGENT_SLUG } from './constants/default-agent.js'
 export {
   API_KEY_PROVIDER_IDS,
   CUSTOM_PROVIDER_API_OPTIONS,
@@ -26,14 +26,6 @@ export {
   PROVIDER_DISPLAY_NAMES,
   type ProviderApi,
 } from './constants/provider-labels.js'
-export {
-  BUILTIN_CODING_AGENT_ID,
-  BUILTIN_GENERAL_AGENT_ID,
-  BUILTIN_PERSONA_CODING,
-  BUILTIN_PERSONA_GENERAL,
-  BUILTIN_SKILL_GIT,
-  BUILTIN_SKILL_REVIEW,
-} from './constants/builtin-agents.js'
 export { BASIC_KIT_PACKAGE_ID, LOCAL_ASSET_NAMESPACE, MUSEPACK_MAX_BYTES, RESERVED_USERNAMES, isReservedUsername } from './constants/market.js'
 export {
   MUSE_LLM_TASKS,
@@ -161,7 +153,6 @@ export {
   type Username,
 } from './schemas/market-id.js'
 export {
-  agentTemplateSchema,
   assetSourceSchema,
   inferAssetSource,
   installedPackageSchema,
@@ -172,7 +163,6 @@ export {
   marketPackageKindSchema,
   museOriginSchema,
   semverSchema,
-  type AgentTemplate,
   type AssetSource,
   type InstalledPackage,
   type InstalledPackagesFile,
@@ -253,5 +243,6 @@ export {
 export { EMPTY_CONTEXT_USAGE, computeContextUsagePercent, contextUsageSchema, type ContextUsage } from './types/context-usage.js'
 export { computeCacheHitRate, computeSessionCacheHitRate, hasSessionCacheUsage } from './utils/cache-hit-rate.js'
 export { compareSemver, pickLatestSemver } from './utils/compare-semver.js'
+export { basicKitAssetId, scopeAssetId } from './utils/market-asset-id.js'
 export { maskApiKey } from './utils/mask-api-key.js'
 export { DEFAULT_LOCALE, I18N_NAMESPACES, SUPPORTED_LOCALES, i18nResources, type I18nNamespace, type SupportedLocale } from './i18n/resources.js'

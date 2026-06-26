@@ -2,15 +2,7 @@ import { access, readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { formatSkillsForSystemPrompt, loadSkills, NodeExecutionEnv, type Skill, type ThinkingLevel } from '@earendil-works/pi-agent-core/node'
-import {
-  agentDefinitionSchema,
-  BUILTIN_GENERAL_AGENT_ID,
-  personaSchema,
-  skillMetaSchema,
-  type AgentDefinition,
-  type Persona,
-  type SkillMeta,
-} from '@museai/shared'
+import { agentDefinitionSchema, DEFAULT_AGENT_ID, personaSchema, skillMetaSchema, type AgentDefinition, type Persona, type SkillMeta } from '@museai/shared'
 import { DEFAULT_MODEL_REF, parseModelRef } from './model-ref.js'
 import type { MuseHarnessOptions } from './types.js'
 
@@ -283,7 +275,7 @@ export class MuseAgentRegistry {
 
   /** 默认 Agent：config.activeAgentId → 内置通用助手 */
   resolveDefaultAgentId(activeAgentId?: string): string {
-    return activeAgentId ?? BUILTIN_GENERAL_AGENT_ID
+    return activeAgentId ?? DEFAULT_AGENT_ID
   }
 
   private async loadAgentFromDir(dir: string): Promise<AgentDefinition | undefined> {

@@ -178,19 +178,6 @@ export function MarketDetailPage() {
               </ul>
             </div>
           ) : null}
-
-          {detail.manifest.assets.length > 0 ? (
-            <div className="rounded-lg border border-border p-4">
-              <h3 className="text-sm font-medium">{t('assetsTitle')}</h3>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                {detail.manifest.assets.map(asset => (
-                  <li key={`${asset.type}:${asset.id}`}>
-                    <span className="font-mono text-xs">{asset.type}</span> · {asset.id}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </div>
       ) : null}
     </PageShell>

@@ -117,20 +117,20 @@ v0.1 的 `packages/cli/assets/` **整体迁入**新 monorepo 包 **`@museai/basi
 packages/basic-kit/
 ├── package.json              # name: @museai/basic-kit，带 SemVer 版本号
 ├── manifest.json             # 市场 manifest，id: museai/basic-kit，version 与 package.json 对齐
-├── assets/                   # 解压后对应 ~/.muse/ 的布局
-│   ├── personas/museai/basic-kit/general/…
-│   ├── skills/museai/basic-kit/git/…
-│   └── agents/00000000-…/agent.json
-└── src/
-    └── index.ts              # 导出包 id、版本号、assets 根路径等（供 CLI 安装器使用）
+├── personas/general/…
+├── skills/git/…
+├── agents/general/…
+└── src/index.ts              # 导出包根路径、版本、musepack 产物路径（供 CLI / Server 使用）
 ```
+
+**目录布局与 `.musepack` zip 根一致**（无 `assets/` 中间层）。`pnpm pack:basic-kit`（CLI `pack-musepack.ts`）产出 `dist/museai-basic-kit-<version>.musepack`。
 
 | 项               | 说明                                                                                                           |
 | ---------------- | -------------------------------------------------------------------------------------------------------------- |
 | **与 CLI 关系**  | `@museai/cli` 声明 `dependencies: { "@museai/basic-kit": "workspace:*" }`；用户安装 CLI 时 npm 一并装上        |
-| **首装落盘**     | `muse start` 检测无 `museai/basic-kit` → 从 npm 包内 `assets/` 写入 `~/.muse/`（无需 Backend）                 |
+| **首装落盘**     | `muse start` 检测无 `museai/basic-kit` → 从 npm 包内 **musepack 同源目录** 写入 `~/.muse/`（无需 Backend）     |
 | **CLI 升级落盘** | `muse start` 检测本机版本 **低于** npm 包版本 → **自动覆盖**同步（同上写入流程）                               |
-| **市场入库**     | 发 npm **前**先将 `.musepack` 入库市场（CI / 种子）；保证市场版本 ≥ npm 随包版本                               |
+| **市场入库**     | `pnpm pack:basic-kit` 构建 `.musepack`；Server 种子读取 `dist/*.musepack`（需先 pack）                         |
 | **版本**         | `package.json` version、`manifest.json` version、市场 `market_package_versions.version` **三者一致**（SemVer） |
 | **市场更新**     | 仅发市场新版、未升 CLI 时，Web 对比版本并显示 **「更新」** 按钮 → `POST /market/update`                        |
 | **卸载**         | `museai/basic-kit` **不可卸载**（CLI 拒绝）；其他套件可卸载                                                    |
@@ -192,23 +192,10 @@ packages/basic-kit/
 
 ### kit（套件）
 
-一个包内包含多个 Persona / Skill，可选 **Agent 模板**。
+一个包内包含多个 Persona / Skill / Agent，目录结构由作者自定简路径；**CLI 安装时**映射为 `~/.muse/` 下的 scoped id（`{packageId}/{slug}`）。
 
-```json
-{
-  "agentTemplate": {
-    "name": "PR 审查助手",
-    "personaId": "museai/review-kit/code-reviewer",
-    "skillIds": ["museai/review-kit/pr-review"],
-    "activeToolNames": ["read", "grep", "bash"],
-    "description": "可选说明"
-  }
-}
-```
-
-- 安装 kit **只**解压资产并登记 `installed.json`（若 manifest `assets` 含 `type: agent`，则同步写入 `~/.muse/agents/`，如 `museai/basic-kit`）
-- 可选 `agentTemplate` 仅用于 Web「从套件创建 Agent」**预填表单**；与 manifest 内显式列出的 `agent` 资产无关
-- Web 预填后用户确认，再调用现有 `POST /agents`
+- 安装 kit 时 CLI 扫描 `personas/`、`skills/`、`agents/`（或 manifest 覆盖路径），落盘并写入 `installed.json`（资产列表由安装器发现，**不**写在 manifest 里）
+- `agents/` 下每个子目录含 `agent.json` 时，安装后自动创建对应 Agent（`personaId` / `skillIds` 可用包内 slug，安装时补全为 scoped id）
 
 ---
 
@@ -216,32 +203,36 @@ packages/basic-kit/
 
 实质为 **zip**；扩展名 `.musepack`（实现可用 `fflate` 等，不采用 tar.gz）。
 
+**包内**使用简路径（不含 `packageId` 前缀）：
+
 ```text
 museai-basic-kit-1.0.0.musepack
 ├── manifest.json
 ├── personas/
-│   └── museai/
-│       └── basic-kit/
-│           ├── general/
-│           │   ├── persona.json
-│           │   └── system.md
-│           └── coding/
-│               └── …
+│   ├── general/
+│   │   ├── persona.json    # 无 id，slug 即 general
+│   │   └── system.md
+│   └── coding/
+│       └── …
 ├── skills/
-│   └── museai/
-│       └── basic-kit/
-│           ├── git/
-│           │   └── SKILL.md
-│           └── review/
-│               └── SKILL.md
+│   ├── git/
+│   │   └── SKILL.md
+│   └── review/
+│       └── SKILL.md
 └── agents/
-    ├── 00000000-0000-4000-8000-000000000001/
-    │   └── agent.json
-    └── 00000000-0000-4000-8000-000000000002/
+    ├── general/
+    │   └── agent.json      # 无 id/personaId，默认绑定同名 persona；skillIds: ["git"]
+    └── coding/
         └── agent.json
 ```
 
-包内路径必须与目标 `~/.muse/` 下的相对路径一致（id 中 `/` 对应嵌套目录）。
+**安装后** CLI 映射到 `~/.muse/`（示例）：
+
+```text
+~/.muse/personas/museai/basic-kit/general/…
+~/.muse/skills/museai/basic-kit/git/…
+~/.muse/agents/50d49f69-1ce7-4220-bc6a-be4391a1859f/…
+```
 
 ### manifest.json
 
@@ -253,49 +244,31 @@ museai-basic-kit-1.0.0.musepack
   "name": "MuseAI 基础套件",
   "description": "默认 Persona、Skill 与内置 Agent",
   "author": "museai",
-  "assets": [
-    { "type": "persona", "id": "museai/basic-kit/general" },
-    { "type": "persona", "id": "museai/basic-kit/coding" },
-    { "type": "skill", "id": "museai/basic-kit/git" },
-    { "type": "skill", "id": "museai/basic-kit/review" },
-    { "type": "agent", "id": "00000000-0000-4000-8000-000000000001" },
-    { "type": "agent", "id": "00000000-0000-4000-8000-000000000002" }
-  ],
   "minMuseVersion": "0.2.0"
 }
 ```
 
-非 basic-kit 的 kit 可附加 `agentTemplate`（安装时不自动创建 Agent，仅 Web 预填表单）：
+可选覆盖资产目录（相对 zip 根）：
 
 ```json
 {
-  "id": "museai/review-kit",
-  "version": "1.0.0",
-  "kind": "kit",
-  "name": "代码审查套件",
-  "author": "museai",
-  "assets": [
-    { "type": "persona", "id": "museai/review-kit/code-reviewer" },
-    { "type": "skill", "id": "museai/review-kit/pr-review" }
-  ],
-  "agentTemplate": {
-    "name": "PR 审查助手",
-    "personaId": "museai/review-kit/code-reviewer",
-    "skillIds": ["museai/review-kit/pr-review"],
-    "activeToolNames": ["read", "grep", "bash"]
-  },
-  "minMuseVersion": "0.2.0"
+  "personas": "./my-personas",
+  "skills": "./my-skills",
+  "agents": "./my-agents"
 }
 ```
 
-| 字段          | 约束                                                                                 |
-| ------------- | ------------------------------------------------------------------------------------ |
-| `id`          | 包 id：`{username}/{package-slug}`；单资产包与唯一 asset id 相同                     |
-| `version`     | [SemVer](https://semver.org/) `MAJOR.MINOR.PATCH`                                    |
-| `kind`        | `persona` \| `skill` \| `kit`                                                        |
-| `author`      | 必须等于发布者的 `username`（**后续**上传时 Backend 校验，不信任 manifest 自声明）   |
-| `assets`      | `kind !== kit` 时仅 1 项；`kit` 至少 1 项；`type` 含 `persona` \| `skill` \| `agent` |
-| `assets[].id` | 套件内须为 `{packageId}/{asset-slug}`；单资产包须等于 manifest `id`                  |
+默认分别为 `personas`、`skills`、`agents`。**无需** `assets` 数组。
+
+| 字段       | 约束                                                                               |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `id`       | 包 id：`{username}/{package-slug}`                                                 |
+| `version`  | [SemVer](https://semver.org/) `MAJOR.MINOR.PATCH`                                  |
+| `kind`     | `persona` \| `skill` \| `kit`                                                      |
+| `author`   | 必须等于发布者的 `username`（**后续**上传时 Backend 校验，不信任 manifest 自声明） |
+| `personas` | 可选，相对 zip 根的 Persona 目录，默认 `personas`                                  |
+| `skills`   | 可选，相对 zip 根的 Skill 目录，默认 `skills`                                      |
+| `agents`   | 可选，相对 zip 根的 Agent 目录，默认 `agents`                                      |
 
 **完整性校验**：归档文件的 **sha256 仅存 Backend**（`market_package_versions.sha256`）；`install-url` 返回给 CLI；**manifest 内不含 sha256**。
 
@@ -319,7 +292,7 @@ museai-basic-kit-1.0.0.musepack
 
 ### `~/.muse/market/installed.json`
 
-`assets` 与 manifest **对齐**（含 `agent`）：
+`assets` 由 **CLI 安装时扫描**写入（scoped id，供卸载与备份）：
 
 ```json
 {
@@ -332,8 +305,7 @@ museai-basic-kit-1.0.0.musepack
         { "type": "persona", "id": "museai/basic-kit/coding" },
         { "type": "skill", "id": "museai/basic-kit/git" },
         { "type": "skill", "id": "museai/basic-kit/review" },
-        { "type": "agent", "id": "00000000-0000-4000-8000-000000000001" },
-        { "type": "agent", "id": "00000000-0000-4000-8000-000000000002" }
+        { "type": "agent", "id": "<由 agents/general slug 派生的 UUID>" }
       ]
     }
   }
@@ -348,7 +320,7 @@ museai-basic-kit-1.0.0.musepack
 
 | 场景             | 行为                                                                                                                                |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **CLI 首次启动** | 本机无 `museai/basic-kit` → 从 `@museai/basic-kit` npm 包内 `assets/` **同步落盘**（无需 Backend）                                  |
+| **CLI 首次启动** | 本机无 `museai/basic-kit` → 从 `@museai/basic-kit` npm 包内 **musepack 同源目录** **同步落盘**（无需 Backend）                      |
 | **CLI 升级**     | 新 CLI 携带更高版本 `@museai/basic-kit`；`muse start` 时若本机已装版本 **低于** npm 包版本，**自动覆盖**落盘并更新 `installed.json` |
 | **市场发新版**   | 仅升级 basic-kit、未发 CLI 时，Web 从 Backend 拉最新 `published` 版本号，显示 **「更新」**                                          |
 | **用户点更新**   | Web → CLI `POST /market/update { packageId: "museai/basic-kit" }`；CLI 从 Backend 下载 `.musepack`                                  |
@@ -526,13 +498,13 @@ Base：`/market`；**所有市场读接口均需 user JWT**（未登录返回 `4
 
 ## Web UI（v0.2）
 
-| 页面 / 入口                  | 说明                                                                                   |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `/market`                    | 列表：卡片展示 kind、作者、简介                                                        |
-| `/market/:packageId`         | 详情、已装版本 vs 最新版本、**更新** / 安装 / 卸载按钮                                 |
-| `/market/installed` 或设置页 | 已安装列表；`museai/basic-kit` 显示当前版本与更新入口                                  |
-| Agents 页                    | Persona/Skill 下拉显示 `source` 标签；「从已安装套件创建」入口（`agentTemplate` 预填） |
-| 注册页                       | 增加用户名；校验规则与 `RESERVED_USERNAMES`                                            |
+| 页面 / 入口                  | 说明                                                              |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `/market`                    | 列表：卡片展示 kind、作者、简介                                   |
+| `/market/:packageId`         | 详情、已装版本 vs 最新版本、**更新** / 安装 / 卸载按钮            |
+| `/market/installed` 或设置页 | 已安装列表；`museai/basic-kit` 显示当前版本与更新入口             |
+| Agents 页                    | Persona/Skill 下拉显示 `source` 标签；套件内 Agent 由安装自动创建 |
+| 注册页                       | 增加用户名；校验规则与 `RESERVED_USERNAMES`                       |
 
 市场浏览需**登录**；安装 / 卸载 / 更新需**在线 CLI**（无设备时可逛市场，安装按钮引导配对，与聊天页一致）。
 
@@ -558,7 +530,7 @@ stateDiagram-v2
 
 | 模块                | 变更要点                                                                                                                         |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `@museai/basic-kit` | **新建** `packages/basic-kit/`；迁入原 `cli/assets`；`manifest.json` + 构建 `.musepack` 脚本                                     |
+| `@museai/basic-kit` | **新建** `packages/basic-kit/`；迁入原 `cli/assets`；musepack 布局 + `manifest.json`；`pnpm pack:basic-kit` 在 CLI 侧打包        |
 | `@museai/shared`    | `marketManifestSchema`、`installedPackageSchema`、scoped id 校验、`RESERVED_USERNAMES`、`AssetSource`、`BASIC_KIT_PACKAGE_ID` 等 |
 | `packages/core`     | `MuseAgentRegistry`：移除 bundled 回退；递归列举；`resolveAssetDir` 全路径；内置 id 常量 → `museai/basic-kit/*`                  |
 | `packages/cli`      | 依赖 `@museai/basic-kit`；删除 `assets/`；`MarketInstaller`（含首装 basic-kit）；daemon `/market/*`                              |
@@ -569,12 +541,12 @@ stateDiagram-v2
 
 ## 实现步骤
 
-按依赖顺序执行；步骤 1–4 可在无 Backend 情况下用 npm 包内 assets 完成首装联调。
+按依赖顺序执行；步骤 1–4 可在无 Backend 情况下用 npm 包内 musepack 同源目录完成首装联调。
 
 | #   | 步骤                        | 任务                                                                                                                                                     | 验收                                   |
 | --- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | 1   | **`@museai/basic-kit`**     | 新建 `packages/basic-kit/`；从 `cli/assets` 迁入；id 改为 `museai/basic-kit/*`；`manifest.json`（无 sha256）                                             | 目录布局与本文一致                     |
-| 2   | **basic-kit 构建**          | `pnpm pack:musepack`（或同等脚本）产出 `.musepack`；sha256 由脚本输出供 seed 使用                                                                        | zip 可解压且 manifest 合法             |
+| 2   | **basic-kit 构建**          | 根目录 `pnpm pack:basic-kit`（CLI `pack-musepack.ts`）产出 `dist/*.musepack`；sha256 由脚本输出供 seed 使用                                              | zip 可解压且 manifest 合法             |
 | 3   | **`@museai/shared`**        | `marketManifestSchema`、`installedPackageSchema`、scoped id Zod、`RESERVED_USERNAMES`、`BASIC_KIT_PACKAGE_ID`、更新 `BUILTIN_*` 常量                     | 单测通过                               |
 | 4   | **`packages/core`**         | `MuseAgentRegistry`：去 bundled；递归 list personas/skills；`resolveAssetDir` 按 `/` 拆路径                                                              | 测试 fixture 改为嵌套目录              |
 | 5   | **CLI 首装**                | `@museai/cli` 依赖 basic-kit；`MarketInstaller.syncBasicKit()`；`muse start` 首装/升级落盘；写 `installed.json` + `.muse-origin.json`（assets 含 agent） | 无 Backend：装 CLI → 默认 Agent 可聊天 |
@@ -585,7 +557,7 @@ stateDiagram-v2
 | 10  | **CLI 市场安装器**          | 下载、sha256 校验、解压、体积上限 10 MB、防 `..`、拒 symlink；install / update / uninstall + 备份；卸载引用检查 409；拒卸 basic-kit                      | 单测 + 本地 `.musepack` 调试命令       |
 | 11  | **CLI daemon**              | `GET /market/installed`、`POST install/uninstall/update`；`GET /personas`、`/skills` 增 `source`；可选 `market_installed` 事件                           | Web 可调通                             |
 | 12  | **Web 市场**                | `/market` 列表与详情；已装 vs 最新版本；安装/更新/卸载；无 CLI 时引导配对；Agents 页 `source` 与套件预填                                                 | 对照验收标准 1–7                       |
-| 13  | **收尾**                    | 更新 `protocols.md`；CI 构建 basic-kit `.musepack` 并 seed；端到端：注册 → 配对 → 逛市场 → 装包 → 聊天                                                   | 文档与 CI 就绪                         |
+| 13  | **收尾**                    | 更新 `protocols.md`；CI `test:run` 内含 `pack:basic-kit`；端到端：注册 → 配对 → 逛市场 → 装包 → 聊天                                                     | 文档与 CI 就绪                         |
 | 14  | **作者上传 + 审核**（后续） | 上传 API、`muse market publish`、审核流、`is_admin` 管理页；`local/*` 发布为 `{username}/*`；上传时校验 `author === username`                            | 独立里程碑                             |
 
 ---
@@ -614,7 +586,7 @@ stateDiagram-v2
 | 6   | CLI 升级时 basic-kit **自动覆盖**；仅市场发新版时 Web **「更新」** 按钮手动升级                          |
 | 7   | **sha256 仅存 Backend**；manifest 内不含 sha256                                                          |
 | 8   | `packageId` 路由用 **通配** `/*`；客户端 `encodeURIComponent`                                            |
-| 9   | `installed.json` 的 `assets` 与 manifest **对齐**（含 agent）                                            |
+| 9   | `installed.json` 的 `assets` 由 CLI 安装扫描生成（含 agent）                                             |
 | 10  | 发版顺序：**先**市场入库，**再**发 npm                                                                   |
 | 11  | v0.2 市场仅 **官方内容**（种子/CI）；**不做**作者上传与审核                                              |
 | 12  | zip 内 **拒绝 symlink**；`RESERVED_USERNAMES` 放 **shared**，server 与 Web 共用                          |

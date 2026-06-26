@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MuseHarness } from '@museai/core'
-import { BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@museai/shared'
+import { DEFAULT_AGENT_ID, DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@museai/shared'
 import { createBackendGetApiKeyAndHeaders } from '@/backend/llm-auth.js'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { seedTestAssets } from '../helpers/seed-test-assets.js'
@@ -51,7 +51,7 @@ describe('SessionSettingsService modelSelection', () => {
     const { deps } = await createPairedDeps()
     vi.spyOn(MuseHarness.prototype, 'setThinkingLevel').mockResolvedValue(undefined as never)
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const patched = await deps.sessionSettingsService.patch(session.id, {
       modelSelection: { type: 'tier', tier: 'high' },
     })
@@ -82,7 +82,7 @@ describe('ChatService Muse 代理', () => {
     })
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueueCompact(session.id)
     await new Promise(resolve => setTimeout(resolve, 80))
 
@@ -109,7 +109,7 @@ describe('SessionTitleService 代理头', () => {
 
   it('标题生成应附带 titleGeneration task 头', async () => {
     const { deps } = await createPairedDeps()
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.sessionStore.updateName(session.id, '帮我写 todo', 'first_message')
 
     vi.spyOn(deps.sessionStore, 'getTree').mockResolvedValue({

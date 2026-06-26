@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSessionStore } from '@museai/core'
 import type { SessionMeta } from '@museai/shared'
-import { DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@museai/shared'
+import { DEFAULT_AGENT_ID, DEFAULT_PORTS, MUSE_PROXY_HEADERS } from '@museai/shared'
 import { SessionEventHub } from '@/daemon/event-hub.js'
 import { SessionTitleService } from '@/daemon/session-title-service.js'
 
@@ -15,7 +15,7 @@ describe('SessionTitleService', () => {
     const updatedAt = '2026-06-16T00:00:00.000Z'
     const meta: SessionMeta = {
       id: sessionId,
-      agentId: '00000000-0000-4000-8000-000000000001',
+      agentId: DEFAULT_AGENT_ID,
       name: '帮我写一个 todo app',
       nameSource: 'first_message',
       createdAt: updatedAt,
@@ -104,7 +104,7 @@ describe('SessionTitleService', () => {
     const sessionStore = {
       get: vi.fn(async () => ({
         id: '550e8400-e29b-41d4-a716-446655440000',
-        agentId: '00000000-0000-4000-8000-000000000001',
+        agentId: DEFAULT_AGENT_ID,
         name: '固定标题',
         nameSource: 'manual' as const,
         createdAt: '2026-06-16T00:00:00.000Z',
@@ -133,7 +133,7 @@ describe('SessionTitleService', () => {
     const sessionStore = {
       get: vi.fn(async () => ({
         id: sessionId,
-        agentId: '00000000-0000-4000-8000-000000000001',
+        agentId: DEFAULT_AGENT_ID,
         name: '介绍下你自己',
         nameSource: 'first_message' as const,
         createdAt: '2026-06-16T00:00:00.000Z',

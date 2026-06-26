@@ -1,9 +1,10 @@
 {
-  "id": "00000000-0000-4000-8000-000000000002",
+  "id": "f69740f1-56ba-405a-af32-e1d584cc41e2",
   "name": "编程助手",
   "personaId": "museai/basic-kit/coding",
   "skillIds": ["museai/basic-kit/git", "museai/basic-kit/review"],
-  "activeToolNames": [],
+  "description": "内置编程 Agent，含 git 与 review skills",
+  "activeToolNames": ["read", "ls", "bash", "write", "edit", "grep", "find", "sleep"],
   "createdAt": "2026-01-01T00:00:00.000Z",
   "updatedAt": "2026-01-01T00:00:00.000Z"
 }

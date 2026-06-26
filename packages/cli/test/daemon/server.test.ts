@@ -3,15 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MuseSseEvent } from '@museai/shared'
-import {
-  BUILTIN_CODING_AGENT_ID,
-  BUILTIN_GENERAL_AGENT_ID,
-  BUILTIN_PERSONA_GENERAL,
-  BASIC_KIT_PACKAGE_ID,
-  CLI_API_PATHS,
-  DEFAULT_PORTS,
-  sessionEventsPath,
-} from '@museai/shared'
+import { basicKitAssetId, DEFAULT_AGENT_ID, BASIC_KIT_PACKAGE_ID, CLI_API_PATHS, DEFAULT_PORTS, sessionEventsPath } from '@museai/shared'
+import { basicKitAgentId } from '@/market/resolve-agent-id.js'
 import { loadCliConfig } from '@/config.js'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
@@ -71,8 +64,8 @@ describe('createCliApp', () => {
     const res = await app.request('http://localhost/agents')
     expect(res.status).toBe(200)
     const body = (await res.json()) as { agents: Array<{ id: string; name: string }> }
-    expect(body.agents.some(a => a.id === BUILTIN_GENERAL_AGENT_ID)).toBe(true)
-    expect(body.agents.some(a => a.id === BUILTIN_CODING_AGENT_ID)).toBe(true)
+    expect(body.agents.some(a => a.id === DEFAULT_AGENT_ID)).toBe(true)
+    expect(body.agents.some(a => a.id === basicKitAgentId('coding'))).toBe(true)
   })
 
   it('POST /sessions 与 GET /sessions 应持久化元数据', async () => {
@@ -81,7 +74,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID, name: 'demo' }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID, name: 'demo' }),
     })
     expect(createRes.status).toBe(201)
     const created = (await createRes.json()) as { session: { id: string } }
@@ -105,12 +98,12 @@ describe('createCliApp', () => {
     })
     expect(createRes.status).toBe(201)
     const created = (await createRes.json()) as { session: { agentId: string } }
-    expect(created.session.agentId).toBe(BUILTIN_GENERAL_AGENT_ID)
+    expect(created.session.agentId).toBe(DEFAULT_AGENT_ID)
   })
 
   it('POST /sessions 应使用 config.activeAgentId', async () => {
     const { app, tempHome } = await createTestApp()
-    await writeFile(join(tempHome, 'config.json'), `${JSON.stringify({ version: 1, activeAgentId: BUILTIN_CODING_AGENT_ID }, null, 2)}\n`)
+    await writeFile(join(tempHome, 'config.json'), `${JSON.stringify({ version: 1, activeAgentId: basicKitAgentId('coding') }, null, 2)}\n`)
 
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
@@ -119,7 +112,7 @@ describe('createCliApp', () => {
     })
     expect(createRes.status).toBe(201)
     const created = (await createRes.json()) as { session: { agentId: string } }
-    expect(created.session.agentId).toBe(BUILTIN_CODING_AGENT_ID)
+    expect(created.session.agentId).toBe(basicKitAgentId('coding'))
   })
 
   it('POST /sessions 应持久化 modelSelection', async () => {
@@ -129,7 +122,7 @@ describe('createCliApp', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        agentId: BUILTIN_GENERAL_AGENT_ID,
+        agentId: DEFAULT_AGENT_ID,
         modelSelection: { type: 'tier', tier: 'medium' },
       }),
     })
@@ -144,7 +137,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -162,7 +155,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -187,7 +180,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -207,7 +200,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -226,7 +219,7 @@ describe('createCliApp', () => {
     const personasRes = await app.request('http://localhost/personas')
     expect(personasRes.status).toBe(200)
     const personasBody = (await personasRes.json()) as { personas: Array<{ id: string; source: string }> }
-    const general = personasBody.personas.find(p => p.id === BUILTIN_PERSONA_GENERAL)
+    const general = personasBody.personas.find(p => p.id === basicKitAssetId('general'))
     expect(general).toBeTruthy()
     expect(general?.source).toBe('local')
 
@@ -248,7 +241,7 @@ describe('createCliApp', () => {
     const res = await app.request('http://localhost/personas')
     expect(res.status).toBe(200)
     const body = (await res.json()) as { personas: Array<{ id: string; source: string }> }
-    const general = body.personas.find(p => p.id === BUILTIN_PERSONA_GENERAL)
+    const general = body.personas.find(p => p.id === basicKitAssetId('general'))
     expect(general?.source).toBe('market')
   })
 
@@ -271,7 +264,7 @@ describe('createCliApp', () => {
           [BASIC_KIT_PACKAGE_ID]: {
             version: '1.0.0',
             installedAt: '2026-01-01T00:00:00.000Z',
-            assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+            assets: [{ type: 'persona', id: basicKitAssetId('general') }],
           },
         },
       })}\n`,
@@ -307,7 +300,7 @@ describe('createCliApp', () => {
       packageId: BASIC_KIT_PACKAGE_ID,
       version: '1.0.1',
       action: 'updated',
-      assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+      assets: [{ type: 'persona', id: basicKitAssetId('general') }],
     })
 
     const events: Array<{ type: string; packageId?: string }> = []
@@ -368,7 +361,7 @@ describe('createCliApp', () => {
       packageId: BASIC_KIT_PACKAGE_ID,
       version: '1.0.1',
       action: 'updated',
-      assets: [{ type: 'persona', id: BUILTIN_PERSONA_GENERAL }],
+      assets: [{ type: 'persona', id: basicKitAssetId('general') }],
     })
 
     const res = await app.request(`http://localhost${CLI_API_PATHS.MARKET_UPDATE}`, {
@@ -392,7 +385,7 @@ describe('createCliApp', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: '测试 Agent',
-        personaId: BUILTIN_PERSONA_GENERAL,
+        personaId: basicKitAssetId('general'),
         skillIds: [],
         activeToolNames: ['read', 'ls'],
       }),
@@ -408,7 +401,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -432,7 +425,7 @@ describe('createCliApp', () => {
     const createRes = await app.request('http://localhost/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId: BUILTIN_GENERAL_AGENT_ID, name: 'tree-demo' }),
+      body: JSON.stringify({ agentId: DEFAULT_AGENT_ID, name: 'tree-demo' }),
     })
     const { session } = (await createRes.json()) as { session: { id: string } }
 
@@ -467,7 +460,7 @@ describe('ChatService', () => {
 
   it('enqueue 未配对时应推送错误事件', async () => {
     const { deps } = await createTestApp()
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_CODING_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: basicKitAgentId('coding') })
     const received: MuseSseEvent[] = []
     const abort = new AbortController()
 
@@ -514,7 +507,7 @@ describe('ChatService', () => {
       }),
     )
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const received: MuseSseEvent[] = []
     const abort = new AbortController()
 
@@ -539,7 +532,7 @@ describe('ChatService', () => {
     const { app, deps } = await createTestApp()
     const compactSpy = vi.spyOn(deps.chatService, 'enqueueCompact').mockResolvedValue({ accepted: true })
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const res = await app.request(`http://localhost/sessions/${session.id}/compact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -554,7 +547,7 @@ describe('ChatService', () => {
     const { app, deps } = await createTestApp()
     vi.spyOn(deps.chatService, 'isSessionBusy').mockReturnValue(true)
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const res = await app.request(`http://localhost/sessions/${session.id}/compact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -570,7 +563,7 @@ describe('ChatService', () => {
     const { app, deps } = await createTestApp()
     const abortSpy = vi.spyOn(deps.chatService, 'abortTurn').mockResolvedValue({ aborted: true })
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const res = await app.request(`http://localhost/sessions/${session.id}/abort`, { method: 'POST' })
 
     expect(res.status).toBe(202)

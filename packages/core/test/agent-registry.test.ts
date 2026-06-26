@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { BUILTIN_PERSONA_CODING, BUILTIN_PERSONA_GENERAL, BUILTIN_SKILL_GIT, BUILTIN_SKILL_REVIEW } from '@museai/shared'
+import { basicKitAssetId, DEFAULT_AGENT_ID } from '@museai/shared'
 import { MuseAgentRegistry, composeSystemPrompt } from '../src/agent-registry.js'
 
 const fixturesRoot = join(fileURLToPath(new URL('.', import.meta.url)), 'fixtures')
@@ -37,10 +37,10 @@ describe('MuseAgentRegistry', () => {
     const personas = await registry.listPersonas()
     const skills = await registry.listSkills()
 
-    expect(personas.some(p => p.id === BUILTIN_PERSONA_GENERAL)).toBe(true)
-    expect(personas.some(p => p.id === BUILTIN_PERSONA_CODING)).toBe(true)
-    expect(skills.some(s => s.id === BUILTIN_SKILL_GIT)).toBe(true)
-    expect(skills.some(s => s.id === BUILTIN_SKILL_REVIEW)).toBe(true)
+    expect(personas.some(p => p.id === basicKitAssetId('general'))).toBe(true)
+    expect(personas.some(p => p.id === basicKitAssetId('coding'))).toBe(true)
+    expect(skills.some(s => s.id === basicKitAssetId('git'))).toBe(true)
+    expect(skills.some(s => s.id === basicKitAssetId('review'))).toBe(true)
   })
 
   it('编程助手 system prompt 应包含 skills 索引', async () => {
@@ -64,7 +64,7 @@ describe('MuseAgentRegistry', () => {
 
   it('resolveDefaultAgentId 应回退内置通用助手', () => {
     const registry = createRegistry()
-    expect(registry.resolveDefaultAgentId()).toBe('00000000-0000-4000-8000-000000000001')
+    expect(registry.resolveDefaultAgentId()).toBe(DEFAULT_AGENT_ID)
     expect(registry.resolveDefaultAgentId('custom-id')).toBe('custom-id')
   })
 

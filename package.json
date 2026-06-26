@@ -15,8 +15,8 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "test": "vitest",
-    "test:run": "pnpm build && vitest run",
-    "pack:basic-kit": "pnpm --filter @museai/basic-kit pack:musepack",
+    "test:run": "pnpm build && pnpm pack:basic-kit && vitest run",
+    "pack:basic-kit": "pnpm --filter @museai/cli exec tsx src/market/pack-musepack.ts",
     "typecheck": "pnpm -r typecheck"
   },
   "lint-staged": {

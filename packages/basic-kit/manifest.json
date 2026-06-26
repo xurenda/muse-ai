@@ -5,13 +5,5 @@
   "name": "MuseAI 基础套件",
   "description": "默认 Persona、Skill 与内置 Agent",
   "author": "museai",
-  "assets": [
-    { "type": "persona", "id": "museai/basic-kit/general" },
-    { "type": "persona", "id": "museai/basic-kit/coding" },
-    { "type": "skill", "id": "museai/basic-kit/git" },
-    { "type": "skill", "id": "museai/basic-kit/review" },
-    { "type": "agent", "id": "00000000-0000-4000-8000-000000000001" },
-    { "type": "agent", "id": "00000000-0000-4000-8000-000000000002" }
-  ],
   "minMuseVersion": "0.2.0"
 }

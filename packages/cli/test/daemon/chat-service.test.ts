@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { AssistantMessage } from '@earendil-works/pi-ai'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MuseHarness } from '@museai/core'
-import { BUILTIN_GENERAL_AGENT_ID, DEFAULT_PORTS } from '@museai/shared'
+import { DEFAULT_AGENT_ID, DEFAULT_PORTS } from '@museai/shared'
 import { createCliDaemonDeps } from '@/daemon/deps.js'
 import { createSseSubscriber } from '@/daemon/event-hub.js'
 import { seedTestAssets } from '../helpers/seed-test-assets.js'
@@ -61,7 +61,7 @@ describe('ChatService steer / follow_up', () => {
     const promptSpy = vi.spyOn(MuseHarness.prototype, 'prompt').mockResolvedValue(mockAssistantMessage())
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -82,7 +82,7 @@ describe('ChatService steer / follow_up', () => {
     const steerSpy = vi.spyOn(MuseHarness.prototype, 'steer').mockResolvedValue(undefined)
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     void deps.chatService.enqueue({ sessionId: session.id, message: '开始', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -109,7 +109,7 @@ describe('ChatService steer / follow_up', () => {
     const followUpSpy = vi.spyOn(MuseHarness.prototype, 'followUp').mockResolvedValue(undefined)
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     void deps.chatService.enqueue({ sessionId: session.id, message: '开始', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -128,7 +128,7 @@ describe('ChatService steer / follow_up', () => {
     const steerSpy = vi.spyOn(MuseHarness.prototype, 'steer').mockResolvedValue(undefined)
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueue({ sessionId: session.id, message: 'idle steer', mode: 'steer' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -142,7 +142,7 @@ describe('ChatService steer / follow_up', () => {
     vi.spyOn(MuseHarness.prototype, 'prompt').mockResolvedValue(mockAssistantMessage())
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => unsubscribe)
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -163,7 +163,7 @@ describe('ChatService steer / follow_up', () => {
     })
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     void deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -177,7 +177,7 @@ describe('ChatService steer / follow_up', () => {
 
   it('idle 时 abortTurn 应返回 aborted: false', async () => {
     const { deps } = await createPairedDeps()
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const result = await deps.chatService.abortTurn(session.id)
     expect(result.aborted).toBe(false)
   })
@@ -195,7 +195,7 @@ describe('ChatService steer / follow_up', () => {
     })
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => unsubscribe)
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     void deps.chatService.enqueue({ sessionId: session.id, message: '你好', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -227,7 +227,7 @@ describe('ChatService compact', () => {
     })
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueueCompact(session.id)
     await new Promise(resolve => setTimeout(resolve, 50))
 
@@ -247,7 +247,7 @@ describe('ChatService compact', () => {
     vi.spyOn(MuseHarness.prototype, 'compact').mockReturnValue(compactPromise)
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     const received: Array<{ type: string; cancelled?: boolean }> = []
     const abort = new AbortController()
     deps.eventHub.subscribe(
@@ -282,7 +282,7 @@ describe('ChatService compact', () => {
     })
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     void deps.chatService.enqueue({ sessionId: session.id, message: '长对话', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 10))
 
@@ -306,7 +306,7 @@ describe('ChatService compact', () => {
     } as AssistantMessage)
     vi.spyOn(MuseHarness.prototype, 'subscribe').mockImplementation(() => () => {})
 
-    const session = await deps.sessionStore.create({ agentId: BUILTIN_GENERAL_AGENT_ID })
+    const session = await deps.sessionStore.create({ agentId: DEFAULT_AGENT_ID })
     await deps.chatService.enqueue({ sessionId: session.id, message: '溢出测试', mode: 'prompt' })
     await new Promise(resolve => setTimeout(resolve, 50))
 

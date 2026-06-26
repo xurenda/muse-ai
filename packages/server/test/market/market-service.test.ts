@@ -12,7 +12,6 @@ const MANIFEST = {
   kind: 'kit' as const,
   name: 'MuseAI 基础套件',
   author: 'museai',
-  assets: [{ type: 'persona' as const, id: 'museai/basic-kit/general' }],
 }
 
 function createSelectChain(rows: unknown[]) {

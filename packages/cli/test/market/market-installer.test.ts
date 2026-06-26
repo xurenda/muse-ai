@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BUILTIN_GENERAL_AGENT_ID, BUILTIN_PERSONA_GENERAL, BUILTIN_SKILL_GIT, BASIC_KIT_PACKAGE_ID } from '@museai/shared'
+import { DEFAULT_AGENT_ID, basicKitAssetId, BASIC_KIT_PACKAGE_ID } from '@museai/shared'
 import { MuseAgentRegistry } from '@museai/core'
 import { syncBasicKit } from '@/market/market-installer.js'
 import { readInstalledPackages } from '@/market/installed-store.js'
@@ -45,9 +45,9 @@ describe('syncBasicKit', () => {
       roots: { agents: paths.agents, personas: paths.personas, skills: paths.skills },
     })
     const agents = await registry.listAgents()
-    expect(agents.some(agent => agent.id === BUILTIN_GENERAL_AGENT_ID)).toBe(true)
-    expect((await registry.listPersonas()).some(persona => persona.id === BUILTIN_PERSONA_GENERAL)).toBe(true)
-    expect((await registry.listSkills()).some(skill => skill.id === BUILTIN_SKILL_GIT)).toBe(true)
+    expect(agents.some(agent => agent.id === DEFAULT_AGENT_ID)).toBe(true)
+    expect((await registry.listPersonas()).some(persona => persona.id === basicKitAssetId('general'))).toBe(true)
+    expect((await registry.listSkills()).some(skill => skill.id === basicKitAssetId('git'))).toBe(true)
   })
 
   it('版本已是最新时应跳过同步', async () => {

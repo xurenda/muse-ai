@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { getBasicKitAssetsRoot, getBasicKitVersion } from '@museai/basic-kit'
+import { join } from 'node:path'
+import { getBasicKitPackageRoot, getBasicKitVersion } from '@museai/basic-kit'
 import { BASIC_KIT_PACKAGE_ID, marketManifestSchema } from '@museai/shared'
 import type { MusePaths } from '../paths.js'
 import { compareSemver } from './compare-semver.js'
 import { getInstalledPackageVersion, readInstalledPackages, upsertInstalledPackage } from './installed-store.js'
-import { copyAssetKind, getBundledAssetsRoot, removeInstalledAssets, writeMuseOriginFiles } from './sync-assets.js'
+import { installMusepackAssets } from './install-musepack-assets.js'
+import { removeInstalledAssets } from './sync-assets.js'
 
 export type SyncBasicKitAction = 'installed' | 'upgraded' | 'skipped'
 
@@ -16,13 +17,12 @@ export interface SyncBasicKitResult {
 }
 
 async function loadBasicKitManifest(): Promise<ReturnType<typeof marketManifestSchema.parse>> {
-  const assetsRoot = getBasicKitAssetsRoot()
-  const manifestPath = join(dirname(assetsRoot), 'manifest.json')
-  const raw = await readFile(manifestPath, 'utf8')
+  const packageRoot = getBasicKitPackageRoot()
+  const raw = await readFile(join(packageRoot, 'manifest.json'), 'utf8')
   return marketManifestSchema.parse(JSON.parse(raw))
 }
 
-/** 从 npm 包内 `@museai/basic-kit` assets 同步 `museai/basic-kit` 到 ~/.muse/ */
+/** 从 npm 包内 `@museai/basic-kit` 同步 `museai/basic-kit` 到 ~/.muse/ */
 export async function syncBasicKit(paths: MusePaths): Promise<SyncBasicKitResult> {
   const manifest = await loadBasicKitManifest()
   const npmVersion = getBasicKitVersion()
@@ -44,17 +44,13 @@ export async function syncBasicKit(paths: MusePaths): Promise<SyncBasicKitResult
     await removeInstalledAssets(paths, previous.assets)
   }
 
-  const sourceRoot = getBundledAssetsRoot()
-  await copyAssetKind(paths, 'personas', sourceRoot)
-  await copyAssetKind(paths, 'skills', sourceRoot)
-  await copyAssetKind(paths, 'agents', sourceRoot)
-
+  const packageRoot = getBasicKitPackageRoot()
+  const assets = await installMusepackAssets(paths, manifest, packageRoot)
   const installedAt = new Date().toISOString()
-  await writeMuseOriginFiles(paths, manifest, installedAt)
   await upsertInstalledPackage(paths, BASIC_KIT_PACKAGE_ID, {
     version: npmVersion,
     installedAt,
-    assets: manifest.assets,
+    assets,
   })
 
   return {

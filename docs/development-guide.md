@@ -247,7 +247,7 @@ Tailscale 会给出类似 `https://<machine>.<tailnet>.ts.net` 的 URL。因 v0.
 ### 检查清单
 
 1. **注册**：Web 注册页填写用户名；保留名（如 `museai`、`admin`）应提示「用户名已存在」
-2. **CLI 首装**：删除 `~/.muse/` 后执行 `pnpm dev:cli`；确认 `~/.muse/personas/museai/basic-kit/` 与 `market/installed.json` 存在
+2. **CLI 首装**：删除 `~/.muse/` 后执行 `pnpm dev:cli`；确认 `~/.muse/personas/museai/basic-kit/general/` 与 `market/installed.json` 存在（包内为 `personas/general/`，由 CLI 映射落盘）
 3. **市场种子**：`pnpm dev:server` 启动后，`GET /market/packages`（带 user JWT）应含 `museai/basic-kit`
 4. **配对**：设备页生成配对码 → `pnpm muse pair <码>` → Web 选择设备，底栏「就绪」
 5. **逛市场**：侧栏「市场」→ 列表与详情；未配对时仍可浏览，安装按钮引导至设备页
@@ -306,7 +306,7 @@ pnpm test:run          # build + vitest 全量
 pnpm typecheck         # 各包 tsc --noEmit
 ```
 
-CI（GitHub Actions）：push / PR 时执行 `pnpm pack:basic-kit` 与 `pnpm test:run`（见 `.github/workflows/ci.yml`）。
+CI（GitHub Actions）：push / PR 时执行 `pnpm test:run`（内含 `build`、`pack:basic-kit` 与全量单测，见 `.github/workflows/ci.yml`）。
 
 ```bash
 # 单包

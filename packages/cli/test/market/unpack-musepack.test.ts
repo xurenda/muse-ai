@@ -13,7 +13,6 @@ const VALID_MANIFEST = {
   kind: 'kit',
   name: '测试套件',
   author: 'museai',
-  assets: [{ type: 'persona', id: 'museai/basic-kit/general' }],
 }
 
 function buildZip(files: Record<string, string>): Uint8Array {
@@ -28,7 +27,7 @@ describe('unpackMusepackArchive', () => {
   it('应解压合法 musepack', () => {
     const data = buildZip({
       'manifest.json': JSON.stringify(VALID_MANIFEST),
-      'personas/museai/basic-kit/general/persona.json': JSON.stringify({ id: 'museai/basic-kit/general', name: '通用' }),
+      'personas/general/persona.json': JSON.stringify({ id: 'general', name: '通用' }),
     })
     const result = unpackMusepackArchive(data)
     try {
@@ -62,8 +61,9 @@ describe('unpackMusepackArchive', () => {
 
 describe('installMarketPackageFromFile', () => {
   it('应从本地 .musepack 安装', async () => {
-    const { packMusepack } = await import('@museai/basic-kit')
-    const packageRoot = join(import.meta.dirname, '../../../basic-kit')
+    const { packMusepack } = await import('@/market/pack-musepack.js')
+    const { getBasicKitPackageRoot } = await import('@museai/basic-kit')
+    const packageRoot = getBasicKitPackageRoot()
     const outputDir = mkdtempSync(join(tmpdir(), 'muse-install-'))
     try {
       const packed = packMusepack({ packageRoot, outputDir })

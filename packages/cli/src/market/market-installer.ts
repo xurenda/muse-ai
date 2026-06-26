@@ -6,7 +6,8 @@ import { downloadMusepack, fetchMarketInstallUrl } from './market-backend-client
 import { MarketInstallerError } from './market-errors.js'
 import { getInstalledPackageVersion, readInstalledPackages, upsertInstalledPackage, writeInstalledPackages } from './installed-store.js'
 import { compareSemver } from './compare-semver.js'
-import { copyAssetKind, backupInstalledAssets, removeInstalledAssets, writeMuseOriginFiles } from './sync-assets.js'
+import { installMusepackAssets } from './install-musepack-assets.js'
+import { backupInstalledAssets, removeInstalledAssets } from './sync-assets.js'
 import { findAgentsReferencingPackageAssets } from './uninstall-check.js'
 import { unpackMusepackArchive } from './unpack-musepack.js'
 
@@ -41,18 +42,15 @@ async function removePackageBackups(paths: MusePaths, packageId: string): Promis
   await Promise.all(entries.filter(name => name.startsWith(prefix)).map(name => rm(join(parent, name), { recursive: true, force: true })))
 }
 
-async function installFromExtractDir(paths: MusePaths, manifest: MarketManifest, extractDir: string): Promise<void> {
-  await copyAssetKind(paths, 'personas', extractDir)
-  await copyAssetKind(paths, 'skills', extractDir)
-  await copyAssetKind(paths, 'agents', extractDir)
-
+async function installFromExtractDir(paths: MusePaths, manifest: MarketManifest, extractDir: string): Promise<InstalledPackage['assets']> {
+  const assets = await installMusepackAssets(paths, manifest, extractDir)
   const installedAt = new Date().toISOString()
-  await writeMuseOriginFiles(paths, manifest, installedAt)
   await upsertInstalledPackage(paths, manifest.id, {
     version: manifest.version,
     installedAt,
-    assets: manifest.assets,
+    assets,
   })
+  return assets
 }
 
 /** 从已解压目录安装市场包（更新时会先备份旧版） */
@@ -67,13 +65,13 @@ export async function installMarketPackageFromExtract(paths: MusePaths, manifest
     await removeInstalledAssets(paths, previous.assets)
   }
 
-  await installFromExtractDir(paths, manifest, extractDir)
+  const assets = await installFromExtractDir(paths, manifest, extractDir)
 
   return {
     packageId: manifest.id,
     version: manifest.version,
     action,
-    assets: manifest.assets,
+    assets,
   }
 }
 

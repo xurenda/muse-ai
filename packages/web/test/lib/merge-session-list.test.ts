@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SessionMeta } from '@museai/shared'
+import { DEFAULT_AGENT_ID } from '@museai/shared'
 import { mergeSessionList } from '@/lib/merge-session-list'
 
 describe('mergeSessionList', () => {
@@ -7,7 +8,7 @@ describe('mergeSessionList', () => {
     const sessions: SessionMeta[] = [
       {
         id: '550e8400-e29b-41d4-a716-446655440000',
-        agentId: '00000000-0000-4000-8000-000000000001',
+        agentId: DEFAULT_AGENT_ID,
         name: '旧标题',
         nameSource: 'first_message',
         createdAt: '2026-06-16T00:00:00.000Z',

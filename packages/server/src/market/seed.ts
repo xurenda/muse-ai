@@ -1,7 +1,7 @@
-import { randomBytes } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { createHash, randomBytes } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import bcrypt from 'bcryptjs'
-import { getBasicKitPackageRoot, packMusepack } from '@museai/basic-kit'
+import { getBasicKitMusepackPath, getBasicKitPackageRoot } from '@museai/basic-kit'
 import { marketManifestSchema } from '@museai/shared'
 import { and, eq } from 'drizzle-orm'
 import type { MuseDb } from '../db/client.js'
@@ -36,6 +36,18 @@ async function ensureMuseaiUser(db: MuseDb): Promise<string> {
   return row.id
 }
 
+function resolveBasicKitMusepack(): { outputPath: string; sha256: string } {
+  const outputPath = getBasicKitMusepackPath()
+  if (!existsSync(outputPath)) {
+    throw new Error(`未找到 ${outputPath}，请先执行 pnpm pack:basic-kit`)
+  }
+  const data = readFileSync(outputPath)
+  return {
+    outputPath,
+    sha256: createHash('sha256').update(data).digest('hex'),
+  }
+}
+
 async function ensureBasicKitPackage(db: MuseDb, marketDataDir: string, authorId: string): Promise<void> {
   const packageRoot = getBasicKitPackageRoot()
   const manifest = marketManifestSchema.parse(JSON.parse(readFileSync(`${packageRoot}/manifest.json`, 'utf8')) as unknown)
@@ -62,7 +74,7 @@ async function ensureBasicKitPackage(db: MuseDb, marketDataDir: string, authorId
     return
   }
 
-  const packed = packMusepack({ packageRoot })
+  const packed = resolveBasicKitMusepack()
   const blobPath = await installBlobFile(marketDataDir, manifest.id, manifest.version, packed.outputPath)
 
   await db.insert(marketPackageVersions).values({

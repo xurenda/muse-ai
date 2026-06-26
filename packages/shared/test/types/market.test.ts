@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { BUILTIN_PERSONA_GENERAL, BUILTIN_SKILL_GIT } from '@/constants/builtin-agents.js'
 import { BASIC_KIT_PACKAGE_ID, RESERVED_USERNAMES, isReservedUsername } from '@/constants/market.js'
+import { DEFAULT_AGENT_ID } from '@/constants/default-agent.js'
+import { basicKitAssetId } from '@/utils/market-asset-id.js'
 import { packageIdSchema, scopedAssetIdSchema, usernameSchema } from '@/schemas/market-id.js'
 import { inferAssetSource, installedPackagesFileSchema, marketManifestSchema } from '@/types/market.js'
 
@@ -42,22 +43,22 @@ describe('RESERVED_USERNAMES', () => {
 })
 
 describe('marketManifestSchema', () => {
-  it('接受 basic-kit manifest', () => {
+  it('接受 basic-kit manifest（无 assets）', () => {
     const root = join(import.meta.dirname, '../../../basic-kit')
     const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'))
     expect(marketManifestSchema.safeParse(manifest).success).toBe(true)
   })
 
-  it('拒绝单资产包 id 与 asset 不一致', () => {
+  it('接受可选资产目录覆盖', () => {
     const result = marketManifestSchema.safeParse({
       id: 'kingen/reviewer',
       version: '1.0.0',
-      kind: 'persona',
-      name: '审查',
+      kind: 'kit',
+      name: '审查套件',
       author: 'kingen',
-      assets: [{ type: 'persona', id: 'kingen/other' }],
+      personas: './my-personas',
     })
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
   })
 })
 
@@ -70,7 +71,7 @@ describe('installedPackagesFileSchema', () => {
           installedAt: '2026-06-25T12:00:00.000Z',
           assets: [
             { type: 'persona', id: 'museai/basic-kit/general' },
-            { type: 'agent', id: '00000000-0000-4000-8000-000000000001' },
+            { type: 'agent', id: DEFAULT_AGENT_ID },
           ],
         },
       },
@@ -79,10 +80,10 @@ describe('installedPackagesFileSchema', () => {
   })
 })
 
-describe('内置常量', () => {
-  it('BUILTIN_* 使用 scoped id', () => {
-    expect(BUILTIN_PERSONA_GENERAL).toBe(`${BASIC_KIT_PACKAGE_ID}/general`)
-    expect(BUILTIN_SKILL_GIT).toBe(`${BASIC_KIT_PACKAGE_ID}/git`)
+describe('basicKitAssetId', () => {
+  it('应生成 scoped 资产 id', () => {
+    expect(basicKitAssetId('general')).toBe(`${BASIC_KIT_PACKAGE_ID}/general`)
+    expect(basicKitAssetId('git')).toBe(`${BASIC_KIT_PACKAGE_ID}/git`)
   })
 })
 
